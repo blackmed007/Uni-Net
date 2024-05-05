@@ -12,13 +12,19 @@ Easy to install [Link to installation manual](https://pnpm.io/installation):
 wget -qO- https://get.pnpm.io/install.sh | sh -
 ```
 
-## Running Front end
+## Running both apps
+
+```bash
+pnpm dev
+```
+
+## Running Front end Only
 
 ```bash
 pnpm --filter frontend start
 ```
 
-## Running Back end
+## Running Back end Only
 
 ```bash
 pnpm --filter backend start
