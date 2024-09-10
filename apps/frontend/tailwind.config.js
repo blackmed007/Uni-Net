@@ -1,9 +1,17 @@
+const { nextui } = require("@nextui-org/react");
+
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
+    "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#FF1493", // Dark pink
+      },
+    },
   },
-  plugins: [],
-}
+  darkMode: 'class',
+  plugins: [nextui()],
+};

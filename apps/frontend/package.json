@@ -1,16 +1,28 @@
 {
-  "name": "frontend",
+  "name": "university-life-app",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.6.0",
+    "@fortawesome/free-brands-svg-icons": "^6.6.0",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@nextui-org/react": "^2.4.6",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "jszip": "^3.10.1",
+    "autoprefixer": "^10.4.20",
+    "date-fns": "^3.6.0",
+    "framer-motion": "^11.5.3",
+    "lucide-react": "^0.438.0",
+    "postcss": "^8.4.42",
     "react": "^18.3.1",
+    "react-big-calendar": "^1.13.4",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.23.0",
+    "react-masonry-css": "^1.0.16",
+    "react-router-dom": "^6.26.1",
     "react-scripts": "5.0.1",
+    "recharts": "^2.12.7",
+    "tailwindcss": "^3.4.10",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -36,10 +48,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3"
   }
 }
