@@ -59,7 +59,7 @@ const SignUp = () => {
   return (
     <div className="relative flex min-h-screen bg-black text-white"
       style={{
-        backgroundImage: 'url(https://images.unsplash.com/photo-1477093782505-e10aaeb27c6d?q=80&w=2960&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)',
+        backgroundImage: 'url(assets/login-signup/background.avif)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'

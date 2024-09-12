@@ -6,7 +6,7 @@ const Header = () => {
     <Navbar shouldHideOnScroll className="bg-black">
       <NavbarBrand>
       <Link href="/" color="Foreground">
-        <img src="https://images.unsplash.com/photo-1513118172236-00b7cc57e1fa?q=80&w=2380&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Logo" className="w-8 h-8" />
+        <img src="assets/home/main-logo.avif" alt="Logo" className="w-8 h-8" />
         <p className="font-bold text-inherit">UniLife</p>
         </Link>
 

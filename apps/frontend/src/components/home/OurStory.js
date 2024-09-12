@@ -9,7 +9,7 @@ const OurStory = () => {
         <Card className="bg-black">
           <CardBody className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-8 md:mb-0">
-              <Image src="https://images.unsplash.com/photo-1455849318743-b2233052fcff?q=80&w=2938&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Our Team" className="w-full h-auto" />
+              <Image src="assets/home/ourstory.avif" alt="Our Team" className="w-full h-auto" />
             </div>
             <div className="md:w-1/2 md:pl-8">
               <p className="text-lg mb-4 text-white">
