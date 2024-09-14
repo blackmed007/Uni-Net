@@ -18,7 +18,7 @@ import UserNavbar from './components/user/UserNavbar';
 import useDarkMode from './hooks/useDarkMode';
 import { initializeMockData } from './utils/mockDataGenerator';
 
-const ProtectedRoute = ({ children, requireProfileCompleted = true }) => {
+const ProtectedRoute = ({ children, requireAdmin = false, requireProfileCompleted = true }) => {
   const userDataString = localStorage.getItem('userData');
   const user = userDataString ? JSON.parse(userDataString) : null;
 
@@ -26,12 +26,12 @@ const ProtectedRoute = ({ children, requireProfileCompleted = true }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireProfileCompleted && !user.profileCompleted) {
-    return <Navigate to="/user/onboarding" replace />;
+  if (requireAdmin && user.role !== 'Admin') {
+    return <Navigate to="/user/dashboard" replace />;
   }
 
-  if (!requireProfileCompleted && user.profileCompleted) {
-    return <Navigate to="/user/dashboard" replace />;
+  if (!requireAdmin && requireProfileCompleted && !user.profileCompleted) {
+    return <Navigate to="/user/onboarding" replace />;
   }
 
   return children;
@@ -57,17 +57,10 @@ const UserLayout = ({ children }) => {
 
 function App() {
   useEffect(() => {
-    // Initialize mock data if it doesn't exist
     if (!localStorage.getItem('users')) {
       initializeMockData();
     }
-      // Initialize mock data if it doesn't exist
-      if (!localStorage.getItem('events')) {
-        initializeMockData();
-      }
-  }, 
-  []);
-  
+  }, []);
 
   return (
     <NextUIProvider>
@@ -83,7 +76,7 @@ function App() {
 
             {/* Admin routes */}
             <Route path="/admin/*" element={
-              <ProtectedRoute>
+              <ProtectedRoute requireAdmin={true}>
                 <AdminDashboard />
               </ProtectedRoute>
             } />

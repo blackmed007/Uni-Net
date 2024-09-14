@@ -53,8 +53,22 @@ const Login = () => {
     if (validateForm()) {
       // TODO: Implement backend authentication
       // For demonstration, we're using a dummy check
-      if (email === 'demo@example.com' && password === 'password') {
-        navigate('/user/dashboard');
+      if (email === 'admin@example.com' && password === 'adminpassword') {
+        const userData = {
+          email: email,
+          role: 'Admin',
+          profileCompleted: true
+        };
+        localStorage.setItem('userData', JSON.stringify(userData));
+        navigate('/admin/dashboard');
+      } else if (email === 'user@example.com' && password === 'userpassword') {
+        const userData = {
+          email: email,
+          role: 'User',
+          profileCompleted: false
+        };
+        localStorage.setItem('userData', JSON.stringify(userData));
+        navigate('/user/onboarding');
       } else {
         setErrors({ form: "Invalid email or password" });
       }
