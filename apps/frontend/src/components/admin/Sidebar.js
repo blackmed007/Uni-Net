@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { LayoutGrid, Users, Calendar, BookOpen, FileText, Bell, Settings, LogOut } from "lucide-react";
+import { Link } from 'react-router-dom';
 
-const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
+const Sidebar = ({ activeTab, setActiveTab }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
@@ -47,40 +48,44 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
         <div className="h-16"></div> {/* Placeholder for navbar */}
         <nav className="flex-1 mt-8 px-2 overflow-y-auto">
           {navItems.map((item) => (
-            <motion.button
+            <Link
               key={item.tab}
-              className={`w-full text-left px-4 py-3 mb-2 flex items-center rounded-lg ${
-                activeTab === item.tab
-                  ? 'bg-white bg-opacity-10 text-white'
-                  : 'text-gray-400 hover:bg-white hover:bg-opacity-5 hover:text-white'
-              } transition-all duration-200`}
+              to={item.tab}
               onClick={() => setActiveTab(item.tab)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
-              <div className={`flex items-center justify-center ${isCollapsed ? 'w-full' : 'w-8'} h-8 rounded-md ${activeTab === item.tab ? 'bg-blue-500' : 'bg-gray-700'}`}>
-                <item.icon className="w-5 h-5" />
-              </div>
-              <AnimatePresence>
-                {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="ml-3"
-                  >
-                    {item.name}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
+              <motion.button
+                className={`w-full text-left px-4 py-3 mb-2 flex items-center rounded-lg ${
+                  activeTab === item.tab
+                    ? 'bg-white bg-opacity-10 text-white'
+                    : 'text-gray-400 hover:bg-white hover:bg-opacity-5 hover:text-white'
+                } transition-all duration-200`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className={`flex items-center justify-center ${isCollapsed ? 'w-full' : 'w-8'} h-8 rounded-md ${activeTab === item.tab ? 'bg-blue-500' : 'bg-gray-700'}`}>
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <AnimatePresence>
+                  {!isCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="ml-3"
+                    >
+                      {item.name}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </Link>
           ))}
         </nav>
         <div className="p-4">
           <motion.button
             className="w-full text-left px-4 py-3 flex items-center rounded-lg text-red-500 hover:bg-red-500 hover:bg-opacity-10 hover:text-red-400 transition-all duration-200"
-            onClick={onLogout}
+            onClick={() => {}} // Add logout functionality here
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
