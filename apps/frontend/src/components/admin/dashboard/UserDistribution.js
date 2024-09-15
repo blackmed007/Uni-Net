@@ -1,44 +1,61 @@
 import React from 'react';
-import { Card, CardBody, CardHeader } from "@nextui-org/react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
 
-const mockPieData = [
+const data = [
   { name: 'Students', value: 400 },
   { name: 'Teachers', value: 300 },
   { name: 'Admins', value: 50 },
   { name: 'Guests', value: 100 },
 ];
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700"
+      >
+        <p className="font-bold text-gray-100">{payload[0].name}</p>
+        <p style={{ color: payload[0].payload.fill }}>
+          Value: {payload[0].value}
+        </p>
+      </motion.div>
+    );
+  }
+  return null;
+};
 
 const UserDistribution = () => (
-  <Card className="w-full bg-white/10 dark:bg-gray-800/50 shadow-xl backdrop-blur-lg border border-gray-200 dark:border-gray-700">
-    <CardHeader className="border-b border-gray-200 dark:border-gray-700 pb-3">
-      <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">User Distribution</h2>
-    </CardHeader>
-    <CardBody>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={mockPieData}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            outerRadius={80}
-            fill="#8884d8"
-            dataKey="value"
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          >
-            {mockPieData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.375rem' }} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    </CardBody>
-  </Card>
+  <ResponsiveContainer width="100%" height={400}>
+    <PieChart>
+      <Pie
+        data={data}
+        cx="50%"
+        cy="50%"
+        innerRadius={60}
+        outerRadius={80}
+        fill="#8884d8"
+        paddingAngle={5}
+        dataKey="value"
+        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+        labelLine={false}
+      >
+        {data.map((entry, index) => (
+          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+        ))}
+      </Pie>
+      <Tooltip content={<CustomTooltip />} />
+      <Legend 
+        verticalAlign="bottom" 
+        height={36}
+        iconType="circle"
+      />
+    </PieChart>
+  </ResponsiveContainer>
 );
 
 export default UserDistribution;

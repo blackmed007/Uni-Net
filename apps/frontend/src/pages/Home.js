@@ -11,11 +11,11 @@ import ScrollArrow from '../components/home/ScrollArrow';
 
 // Animation variants for section transitions
 const sectionVariants = {
-  hidden: { opacity: 0, y: 50 },
+  hidden: { opacity: 50, y: 50 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.8, ease: "easeOut" }
+    transition: { duration: 0.4, ease: "easeOut" }
   }
 };
 

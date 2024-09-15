@@ -1,39 +1,63 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import { Card, CardBody, CardHeader } from "@nextui-org/react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
 
-const ActivityOverview = ({ data }) => (
-  <Card className="w-full bg-white/10 dark:bg-gray-800/50 shadow-xl backdrop-blur-lg border border-gray-200 dark:border-gray-700">
-    <CardHeader className="border-b border-gray-200 dark:border-gray-700 pb-3">
-      <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Activity Overview</h2>
-    </CardHeader>
-    <CardBody>
-      <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="name" stroke="#9CA3AF" />
-          <YAxis stroke="#9CA3AF" />
-          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.375rem' }} />
-          <Legend />
-          <Area type="monotone" dataKey="users" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.2} />
-          <Area type="monotone" dataKey="events" stackId="1" stroke="#10B981" fill="#10B981" fillOpacity={0.2} />
-          <Area type="monotone" dataKey="studyGroups" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.2} />
-        </AreaChart>
-      </ResponsiveContainer>
-    </CardBody>
-  </Card>
-);
+const data = [
+  { name: 'Jan', users: 400, events: 240, studyGroups: 240 },
+  { name: 'Feb', users: 300, events: 139, studyGroups: 221 },
+  { name: 'Mar', users: 200, events: 980, studyGroups: 229 },
+  { name: 'Apr', users: 278, events: 390, studyGroups: 200 },
+  { name: 'May', users: 189, events: 480, studyGroups: 218 },
+  { name: 'Jun', users: 239, events: 380, studyGroups: 250 },
+  { name: 'Jul', users: 349, events: 430, studyGroups: 210 },
+];
 
-ActivityOverview.propTypes = {
-  data: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      users: PropTypes.number.isRequired,
-      events: PropTypes.number.isRequired,
-      studyGroups: PropTypes.number.isRequired,
-    })
-  ).isRequired,
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700"
+      >
+        <p className="font-bold text-gray-100">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }}>
+            {entry.name}: {entry.value}
+          </p>
+        ))}
+      </motion.div>
+    );
+  }
+  return null;
 };
+
+const ActivityOverview = () => (
+  <ResponsiveContainer width="100%" height={400}>
+    <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+      <defs>
+        <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+        </linearGradient>
+        <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+        </linearGradient>
+        <linearGradient id="colorStudyGroups" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
+          <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
+        </linearGradient>
+      </defs>
+      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+      <XAxis dataKey="name" stroke="#9CA3AF" />
+      <YAxis stroke="#9CA3AF" />
+      <Tooltip content={<CustomTooltip />} />
+      <Area type="monotone" dataKey="users" stroke="#3B82F6" fillOpacity={1} fill="url(#colorUsers)" />
+      <Area type="monotone" dataKey="events" stroke="#10B981" fillOpacity={1} fill="url(#colorEvents)" />
+      <Area type="monotone" dataKey="studyGroups" stroke="#F59E0B" fillOpacity={1} fill="url(#colorStudyGroups)" />
+    </AreaChart>
+  </ResponsiveContainer>
+);
 
 export default ActivityOverview;

@@ -1,35 +1,58 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import { Card, CardBody, CardHeader } from "@nextui-org/react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
 
-const EngagementTrend = ({ data }) => (
-  <Card className="w-full bg-white/10 dark:bg-gray-800/50 shadow-xl backdrop-blur-lg border border-gray-200 dark:border-gray-700">
-    <CardHeader className="border-b border-gray-200 dark:border-gray-700 pb-3">
-      <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Engagement Trend</h2>
-    </CardHeader>
-    <CardBody>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="name" stroke="#9CA3AF" />
-          <YAxis stroke="#9CA3AF" />
-          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.375rem' }} />
-          <Legend />
-          <Line type="monotone" dataKey="engagement" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 4 }} />
-        </LineChart>
-      </ResponsiveContainer>
-    </CardBody>
-  </Card>
-);
+const data = [
+  { name: 'Jan', engagement: 65 },
+  { name: 'Feb', engagement: 59 },
+  { name: 'Mar', engagement: 80 },
+  { name: 'Apr', engagement: 72 },
+  { name: 'May', engagement: 76 },
+  { name: 'Jun', engagement: 82 },
+  { name: 'Jul', engagement: 79 },
+];
 
-EngagementTrend.propTypes = {
-  data: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      engagement: PropTypes.number.isRequired,
-    })
-  ).isRequired,
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700"
+      >
+        <p className="font-bold text-gray-100">{label}</p>
+        <p className="text-purple-400">
+          Engagement: {payload[0].value}%
+        </p>
+      </motion.div>
+    );
+  }
+  return null;
 };
+
+const EngagementTrend = () => (
+  <ResponsiveContainer width="100%" height={400}>
+    <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+      <XAxis dataKey="name" stroke="#9CA3AF" />
+      <YAxis stroke="#9CA3AF" />
+      <Tooltip content={<CustomTooltip />} />
+      <defs>
+        <linearGradient id="colorEngagement" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+          <stop offset="95%" stopColor="#D946EF" stopOpacity={0.8}/>
+        </linearGradient>
+      </defs>
+      <Line 
+        type="monotone" 
+        dataKey="engagement" 
+        stroke="url(#colorEngagement)" 
+        strokeWidth={3}
+        dot={{ r: 6, strokeWidth: 2, fill: '#1F2937' }}
+        activeDot={{ r: 8, strokeWidth: 2 }}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+);
 
 export default EngagementTrend;

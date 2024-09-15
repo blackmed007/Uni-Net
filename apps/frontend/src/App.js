@@ -56,6 +56,7 @@ const UserLayout = ({ children }) => {
 };
 
 function App() {
+  const [isDarkMode] = useDarkMode();
   useEffect(() => {
     if (!localStorage.getItem('users')) {
       initializeMockData();

@@ -1,30 +1,41 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import { Card, CardBody } from "@nextui-org/react";
+import { motion } from 'framer-motion';
 
-const SummaryCard = ({ title, value, icon: Icon, trend, color }) => (
-  <Card className="w-full bg-white/10 dark:bg-gray-800/50 shadow-xl backdrop-blur-lg border border-gray-200 dark:border-gray-700">
-    <CardBody className="flex flex-row items-center justify-between p-6">
-      <div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-        <p className={`text-3xl font-bold ${color}`}>{value}</p>
-        <p className={`text-xs ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-          {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% from last month
-        </p>
-      </div>
-      <div className={`p-4 rounded-full ${color.replace('text-', 'bg-').replace('500', '100')} bg-opacity-20`}>
-        <Icon className={`w-8 h-8 ${color}`} />
-      </div>
-    </CardBody>
-  </Card>
-);
+const SummaryCard = ({ title, value, icon: Icon, trend, color }) => {
+  const gradientClass = {
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-green-500 to-green-600',
+    yellow: 'from-yellow-500 to-yellow-600',
+    purple: 'from-purple-500 to-purple-600',
+  }[color];
 
-SummaryCard.propTypes = {
-  title: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
-  icon: PropTypes.elementType.isRequired,
-  trend: PropTypes.number.isRequired,
-  color: PropTypes.string.isRequired,
+  return (
+    <motion.div
+      whileHover={{ scale: 1.05, boxShadow: "0 10px 20px rgba(0,0,0,0.2)" }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <Card className={`bg-gradient-to-br ${gradientClass} text-white shadow-lg rounded-xl overflow-hidden border border-gray-700`}>
+        <CardBody className="p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm opacity-80">{title}</p>
+              <p className="text-3xl font-bold mt-1">{value}</p>
+              <p className={`text-xs mt-2 ${trend >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% from last month
+              </p>
+            </div>
+            <motion.div 
+              className="p-4 bg-white bg-opacity-20 rounded-full"
+              whileHover={{ rotate: 15 }}
+            >
+              <Icon className="w-8 h-8 text-white" />
+            </motion.div>
+          </div>
+        </CardBody>
+      </Card>
+    </motion.div>
+  );
 };
 
 export default SummaryCard;
