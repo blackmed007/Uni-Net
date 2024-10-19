@@ -12,3 +12,21 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id          String   @id @default(uuid())
+  first_name  String
+  last_name   String
+  email       String   @unique
+  password    String
+  status      Boolean
+  profile_url String
+  gender      Gender
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @map("updatedAt")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
