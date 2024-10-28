@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "status" DROP NOT NULL,
+ALTER COLUMN "profile_url" DROP NOT NULL,
+ALTER COLUMN "gender" DROP NOT NULL;
