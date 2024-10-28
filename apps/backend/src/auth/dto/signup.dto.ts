@@ -4,11 +4,11 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 export class SignupDto implements Prisma.UserCreateInput {
   @IsString()
   @IsNotEmpty()
-  firstName: string;
+  first_name: string;
 
   @IsString()
   @IsNotEmpty()
-  lastName: string;
+  last_name: string;
 
   @IsEmail()
   @IsNotEmpty()
