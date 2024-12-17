@@ -1,56 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { NextUIProvider } from "@nextui-org/react";
-import OnboardingForm from '../../components/user/OnboardingForm';
+import UserSidebar from '../../components/user/UserSidebar';
+import UserNavbar from '../../components/user/UserNavbar';
+import UserDashboard from '../../components/user/dashboard/UserDashboard';
 import useDarkMode from '../../hooks/useDarkMode';
 
-const NewUserOnboardingPage = () => {
-  const [isDarkMode] = useDarkMode();
+const UserDashboardPage = () => {
   const [user, setUser] = useState(null);
-  const navigate = useNavigate();
+  const [studyGroups, setStudyGroups] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [isDarkMode, toggleDarkMode] = useDarkMode();
 
   useEffect(() => {
-    const userDataString = localStorage.getItem('userData');
-    if (userDataString) {
-      const userData = JSON.parse(userDataString);
-      setUser(userData);
-      if (userData.profileCompleted) {
-        navigate('/user/dashboard');
-      }
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  const handleProfileComplete = (profileData) => {
-    const updatedUser = { ...user, ...profileData, profileCompleted: true };
-    localStorage.setItem('userData', JSON.stringify(updatedUser));
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    const storedGroups = JSON.parse(localStorage.getItem('studyGroups') || '[]');
+    const storedEvents = JSON.parse(localStorage.getItem('events') || '[]');
     
-    // Update the users list in localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-    navigate('/user/dashboard');
-  };
+    setUser(userData);
+    setStudyGroups(storedGroups);
+    setEvents(storedEvents);
+  }, []);
 
   if (!user) {
-    return <div>Loading...</div>;
+    return <div className="text-center text-white">Loading...</div>;
   }
 
   return (
     <NextUIProvider>
-      <div className={`min-h-screen ${isDarkMode ? 'dark' : ''} bg-gray-50 dark:bg-gray-900`}>
-        <div className="container mx-auto py-12 px-4">
-          <h1 className="text-4xl font-bold mb-6 text-center text-gray-800 dark:text-white">Welcome to UniConnect!</h1>
-          <p className="text-xl mb-8 text-center text-gray-600 dark:text-gray-300">
-            Let's get your profile set up so you can start connecting with your peers.
-          </p>
-          <OnboardingForm onComplete={handleProfileComplete} />
+      <div className="flex h-screen bg-black text-white">
+        <UserSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <UserNavbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} user={user} />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-black">
+            <div className="container mx-auto px-6 py-8">
+              <UserDashboard 
+                user={user} 
+                studyGroups={studyGroups} 
+                events={events}
+              />
+            </div>
+          </main>
         </div>
       </div>
     </NextUIProvider>
   );
 };
 
-export default NewUserOnboardingPage;
+export default UserDashboardPage;

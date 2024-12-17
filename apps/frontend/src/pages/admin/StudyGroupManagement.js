@@ -3,7 +3,7 @@ import { Input, Button, useDisclosure } from "@nextui-org/react";
 import { Search, Filter, Plus } from "lucide-react";
 import StudyGroupListTable from '../../components/admin/studyGroup/StudyGroupListTable';
 import StudyGroupDetailModal from '../../components/admin/studyGroup/StudyGroupDetailModal';
-import FilterModal from '../../components/common/FilterModal';
+import StudyGroupFilterModal from '../../components/admin/studyGroup/StudyGroupFilterModal';
 import CreateStudyGroupModal from '../../components/admin/studyGroup/CreateStudyGroupModal';
 import EditStudyGroupModal from '../../components/admin/studyGroup/EditStudyGroupModal';
 import ConfirmActionModal from '../../components/common/ConfirmActionModal';
@@ -101,7 +101,12 @@ const StudyGroupManagement = () => {
         <Button color="primary" onPress={onFilterOpen} startContent={<Filter size={20} />}>
           Filters
         </Button>
-        <Button color="success" onPress={onCreateOpen} startContent={<Plus size={20} />}>
+        <Button 
+          color="success" 
+          onPress={onCreateOpen} 
+          startContent={<Plus size={20} />}
+          className="bg-gradient-to-r from-green-400 to-blue-500 text-white"
+        >
           Create Study Group
         </Button>
       </div>
@@ -116,7 +121,7 @@ const StudyGroupManagement = () => {
         onClose={onGroupDetailClose}
         group={selectedGroup}
       />
-      <FilterModal
+      <StudyGroupFilterModal
         isOpen={isFilterOpen}
         onClose={onFilterClose}
         onApplyFilters={handleFilter}

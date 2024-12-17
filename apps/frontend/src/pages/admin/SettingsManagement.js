@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Tab, Card, CardBody } from "@nextui-org/react";
+import { Card, CardBody, Button } from "@nextui-org/react";
+import { Settings, User, Bell, Lock, FileText, AlertTriangle, Building, MapPin } from "lucide-react";
 import AdminProfileSettings from '../../components/admin/settings/AdminProfileSettings';
 import GeneralSettingsForm from '../../components/admin/settings/GeneralSettingsForm';
 import NotificationSettingsForm from '../../components/admin/settings/NotificationSettingsForm';
@@ -10,6 +11,7 @@ import UniversityManagement from '../../components/admin/settings/UniversityMana
 import CityManagement from '../../components/admin/settings/CityManagement';
 
 const SettingsManagement = ({ adminProfile, onProfileUpdate, settings, onSettingsUpdate }) => {
+  const [activeTab, setActiveTab] = useState("profile");
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
 
@@ -52,55 +54,77 @@ const SettingsManagement = ({ adminProfile, onProfileUpdate, settings, onSetting
     localStorage.setItem('cities', JSON.stringify(updatedCities));
   };
 
+  const tabs = [
+    { key: "profile", label: "Admin Profile", icon: User },
+    { key: "general", label: "General", icon: Settings },
+    { key: "notifications", label: "Notifications", icon: Bell },
+    { key: "auth", label: "Authentication", icon: Lock },
+    { key: "accessLogs", label: "Access Logs", icon: FileText },
+    { key: "errorTracking", label: "Error Tracking", icon: AlertTriangle },
+    { key: "universities", label: "Universities", icon: Building },
+    { key: "cities", label: "Cities", icon: MapPin },
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "profile":
+        return <AdminProfileSettings initialSettings={adminProfile} onSave={onProfileUpdate} />;
+      case "general":
+        return <GeneralSettingsForm initialSettings={settings.general} onSave={(newSettings) => onSettingsUpdate('general', newSettings)} />;
+      case "notifications":
+        return <NotificationSettingsForm initialSettings={settings.notification} onSave={(newSettings) => onSettingsUpdate('notification', newSettings)} />;
+      case "auth":
+        return <AuthSettingsForm initialSettings={settings.auth} onSave={(newSettings) => onSettingsUpdate('auth', newSettings)} />;
+      case "accessLogs":
+        return <AccessLogsTable />;
+      case "errorTracking":
+        return <ErrorTrackingDashboard />;
+      case "universities":
+        return <UniversityManagement universities={universities} onUniversityUpdate={handleUniversityUpdate} />;
+      case "cities":
+        return <CityManagement cities={cities} onCityUpdate={handleCityUpdate} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-4xl font-bold">Settings and Configurations</h1>
-      <Card>
+    <div className="space-y-6 p-8 bg-black min-h-screen">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-white">Settings and Configurations</h1>
+        <Button 
+          color="primary" 
+          startContent={<Settings size={18} />}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+        >
+          Save All Changes
+        </Button>
+      </div>
+      <Card className="bg-gradient-to-b from-gray-900 to-black border border-gray-800 shadow-2xl">
         <CardBody>
-          <Tabs>
-            <Tab key="profile" title="Admin Profile">
-              <AdminProfileSettings
-                initialSettings={adminProfile}
-                onSave={onProfileUpdate}
-              />
-            </Tab>
-            <Tab key="general" title="General">
-              <GeneralSettingsForm
-                initialSettings={settings.general}
-                onSave={(newSettings) => onSettingsUpdate('general', newSettings)}
-              />
-            </Tab>
-            <Tab key="notification" title="Notifications">
-              <NotificationSettingsForm
-                initialSettings={settings.notification}
-                onSave={(newSettings) => onSettingsUpdate('notification', newSettings)}
-              />
-            </Tab>
-            <Tab key="auth" title="Authentication">
-              <AuthSettingsForm
-                initialSettings={settings.auth}
-                onSave={(newSettings) => onSettingsUpdate('auth', newSettings)}
-              />
-            </Tab>
-            <Tab key="accessLogs" title="Access Logs">
-              <AccessLogsTable />
-            </Tab>
-            <Tab key="errorTracking" title="Error Tracking">
-              <ErrorTrackingDashboard />
-            </Tab>
-            <Tab key="universityManagement" title="University Management">
-              <UniversityManagement
-                universities={universities}
-                onUniversityUpdate={handleUniversityUpdate}
-              />
-            </Tab>
-            <Tab key="cityManagement" title="City Management">
-              <CityManagement
-                cities={cities}
-                onCityUpdate={handleCityUpdate}
-              />
-            </Tab>
-          </Tabs>
+          <div className="flex">
+            <div className="w-64 border-r border-gray-800 pr-4">
+              <nav className="space-y-1">
+                {tabs.map((tab) => (
+                  <Button
+                    key={tab.key}
+                    className={`w-full justify-start transition-all duration-200 ${
+                      activeTab === tab.key 
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                        : 'bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white'
+                    }`}
+                    onPress={() => setActiveTab(tab.key)}
+                    startContent={<tab.icon size={18} />}
+                  >
+                    {tab.label}
+                  </Button>
+                ))}
+              </nav>
+            </div>
+            <div className="flex-1 pl-6">
+              {renderContent()}
+            </div>
+          </div>
         </CardBody>
       </Card>
     </div>

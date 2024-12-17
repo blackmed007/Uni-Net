@@ -1,27 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
 import { Plus, Edit, Trash } from "lucide-react";
 
-const UniversityManagement = () => {
-  const [universities, setUniversities] = useState([]);
+const UniversityManagement = ({ universities, onUniversityUpdate }) => {
   const [newUniversity, setNewUniversity] = useState('');
   const [editingUniversity, setEditingUniversity] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
-    setUniversities(storedUniversities);
-  }, []);
-
-  const saveUniversities = (updatedUniversities) => {
-    setUniversities(updatedUniversities);
-    localStorage.setItem('universities', JSON.stringify(updatedUniversities));
-  };
-
   const handleAddUniversity = () => {
     if (newUniversity.trim()) {
       const updatedUniversities = [...universities, { id: Date.now(), name: newUniversity.trim() }];
-      saveUniversities(updatedUniversities);
+      onUniversityUpdate(updatedUniversities);
       setNewUniversity('');
     }
   };
@@ -35,25 +24,27 @@ const UniversityManagement = () => {
     const updatedUniversities = universities.map(u => 
       u.id === editingUniversity.id ? editingUniversity : u
     );
-    saveUniversities(updatedUniversities);
+    onUniversityUpdate(updatedUniversities);
     setIsModalOpen(false);
     setEditingUniversity(null);
   };
 
   const handleDeleteUniversity = (id) => {
     const updatedUniversities = universities.filter(u => u.id !== id);
-    saveUniversities(updatedUniversities);
+    onUniversityUpdate(updatedUniversities);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">University Management</h2>
       <div className="flex space-x-2">
         <Input
           placeholder="Enter university name"
           value={newUniversity}
           onChange={(e) => setNewUniversity(e.target.value)}
+          className="flex-grow"
         />
-        <Button color="primary" onPress={handleAddUniversity} startContent={<Plus size={20} />}>
+        <Button color="primary" onPress={handleAddUniversity} startContent={<Plus size={16} />}>
           Add University
         </Button>
       </div>
@@ -69,10 +60,10 @@ const UniversityManagement = () => {
               <TableCell>
                 <div className="flex space-x-2">
                   <Button isIconOnly size="sm" variant="light" onPress={() => handleEditUniversity(university)}>
-                    <Edit size={20} />
+                    <Edit size={16} />
                   </Button>
                   <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleDeleteUniversity(university.id)}>
-                    <Trash size={20} />
+                    <Trash size={16} />
                   </Button>
                 </div>
               </TableCell>

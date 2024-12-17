@@ -2,7 +2,7 @@ import React from 'react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, User, Chip, Tooltip, Button } from "@nextui-org/react";
 import { Eye, Edit2, Trash2 } from "lucide-react";
 
-const BlogPostListTable = ({ blogPosts, searchTerm, filters, onPostAction }) => {
+const BlogPostListTable = ({ blogPosts, searchTerm, filters, onPostAction, formatDate }) => {
   const filteredPosts = blogPosts.filter(post => 
     (post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
      post.author.toLowerCase().includes(searchTerm.toLowerCase())) &&
@@ -12,17 +12,21 @@ const BlogPostListTable = ({ blogPosts, searchTerm, filters, onPostAction }) => 
   );
 
   const columns = [
+    { name: 'ID', uid: 'id' },
     { name: 'TITLE', uid: 'title' },
     { name: 'AUTHOR', uid: 'author' },
     { name: 'CATEGORY', uid: 'category' },
     { name: 'DATE', uid: 'date' },
     { name: 'STATUS', uid: 'status' },
+    { name: 'VIEWS', uid: 'views' },
     { name: 'ACTIONS', uid: 'actions' },
   ];
 
   const renderCell = (post, columnKey) => {
     const cellValue = post[columnKey];
     switch (columnKey) {
+      case 'id':
+        return <span className="text-bold text-small">#{cellValue}</span>;
       case 'title':
         return (
           <div className="flex flex-col">
@@ -32,6 +36,8 @@ const BlogPostListTable = ({ blogPosts, searchTerm, filters, onPostAction }) => 
         );
       case 'category':
         return <Chip color="primary" size="sm" variant="flat">{cellValue}</Chip>;
+      case 'date':
+        return formatDate(cellValue);
       case 'status':
         return (
           <Chip
@@ -43,29 +49,22 @@ const BlogPostListTable = ({ blogPosts, searchTerm, filters, onPostAction }) => 
             {cellValue}
           </Chip>
         );
+      case 'views':
+        return cellValue;
       case 'actions':
         return (
           <div className="flex items-center gap-2">
-            <Tooltip 
-              content="View Post" 
-              className="bg-gray-800 text-white p-2 rounded-md"
-            >
+            <Tooltip content="View Details">
               <Button isIconOnly size="sm" variant="light" onPress={() => onPostAction('view', post)}>
                 <Eye size={20} />
               </Button>
             </Tooltip>
-            <Tooltip 
-              content="Edit Post" 
-              className="bg-gray-800 text-white p-2 rounded-md"
-            >
+            <Tooltip content="Edit Post">
               <Button isIconOnly size="sm" variant="light" onPress={() => onPostAction('edit', post)}>
                 <Edit2 size={20} />
               </Button>
             </Tooltip>
-            <Tooltip 
-              content="Delete Post" 
-              className="bg-gray-800 text-white p-2 rounded-md"
-            >
+            <Tooltip content="Delete Post">
               <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => onPostAction('delete', post)}>
                 <Trash2 size={20} />
               </Button>

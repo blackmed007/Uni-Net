@@ -4,6 +4,7 @@ import { Eye, Edit2, UserX, UserCheck, Trash2 } from "lucide-react";
 
 const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
   const columns = [
+    { name: '#ID', uid: 'id' },
     { name: 'NAME', uid: 'name' },
     { name: 'ROLE', uid: 'role' },
     { name: 'STATUS', uid: 'status' },
@@ -17,6 +18,8 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
   const renderCell = (user, columnKey) => {
     const cellValue = user[columnKey];
     switch (columnKey) {
+      case 'id':
+        return <span className="text-xs font-medium text-gray-400">#{cellValue}</span>;
       case 'name':
         return (
           <User
@@ -28,7 +31,15 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
           </User>
         );
       case 'role':
-        return <Chip color="primary" size="sm" variant="flat">{cellValue}</Chip>;
+        return (
+          <Chip
+            color={user.role === 'Admin' ? 'primary' : 'secondary'}
+            size="sm"
+            variant="flat"
+          >
+            {cellValue}
+          </Chip>
+        );
       case 'status':
         return (
           <Chip

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Input, Button, useDisclosure } from "@nextui-org/react";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Filter, Plus, Eye } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 import BlogPostListTable from '../../components/admin/blog/BlogPostListTable';
 import BlogPostDetailModal from '../../components/admin/blog/BlogPostDetailModal';
-import FilterModal from '../../components/common/FilterModal';
+import BlogFilterModal from '../../components/admin/blog/BlogFilterModal';
 import CreateBlogPostModal from '../../components/admin/blog/CreateBlogPostModal';
 import EditBlogPostModal from '../../components/admin/blog/EditBlogPostModal';
-import ConfirmActionModal from '../../components/common/ConfirmActionModal';
+import BlogConfirmActionModal from '../../components/admin/blog/BlogConfirmActionModal';
 
 const BlogManagement = () => {
   const [blogPosts, setBlogPosts] = useState([]);
@@ -15,6 +16,8 @@ const BlogManagement = () => {
     author: '',
     category: '',
     status: '',
+    startDate: '',
+    endDate: '',
   });
   const [selectedPost, setSelectedPost] = useState(null);
   const [actionType, setActionType] = useState('');
@@ -23,6 +26,7 @@ const BlogManagement = () => {
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedPosts = localStorage.getItem('blogPosts');
@@ -80,10 +84,26 @@ const BlogManagement = () => {
   };
 
   const handleCreatePost = (newPost) => {
-    const postWithId = { ...newPost, id: Date.now() };
+    const lastId = blogPosts.length > 0 ? Math.max(...blogPosts.map(post => parseInt(post.id))) : -1;
+    const newId = ((lastId + 1) % 1000).toString().padStart(3, '0');
+    const postWithId = { 
+      ...newPost, 
+      id: newId,
+      views: 0,
+      date: new Date().toISOString()
+    };
     const updatedPosts = [...blogPosts, postWithId];
     saveBlogPosts(updatedPosts);
     onCreateClose();
+  };
+
+  const handleViewBlog = () => {
+    window.open('/blog', '_blank');
+  };
+
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   return (
@@ -103,19 +123,24 @@ const BlogManagement = () => {
         <Button color="success" onPress={onCreateOpen} startContent={<Plus size={20} />}>
           Create Post
         </Button>
+        <Button color="secondary" onPress={handleViewBlog} startContent={<Eye size={20} />}>
+          View Blog
+        </Button>
       </div>
       <BlogPostListTable
         blogPosts={blogPosts}
         searchTerm={searchTerm}
         filters={filters}
         onPostAction={handlePostAction}
+        formatDate={formatDate}
       />
       <BlogPostDetailModal
         isOpen={isPostDetailOpen}
         onClose={onPostDetailClose}
         post={selectedPost}
+        formatDate={formatDate}
       />
-      <FilterModal
+      <BlogFilterModal
         isOpen={isFilterOpen}
         onClose={onFilterClose}
         onApplyFilters={handleFilter}
@@ -132,7 +157,7 @@ const BlogManagement = () => {
         post={selectedPost}
         onSave={handleEditPost}
       />
-      <ConfirmActionModal
+      <BlogConfirmActionModal
         isOpen={isConfirmOpen}
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}

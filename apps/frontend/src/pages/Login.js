@@ -56,19 +56,17 @@ const Login = () => {
       if (email === 'admin@example.com' && password === 'adminpassword') {
         const userData = {
           email: email,
-          role: 'Admin',
-          profileCompleted: true
+          role: 'Admin'
         };
         localStorage.setItem('userData', JSON.stringify(userData));
         navigate('/admin/dashboard');
       } else if (email === 'user@example.com' && password === 'userpassword') {
         const userData = {
           email: email,
-          role: 'User',
-          profileCompleted: false
+          role: 'User'
         };
         localStorage.setItem('userData', JSON.stringify(userData));
-        navigate('/user/onboarding');
+        navigate('/user/dashboard');
       } else {
         setErrors({ form: "Invalid email or password" });
       }

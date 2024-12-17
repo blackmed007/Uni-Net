@@ -1,22 +1,46 @@
 import React from 'react';
-import { Card, CardBody, Button, Chip, Tooltip } from "@nextui-org/react";
-import { Calendar, Clock, MapPin, Users, Info } from "lucide-react";
+import { Card, CardBody, Button, Chip } from "@nextui-org/react";
+import { Clock, MapPin, Users, Bookmark, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
-const EventCard = ({ event, onViewDetails, onJoin, isJoined }) => {
+const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJoined }) => {
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
   };
 
+  const bookmarkVariants = {
+    initial: { scale: 1 },
+    animate: { scale: [1, 1.2, 1] },
+  };
+
   const getEventTypeColor = (type) => {
     const colors = {
-      'Conference': 'bg-blue-500',
-      'Workshop': 'bg-green-500',
-      'Seminar': 'bg-yellow-500',
-      'Webinar': 'bg-purple-500',
+      'Workshop': 'bg-purple-500',
+      'Seminar': 'bg-blue-500',
+      'Conference': 'bg-pink-500',
+      'Social': 'bg-green-500',
+      'Concert': 'bg-yellow-500',
     };
     return colors[type] || 'bg-gray-500';
+  };
+
+  const getMonthAbbreviation = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('default', { month: 'short' }).toUpperCase();
+  };
+
+  const getDay = (dateString) => {
+    const date = new Date(dateString);
+    return date.getDate();
+  };
+
+  const handleBookmark = () => {
+    onBookmark(event.id);
+  };
+
+  const handleJoin = () => {
+    onJoin(event.id);
   };
 
   return (
@@ -26,54 +50,72 @@ const EventCard = ({ event, onViewDetails, onJoin, isJoined }) => {
       animate="visible"
       transition={{ duration: 0.3 }}
       whileHover={{ scale: 1.03 }}
+      className="relative"
     >
-      <Card className="bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900 dark:to-indigo-900 hover:shadow-lg transition-all duration-300">
-        <CardBody className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-2xl font-bold text-violet-700 dark:text-violet-300">{event.name}</h3>
-            <Chip color="primary" variant="flat" className={`${getEventTypeColor(event.type)} text-white`}>
-              {event.type}
-            </Chip>
-          </div>
-          <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
-            {event.description || 'No description available.'}
-          </p>
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-              <Calendar className="mr-2 text-violet-500" size={18} />
-              <span>{event.date || 'Date not specified'}</span>
+      <Card className="bg-black text-white overflow-hidden">
+        <div className="absolute top-0 left-0 bg-yellow-500 text-black p-2 z-10 flex flex-col items-center justify-center w-16 h-16">
+          <div className="text-xs font-bold">{getMonthAbbreviation(event.date)}</div>
+          <div className="text-2xl font-bold">{getDay(event.date)}</div>
+        </div>
+        <div className="absolute top-2 right-2 z-20">
+          <motion.div
+            variants={bookmarkVariants}
+            initial="initial"
+            whileTap="animate"
+          >
+            <Button
+              isIconOnly
+              color={isBookmarked ? "success" : "primary"}
+              variant="light"
+              onPress={handleBookmark}
+              className="bg-opacity-50 hover:bg-opacity-75"
+            >
+              <Bookmark className={isBookmarked ? "fill-current" : ""} />
+            </Button>
+          </motion.div>
+        </div>
+        <div onClick={() => onViewDetails(event)} className="cursor-pointer">
+          <img 
+            src={event.image} 
+            alt={event.name} 
+            className="w-full h-48 object-cover"
+          />
+          <CardBody className="p-4">
+            <div className="mb-2">
+              <Chip color="primary" variant="flat" className={`${getEventTypeColor(event.type)} text-white`}>
+                {event.type}
+              </Chip>
             </div>
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-              <Clock className="mr-2 text-violet-500" size={18} />
+            <h3 className="text-xl font-bold mb-2">{event.name}</h3>
+            <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+              {event.description || 'No description available.'}
+            </p>
+            <div className="flex items-center text-sm text-gray-400 mb-2">
+              <Clock className="mr-2 text-gray-500" size={16} />
               <span>{event.time || 'Time not specified'}</span>
             </div>
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-              <MapPin className="mr-2 text-violet-500" size={18} />
+            <div className="flex items-center text-sm text-gray-400 mb-4">
+              <MapPin className="mr-2 text-gray-500" size={16} />
               <span>{event.location || 'Location not specified'}</span>
             </div>
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-              <Users className="mr-2 text-violet-500" size={18} />
-              <span>{event.participants ? event.participants.length : 0} / {event.maxParticipants || '∞'} participants</span>
-            </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <Tooltip content="View event details">
-              <Button color="secondary" variant="flat" onPress={() => onViewDetails(event)}>
-                View Details
-              </Button>
-            </Tooltip>
-            <Tooltip content={isJoined ? "You've joined this event" : "Join this event"}>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">
+                <Users className="inline mr-1 text-gray-500" size={16} />
+                {event.participants?.length || 0}/{event.maxParticipants} participants
+              </span>
               <Button
                 color={isJoined ? "success" : "primary"}
-                variant={isJoined ? "flat" : "solid"}
-                onPress={() => onJoin(event.id)}
-                disabled={isJoined}
+                variant="solid"
+                onPress={handleJoin}
+                size="sm"
+                className={isJoined ? "bg-green-500 text-white" : "bg-white text-black hover:bg-gray-200"}
               >
+                {isJoined ? <Check size={16} className="mr-1" /> : null}
                 {isJoined ? "Joined" : "Join Event"}
               </Button>
-            </Tooltip>
-          </div>
-        </CardBody>
+            </div>
+          </CardBody>
+        </div>
       </Card>
     </motion.div>
   );

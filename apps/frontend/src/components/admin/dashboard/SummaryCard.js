@@ -1,14 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardBody } from "@nextui-org/react";
 import { motion } from 'framer-motion';
 
 const SummaryCard = ({ title, value, icon: Icon, trend, color }) => {
+  // TODO: Remove these props when connecting to backend
+  const [cardData, setCardData] = useState({ title, value, trend, color });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // TODO: Uncomment and implement the following useEffect when connecting to backend
+  /*
+  useEffect(() => {
+    const fetchCardData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/summary-card/${title}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch summary card data');
+        }
+        const result = await response.json();
+        setCardData(result);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCardData();
+  }, [title]);
+  */
+
   const gradientClass = {
     blue: 'from-blue-500 to-blue-600',
     green: 'from-green-500 to-green-600',
     yellow: 'from-yellow-500 to-yellow-600',
     purple: 'from-purple-500 to-purple-600',
-  }[color];
+  }[cardData.color];
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <motion.div
@@ -19,10 +51,10 @@ const SummaryCard = ({ title, value, icon: Icon, trend, color }) => {
         <CardBody className="p-6">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm opacity-80">{title}</p>
-              <p className="text-3xl font-bold mt-1">{value}</p>
-              <p className={`text-xs mt-2 ${trend >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% from last month
+              <p className="text-sm opacity-80">{cardData.title}</p>
+              <p className="text-3xl font-bold mt-1">{cardData.value}</p>
+              <p className={`text-xs mt-2 ${cardData.trend >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                {cardData.trend >= 0 ? '↑' : '↓'} {Math.abs(cardData.trend)}% from last month
               </p>
             </div>
             <motion.div 

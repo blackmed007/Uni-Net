@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Input, Select, SelectItem } from "@nextui-org/react";
+import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Input, Select, SelectItem } from "@nextui-org/react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Search, AlertTriangle, ArrowRight } from "lucide-react";
 
 const ErrorTrackingDashboard = () => {
   const [errorLogs, setErrorLogs] = useState([]);
@@ -25,22 +26,6 @@ const ErrorTrackingDashboard = () => {
       { name: 'Network Traffic', value: 70 },
     ];
     setPerformanceMetrics(mockPerformanceMetrics);
-
-    // Simulated real-time updates
-    const interval = setInterval(() => {
-      setErrorLogs(prevLogs => [
-        {
-          id: prevLogs.length + 1,
-          message: `New Error: ${['Database connection failed', '404 Not Found', 'Null pointer exception', 'API timeout'][Math.floor(Math.random() * 4)]}`,
-          timestamp: new Date().toISOString(),
-          severity: ['Critical', 'Warning', 'Info'][Math.floor(Math.random() * 3)],
-          stackTrace: 'at ErrorTrackingDashboard.js:42\nat renderWithHooks()\nat updateFunctionComponent()',
-        },
-        ...prevLogs.slice(0, 19)
-      ]);
-    }, 10000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const filteredLogs = errorLogs.filter(log => 
@@ -49,34 +34,31 @@ const ErrorTrackingDashboard = () => {
      log.severity.toLowerCase().includes(filter.search.toLowerCase()))
   );
 
-  const handleIntegration = () => {
-    // Logic to integrate with issue tracking tools (e.g., Jira, GitHub)
-    console.log('Integrating with issue tracking tool...');
-  };
-
   return (
     <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Error Tracking Dashboard</h2>
+      <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+        <Input
+          placeholder="Search errors..."
+          value={filter.search}
+          onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
+          startContent={<Search className="text-default-400" size={16} />}
+          className="w-full sm:w-1/2"
+        />
+        <Select 
+          placeholder="Filter by severity"
+          selectedKeys={[filter.severity]}
+          onChange={(e) => setFilter(prev => ({ ...prev, severity: e.target.value }))}
+          className="w-full sm:w-1/2"
+        >
+          <SelectItem key="all" value="all">All Severities</SelectItem>
+          <SelectItem key="Critical" value="Critical">Critical</SelectItem>
+          <SelectItem key="Warning" value="Warning">Warning</SelectItem>
+          <SelectItem key="Info" value="Info">Info</SelectItem>
+        </Select>
+      </div>
       <Card>
-        <CardHeader>
-          <h3 className="text-xl font-bold">Error Logs</h3>
-        </CardHeader>
         <CardBody>
-          <div className="flex space-x-4 mb-4">
-            <Select 
-              placeholder="Filter by severity"
-              onChange={(e) => setFilter(prev => ({ ...prev, severity: e.target.value }))}
-            >
-              <SelectItem value="all">All Severities</SelectItem>
-              <SelectItem value="Critical">Critical</SelectItem>
-              <SelectItem value="Warning">Warning</SelectItem>
-              <SelectItem value="Info">Info</SelectItem>
-            </Select>
-            <Input
-              placeholder="Search errors..."
-              value={filter.search}
-              onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
-            />
-          </div>
           <Table aria-label="Error logs table">
             <TableHeader>
               <TableColumn>MESSAGE</TableColumn>
@@ -99,7 +81,7 @@ const ErrorTrackingDashboard = () => {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" color="primary" onClick={() => console.log('View details', log)}>
+                    <Button size="sm" color="primary" endContent={<ArrowRight size={16} />}>
                       View Details
                     </Button>
                   </TableCell>
@@ -109,12 +91,9 @@ const ErrorTrackingDashboard = () => {
           </Table>
         </CardBody>
       </Card>
-
       <Card>
-        <CardHeader>
-          <h3 className="text-xl font-bold">Performance Metrics</h3>
-        </CardHeader>
         <CardBody>
+          <h3 className="text-lg font-semibold mb-4">Performance Metrics</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={performanceMetrics}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -127,8 +106,7 @@ const ErrorTrackingDashboard = () => {
           </ResponsiveContainer>
         </CardBody>
       </Card>
-
-      <Button color="primary" onPress={handleIntegration}>
+      <Button color="primary" startContent={<AlertTriangle size={16} />}>
         Integrate with Issue Tracking Tool
       </Button>
     </div>

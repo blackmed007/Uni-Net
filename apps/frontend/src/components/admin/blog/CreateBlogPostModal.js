@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import { Upload, X } from "lucide-react";
+import { motion } from "framer-motion";
 
 const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
   const [newPost, setNewPost] = useState({
@@ -10,6 +14,8 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
     excerpt: '',
     status: 'Draft',
     image: null,
+    views: 0,
+    date: new Date().toISOString(),
   });
 
   const handleChange = (key, value) => {
@@ -28,19 +34,11 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleSave = () => {
-    onSave({
-      ...newPost,
-      date: new Date().toISOString(),
-    });
-    setNewPost({
-      title: '',
-      author: '',
-      category: '',
-      content: '',
-      excerpt: '',
-      status: 'Draft',
-      image: null,
-    });
+    if (Object.values(newPost).some(value => value === '')) {
+      alert('All fields are required');
+      return;
+    }
+    onSave(newPost);
     onClose();
   };
 
@@ -48,67 +46,132 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
     <Modal 
       isOpen={isOpen} 
       onClose={onClose}
-      size="3xl"
+      size="5xl"
       scrollBehavior="inside"
+      classNames={{
+        base: "bg-gray-900 bg-opacity-50 backdrop-blur-md border border-gray-800 rounded-3xl",
+        header: "border-b border-gray-800",
+        body: "py-6",
+        footer: "border-t border-gray-800",
+      }}
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1 text-black dark:text-white">Create New Blog Post</ModalHeader>
-        <ModalBody>
-          <Input
-            label="Title"
-            value={newPost.title}
-            onChange={(e) => handleChange('title', e.target.value)}
-            className="mb-4"
-          />
-          <Input
-            label="Author"
-            value={newPost.author}
-            onChange={(e) => handleChange('author', e.target.value)}
-            className="mb-4"
-          />
-          <Input
-            label="Category"
-            value={newPost.category}
-            onChange={(e) => handleChange('category', e.target.value)}
-            className="mb-4"
-          />
-          <Textarea
-            label="Excerpt"
-            value={newPost.excerpt}
-            onChange={(e) => handleChange('excerpt', e.target.value)}
-            className="mb-4"
-          />
-          <Textarea
-            label="Content"
-            value={newPost.content}
-            onChange={(e) => handleChange('content', e.target.value)}
-            className="mb-4"
-            minRows={10}
-          />
-          <Select
-            label="Status"
-            value={newPost.status}
-            onChange={(e) => handleChange('status', e.target.value)}
-            className="mb-4"
+        <ModalHeader className="flex flex-col gap-1">
+          <motion.h2 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600"
           >
-            <SelectItem key="Draft" value="Draft" className="text-black dark:text-white">Draft</SelectItem>
-            <SelectItem key="Published" value="Published" className="text-black dark:text-white">Published</SelectItem>
-          </Select>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="mb-4"
-          />
-          {newPost.image && (
-            <img src={newPost.image} alt="Preview" className="max-w-full h-auto mb-4" />
-          )}
+            Create New Blog Post
+          </motion.h2>
+        </ModalHeader>
+        <ModalBody>
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Input
+              label="Title"
+              placeholder="Enter post title"
+              value={newPost.title}
+              onChange={(e) => handleChange('title', e.target.value)}
+              isRequired
+            />
+            <div className="flex gap-4">
+              <Input
+                label="Author"
+                placeholder="Enter author name"
+                value={newPost.author}
+                onChange={(e) => handleChange('author', e.target.value)}
+                className="flex-1"
+                isRequired
+              />
+              <Input
+                label="Category"
+                placeholder="Enter post category"
+                value={newPost.category}
+                onChange={(e) => handleChange('category', e.target.value)}
+                className="flex-1"
+                isRequired
+              />
+            </div>
+            <Textarea
+              label="Excerpt"
+              placeholder="Enter post excerpt"
+              value={newPost.excerpt}
+              onChange={(e) => handleChange('excerpt', e.target.value)}
+              isRequired
+            />
+            <div className="border rounded-lg overflow-hidden">
+              <ReactQuill
+                theme="snow"
+                value={newPost.content}
+                onChange={(content) => handleChange('content', content)}
+                style={{ height: '200px' }}
+              />
+            </div>
+            <div className="flex justify-between items-center gap-4">
+              <Select
+                label="Status"
+                placeholder="Select post status"
+                selectedKeys={[newPost.status]}
+                onChange={(e) => handleChange('status', e.target.value)}
+                className="max-w-xs"
+                isRequired
+              >
+                <SelectItem key="Draft" value="Draft">Draft</SelectItem>
+                <SelectItem key="Published" value="Published">Published</SelectItem>
+              </Select>
+              <Button
+                color="primary"
+                variant="flat"
+                onPress={() => document.getElementById('dropzone-file').click()}
+                startContent={<Upload size={20} />}
+              >
+                Upload Image
+              </Button>
+            </div>
+            <input
+              id="dropzone-file"
+              type="file"
+              className="hidden"
+              onChange={handleImageUpload}
+              accept="image/*"
+            />
+            {newPost.image && (
+              <div className="relative">
+                <img src={newPost.image} alt="Preview" className="max-w-full h-auto rounded-lg" />
+                <Button
+                  isIconOnly
+                  color="danger"
+                  variant="flat"
+                  size="sm"
+                  onPress={() => handleChange('image', null)}
+                  className="absolute top-2 right-2"
+                >
+                  <X size={20} />
+                </Button>
+              </div>
+            )}
+          </motion.div>
         </ModalBody>
         <ModalFooter>
-          <Button color="danger" variant="light" onPress={onClose}>
+          <Button 
+            color="danger" 
+            variant="flat" 
+            onPress={onClose}
+            className="bg-gradient-to-r from-red-500 to-pink-500 text-white"
+          >
             Cancel
           </Button>
-          <Button color="primary" onPress={handleSave}>
+          <Button 
+            color="primary" 
+            onPress={handleSave}
+            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+          >
             Create Post
           </Button>
         </ModalFooter>

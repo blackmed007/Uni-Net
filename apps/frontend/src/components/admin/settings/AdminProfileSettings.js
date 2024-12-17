@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Card, CardBody, Avatar } from "@nextui-org/react";
+import { Input, Button, Avatar } from "@nextui-org/react";
+import { User, Mail, Upload } from "lucide-react";
 
-const AdminProfileSettings = ({ initialSettings, onSave, onProfileUpdate }) => {
+const AdminProfileSettings = ({ initialSettings, onSave }) => {
   const [settings, setSettings] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     profileImage: '',
   });
 
   useEffect(() => {
     if (initialSettings) {
+      // Assuming initialSettings now contains firstName and lastName
       setSettings(initialSettings);
     }
   }, [initialSettings]);
@@ -21,7 +24,6 @@ const AdminProfileSettings = ({ initialSettings, onSave, onProfileUpdate }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(settings);
-    onProfileUpdate(settings); // Update the navbar
   };
 
   const handleImageUpload = (e) => {
@@ -29,51 +31,68 @@ const AdminProfileSettings = ({ initialSettings, onSave, onProfileUpdate }) => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const newSettings = { ...settings, profileImage: reader.result };
-        setSettings(newSettings);
-        onProfileUpdate(newSettings); // Update the navbar immediately when image changes
+        setSettings(prev => ({ ...prev, profileImage: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
   return (
-    <Card>
-      <CardBody>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <Avatar
-              src={settings.profileImage || "https://i.pravatar.cc/150?u=a042581f4e29026704d"}
-              size="lg"
-            />
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
-          </div>
-          <Input
-            label="Full Name"
-            value={settings.fullName}
-            onChange={(e) => handleChange('fullName', e.target.value)}
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Admin Profile</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-center space-x-4">
+          <Avatar
+            src={settings.profileImage || "https://i.pravatar.cc/150?u=a042581f4e29026704d"}
+            className="w-24 h-24"
           />
-          <Input
-            label="Email"
-            type="email"
-            value={settings.email}
-            onChange={(e) => handleChange('email', e.target.value)}
-          />
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold mb-2">Current Information:</h3>
-            <p><strong>Full Name:</strong> {initialSettings.fullName}</p>
-            <p><strong>Email:</strong> {initialSettings.email}</p>
-          </div>
-          <Button type="submit" color="primary">
-            Save Profile Settings
+          <Button
+            color="primary"
+            variant="flat"
+            onPress={() => document.getElementById('profile-image-upload').click()}
+            startContent={<Upload size={20} />}
+          >
+            Upload Image
           </Button>
-        </form>
-      </CardBody>
-    </Card>
+          <input
+            id="profile-image-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </div>
+        <div className="flex space-x-4">
+          <Input
+            label="First Name"
+            value={settings.firstName}
+            onChange={(e) => handleChange('firstName', e.target.value)}
+            startContent={<User className="text-default-400" size={16} />}
+            className="flex-1"
+          />
+          <Input
+            label="Last Name"
+            value={settings.lastName}
+            onChange={(e) => handleChange('lastName', e.target.value)}
+            startContent={<User className="text-default-400" size={16} />}
+            className="flex-1"
+          />
+        </div>
+        <Input
+          label="Email"
+          type="email"
+          value={settings.email}
+          onChange={(e) => handleChange('email', e.target.value)}
+          startContent={<Mail className="text-default-400" size={16} />}
+        />
+        <Button 
+          type="submit" 
+          color="primary"
+        >
+          Save Profile Settings
+        </Button>
+      </form>
+    </div>
   );
 };
 

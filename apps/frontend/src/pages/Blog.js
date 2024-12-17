@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardBody, CardFooter, Button, Input, Chip, Switch } from "@nextui-org/react";
-import { Search, Sun, Moon } from "lucide-react";
+import { Card, CardHeader, CardBody, CardFooter, Button, Chip } from "@nextui-org/react";
+import { ArrowRight } from "lucide-react";
 
 const Blog = () => {
   const [posts, setPosts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     const storedPosts = localStorage.getItem('blogPosts');
@@ -15,74 +13,64 @@ const Blog = () => {
       const publishedPosts = allPosts.filter(post => post.status === 'Published');
       setPosts(publishedPosts);
     }
-    
-    const darkModePreference = localStorage.getItem('darkMode');
-    setIsDarkMode(darkModePreference === 'true');
   }, []);
 
-  useEffect(() => {
-    document.body.classList.toggle('dark', isDarkMode);
-    localStorage.setItem('darkMode', isDarkMode);
-  }, [isDarkMode]);
-
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.author.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-white">EduConnect Blog</h1>
-          <Switch
-            checked={isDarkMode}
-            onChange={() => setIsDarkMode(!isDarkMode)}
-            size="lg"
-            color="secondary"
-            startContent={<Sun />}
-            endContent={<Moon />}
-          />
-        </div>
-        <div className="mb-8">
-          <Input
-            placeholder="Search blog posts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            startContent={<Search className="text-gray-400" size={20} />}
-            className="max-w-md mx-auto"
-          />
-        </div>
+    <div className="min-h-screen bg-black text-white">
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="text-5xl font-bold mb-12 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          UniConnect Blog
+        </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredPosts.map(post => (
-            <Card key={post.id} className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <img 
-                src={post.image || 'https://via.placeholder.com/300x200'} 
-                alt={post.title} 
-                className="w-full h-48 object-cover"
-              />
+          {posts.map(post => (
+            <Card key={post.id} className="bg-gradient-to-b from-gray-900 to-black border border-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+              <div className="relative h-64 bg-gray-800">
+                <img 
+                  src={post.image || 'https://via.placeholder.com/400x300'}
+                  alt={post.title} 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-40" />
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <Chip color="primary" variant="flat" className="bg-blue-600 text-white">{post.category}</Chip>
+                </div>
+              </div>
               <CardHeader className="flex flex-col items-start p-6">
-                <h2 className="text-2xl font-semibold mb-2 text-gray-800 dark:text-white">{post.title}</h2>
-                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <h2 className="text-2xl font-semibold mb-2 text-white hover:text-blue-400 transition-colors duration-200">
+                  {post.title}
+                </h2>
+                <div className="flex items-center text-sm text-gray-400">
                   <span className="mr-4">By {post.author}</span>
-                  <span>{new Date(post.date).toLocaleDateString()}</span>
+                  <span>{formatDate(post.date)}</span>
                 </div>
               </CardHeader>
               <CardBody className="p-6">
-                <p className="text-gray-600 dark:text-gray-300">{post.excerpt}</p>
+                <p className="text-gray-300 line-clamp-3">{post.excerpt}</p>
               </CardBody>
               <CardFooter className="flex justify-between items-center p-6">
-                <Chip color="primary" variant="flat">{post.category}</Chip>
+                <span className="text-sm text-gray-400">
+                  {post.views} view{post.views !== 1 ? 's' : ''}
+                </span>
                 <Link to={`/blog/${post.id}`}>
-                  <Button color="primary" variant="flat">Read More</Button>
+                  <Button 
+                    color="primary" 
+                    endContent={<ArrowRight size={16} />}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                  >
+                    Read More
+                  </Button>
                 </Link>
               </CardFooter>
             </Card>
           ))}
         </div>
-        {filteredPosts.length === 0 && (
-          <p className="text-center text-gray-600 dark:text-gray-400 mt-8">No blog posts found. Try a different search term.</p>
+        {posts.length === 0 && (
+          <p className="text-center text-gray-400 mt-8">No blog posts found.</p>
         )}
       </div>
     </div>

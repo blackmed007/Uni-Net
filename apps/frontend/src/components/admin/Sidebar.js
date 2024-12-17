@@ -1,10 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { LayoutGrid, Users, Calendar, BookOpen, FileText, Bell, Settings, LogOut } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure } from "@nextui-org/react";
 
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const storedTab = localStorage.getItem('activeTab');
+    return storedTab || 'dashboard';
+  });
+
+  useEffect(() => {
+    const path = location.pathname.split('/')[2] || 'dashboard';
+    setActiveTab(path);
+    localStorage.setItem('activeTab', path);
+  }, [location]);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -17,6 +32,13 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { name: 'Notifications', icon: Bell, tab: 'notifications' },
     { name: 'Settings', icon: Settings, tab: 'settings' },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('activeTab');
+    localStorage.removeItem('userData');
+    navigate('/login');
+    onClose();
+  };
 
   const CollapseButton = () => (
     <motion.button
@@ -45,13 +67,16 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       animate={{ width: isCollapsed ? 80 : 256 }}
     >
       <div className="flex flex-col h-full">
-        <div className="h-16"></div> {/* Placeholder for navbar */}
+        <div className="h-16"></div>
         <nav className="flex-1 mt-8 px-2 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.tab}
               to={item.tab}
-              onClick={() => setActiveTab(item.tab)}
+              onClick={() => {
+                setActiveTab(item.tab);
+                localStorage.setItem('activeTab', item.tab);
+              }}
             >
               <motion.button
                 className={`w-full text-left px-4 py-3 mb-2 flex items-center rounded-lg ${
@@ -62,7 +87,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className={`flex items-center justify-center ${isCollapsed ? 'w-full' : 'w-8'} h-8 rounded-md ${activeTab === item.tab ? 'bg-blue-500' : 'bg-gray-700'}`}>
+                <div className={`flex items-center justify-center ${isCollapsed ? 'w-full' : 'w-8'} h-8 rounded-md ${activeTab === item.tab ? 'bg-blue-500' : 'bg-black'}`}>
                   <item.icon className="w-5 h-5" />
                 </div>
                 <AnimatePresence>
@@ -85,7 +110,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         <div className="p-4">
           <motion.button
             className="w-full text-left px-4 py-3 flex items-center rounded-lg text-red-500 hover:bg-red-500 hover:bg-opacity-10 hover:text-red-400 transition-all duration-200"
-            onClick={() => {}} // Add logout functionality here
+            onClick={onOpen}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -109,6 +134,33 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         </div>
       </div>
       <CollapseButton />
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        classNames={{
+          base: "bg-gray-900 text-white",
+          header: "border-b border-gray-800",
+          body: "py-6",
+          footer: "border-t border-gray-800"
+        }}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-semibold">Confirm Logout</h3>
+          </ModalHeader>
+          <ModalBody>
+            <p>Are you sure you want to log out?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="gray" variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="danger" onPress={handleLogout}>
+              Log Out
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </motion.div>
   );
 };

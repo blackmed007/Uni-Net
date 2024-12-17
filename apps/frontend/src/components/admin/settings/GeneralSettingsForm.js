@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Input, Switch, Button, Card, CardBody, Select, SelectItem } from "@nextui-org/react";
+import { Select, SelectItem, Switch, Button } from "@nextui-org/react";
+import { Globe, Moon } from "lucide-react";
 
 const GeneralSettingsForm = ({ initialSettings, onSave }) => {
   const [settings, setSettings] = useState(initialSettings);
@@ -14,31 +15,37 @@ const GeneralSettingsForm = ({ initialSettings, onSave }) => {
   };
 
   return (
-    <Card>
-      <CardBody>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Select
-            label="Website State"
-            selectedKeys={[settings.websiteState]}
-            onChange={(e) => handleChange('websiteState', e.target.value)}
-          >
-            <SelectItem key="active" value="active">Active</SelectItem>
-            <SelectItem key="underMaintenance" value="underMaintenance">Under Maintenance</SelectItem>
-            <SelectItem key="comingSoon" value="comingSoon">Coming Soon</SelectItem>
-          </Select>
-          <div className="flex items-center justify-between">
-            <span>Enable Dark Mode by Default for All Users</span>
-            <Switch
-              checked={settings.enableDarkModeByDefault}
-              onChange={(e) => handleChange('enableDarkModeByDefault', e.target.checked)}
-            />
-          </div>
-          <Button type="submit" color="primary">
-            Save General Settings
-          </Button>
-        </form>
-      </CardBody>
-    </Card>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">General Settings</h2>
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+        <Select
+          label="Website State"
+          selectedKeys={[settings.websiteState]}
+          onChange={(e) => handleChange('websiteState', e.target.value)}
+          startContent={<Globe className="text-default-400" size={16} />}
+        >
+          <SelectItem key="active" value="active">Active</SelectItem>
+          <SelectItem key="underMaintenance" value="underMaintenance">Under Maintenance</SelectItem>
+          <SelectItem key="comingSoon" value="comingSoon">Coming Soon</SelectItem>
+        </Select>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">Enable Dark Mode by Default</span>
+          <Switch
+            checked={settings.enableDarkModeByDefault}
+            onChange={(e) => handleChange('enableDarkModeByDefault', e.target.checked)}
+            size="sm"
+            color="primary"
+            startContent={<Moon className="text-default-400" size={16} />}
+          />
+        </div>
+        <Button 
+          type="submit" 
+          color="primary"
+        >
+          Save General Settings
+        </Button>
+      </form>
+    </div>
   );
 };
 

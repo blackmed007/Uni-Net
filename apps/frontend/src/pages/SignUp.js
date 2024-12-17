@@ -64,6 +64,11 @@ const SignUp = () => {
         // }
         
         // Temporary: Simulate successful registration
+        const userData = {
+          email: formData.email,
+          role: 'User'
+        };
+        localStorage.setItem('userData', JSON.stringify(userData));
         navigate('/user/dashboard');
       } catch (error) {
         setErrors({ form: "An error occurred during registration. Please try again." });

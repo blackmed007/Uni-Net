@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Pagination } from "@nextui-org/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Pagination, Input } from "@nextui-org/react";
+import { Search } from "lucide-react";
 
 const AccessLogsTable = () => {
   const [logs, setLogs] = useState([]);
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 10;
 
   useEffect(() => {
@@ -19,17 +21,31 @@ const AccessLogsTable = () => {
     setLogs(mockLogs);
   }, []);
 
-  const pages = Math.ceil(logs.length / rowsPerPage);
+  const filteredLogs = logs.filter(log => 
+    log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.ipAddress.includes(searchTerm)
+  );
+
+  const pages = Math.ceil(filteredLogs.length / rowsPerPage);
 
   const items = React.useMemo(() => {
     const start = (page - 1) * rowsPerPage;
     const end = start + rowsPerPage;
 
-    return logs.slice(start, end);
-  }, [page, logs]);
+    return filteredLogs.slice(start, end);
+  }, [page, filteredLogs]);
 
   return (
-    <div>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Access Logs</h2>
+      <Input
+        placeholder="Search logs..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        startContent={<Search className="text-default-400" size={16} />}
+        className="max-w-xs mb-4"
+      />
       <Table aria-label="Access logs table">
         <TableHeader>
           <TableColumn>USER</TableColumn>

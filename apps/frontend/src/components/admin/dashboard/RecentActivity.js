@@ -1,13 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, Calendar, MessageCircle, BookOpen } from "lucide-react";
-
-const activityData = [
-  { icon: UserPlus, text: "New user registered: Sarah Johnson", time: "2 minutes ago", type: "user" },
-  { icon: Calendar, text: "Event created: Web Development Workshop", time: "1 hour ago", type: "event" },
-  { icon: MessageCircle, text: "New forum post: 'Tips for Effective Studying'", time: "3 hours ago", type: "forum" },
-  { icon: BookOpen, text: "Study group 'Advanced Mathematics' reached 20 members", time: "5 hours ago", type: "studyGroup" },
-];
+import { recentActivityData } from './DummyData_Dash'; // TODO: Remove this import when connecting to backend
 
 const getActivityColor = (type) => {
   switch (type) {
@@ -24,26 +18,77 @@ const getActivityColor = (type) => {
   }
 };
 
-const RecentActivity = () => (
-  <ul className="space-y-4">
-    {activityData.map((item, index) => (
-      <motion.li 
-        key={index} 
-        className="flex items-center space-x-3 bg-gray-800 bg-opacity-50 p-4 rounded-lg shadow-md backdrop-filter backdrop-blur-lg"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: index * 0.1 }}
-      >
-        <div className={`p-2 rounded-full ${getActivityColor(item.type)}`}>
-          <item.icon className="w-5 h-5" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-100">{item.text}</p>
-          <p className="text-xs text-gray-400">{item.time}</p>
-        </div>
-      </motion.li>
-    ))}
-  </ul>
-);
+const getIcon = (iconName) => {
+  switch (iconName) {
+    case 'UserPlus':
+      return UserPlus;
+    case 'Calendar':
+      return Calendar;
+    case 'MessageCircle':
+      return MessageCircle;
+    case 'BookOpen':
+      return BookOpen;
+    default:
+      return UserPlus;
+  }
+};
+
+const RecentActivity = () => {
+  const [activityData, setActivityData] = useState(recentActivityData); // TODO: Initialize with [] when connecting to backend
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // TODO: Uncomment and implement the following useEffect when connecting to backend
+  /*
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch('/api/recent-activity');
+        if (!response.ok) {
+          throw new Error('Failed to fetch recent activity');
+        }
+        const result = await response.json();
+        setActivityData(result);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecentActivity();
+  }, []);
+  */
+
+  if (isLoading) return <div>Loading recent activity...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <ul className="space-y-2">
+      {activityData.map((item, index) => {
+        const Icon = getIcon(item.icon);
+        return (
+          <motion.li 
+            key={index} 
+            className="flex items-center space-x-2 bg-gray-800 bg-opacity-50 p-2 rounded-lg shadow-md backdrop-filter backdrop-blur-lg"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: index * 0.05 }}
+          >
+            <div className={`p-1 rounded-full ${getActivityColor(item.type)}`}>
+              <Icon className="w-3 h-3" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-gray-100">{item.text}</p>
+              <p className="text-xxs text-gray-400">{item.time}</p>
+            </div>
+          </motion.li>
+        );
+      })}
+    </ul>
+  );
+};
 
 export default RecentActivity;

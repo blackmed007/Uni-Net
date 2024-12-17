@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Input, Button, useDisclosure } from "@nextui-org/react";
 import { Search, Filter, Calendar, Plus } from "lucide-react";
+import { motion } from "framer-motion";
 import EventListTable from '../../components/admin/event/EventListTable';
 import EventDetailModal from '../../components/admin/event/EventDetailModal';
-import FilterModal from '../../components/common/FilterModal';
+import EventFilterModal from '../../components/admin/event/EventFilterModal';
 import CreateEventModal from '../../components/admin/event/CreateEventModal';
 import EditEventModal from '../../components/admin/event/EditEventModal';
-import ConfirmActionModal from '../../components/common/ConfirmActionModal';
-import { filterEvents, sortEvents } from '../../utils/eventHelpers';
+import EventConfirmActionModal from '../../components/admin/event/EventConfirmActionModal';
 
 const EventManagement = () => {
   const [events, setEvents] = useState([]);
@@ -29,12 +29,14 @@ const EventManagement = () => {
 
   useEffect(() => {
     const storedEvents = JSON.parse(localStorage.getItem('events') || '[]');
-    setEvents(storedEvents);
+    const validEvents = storedEvents.filter(event => event && typeof event === 'object' && event.id);
+    setEvents(validEvents);
   }, []);
 
   const saveEvents = (updatedEvents) => {
-    setEvents(updatedEvents);
-    localStorage.setItem('events', JSON.stringify(updatedEvents));
+    const validEvents = updatedEvents.filter(event => event && typeof event === 'object' && event.id);
+    setEvents(validEvents);
+    localStorage.setItem('events', JSON.stringify(validEvents));
   };
 
   const handleSearch = (e) => {
@@ -62,6 +64,7 @@ const EventManagement = () => {
         onEditOpen();
         break;
       case 'cancel':
+      case 'ongoing':
       case 'delete':
         onConfirmOpen();
         break;
@@ -71,15 +74,25 @@ const EventManagement = () => {
   };
 
   const handleConfirmAction = () => {
-    if (actionType === 'cancel') {
-      const updatedEvents = events.map(event => 
-        event.id === selectedEvent.id ? { ...event, status: 'Cancelled' } : event
-      );
-      saveEvents(updatedEvents);
-    } else if (actionType === 'delete') {
-      const updatedEvents = events.filter(event => event.id !== selectedEvent.id);
-      saveEvents(updatedEvents);
+    let updatedEvents;
+    switch (actionType) {
+      case 'cancel':
+        updatedEvents = events.map(event => 
+          event.id === selectedEvent.id ? { ...event, status: 'Cancelled' } : event
+        );
+        break;
+      case 'ongoing':
+        updatedEvents = events.map(event => 
+          event.id === selectedEvent.id ? { ...event, status: 'Ongoing' } : event
+        );
+        break;
+      case 'delete':
+        updatedEvents = events.filter(event => event.id !== selectedEvent.id);
+        break;
+      default:
+        return;
     }
+    saveEvents(updatedEvents);
     onConfirmClose();
   };
 
@@ -97,12 +110,34 @@ const EventManagement = () => {
     onEditClose();
   };
 
-  const filteredEvents = filterEvents(events, searchTerm, filters);
-  const sortedEvents = sortEvents(filteredEvents, sortConfig.key, sortConfig.direction);
+  // Sort events
+  const sortedEvents = [...events].sort((a, b) => {
+    if (sortConfig.key) {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+    }
+    return 0;
+  });
+
+  // Filter events
+  const filteredEvents = sortedEvents.filter(event => 
+    event.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (!filters.type || event.type === filters.type) &&
+    (!filters.status || event.status === filters.status) &&
+    (!filters.date || event.date === filters.date)
+  );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-4xl font-bold">Event Management</h1>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-4xl font-bold">Event Management</h1>
+      </motion.div>
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
           placeholder="Search events..."
@@ -114,17 +149,28 @@ const EventManagement = () => {
         <Button color="primary" onPress={onFilterOpen} startContent={<Filter size={20} />}>
           Filters
         </Button>
-        <Button color="success" onPress={onCreateOpen} startContent={<Plus size={20} />}>
+        <Button 
+          color="success" 
+          onPress={onCreateOpen} 
+          startContent={<Plus size={20} />}
+          className="bg-gradient-to-r from-green-400 to-blue-500 text-white"
+        >
           Create Event
         </Button>
       </div>
-      {events.length === 0 ? (
-        <p>No events found. Create a new event to get started.</p>
+      {filteredEvents.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center py-10"
+        >
+          <Calendar size={64} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-xl text-gray-500">No events found. Create a new event to get started.</p>
+        </motion.div>
       ) : (
         <EventListTable
-          events={sortedEvents}
-          searchTerm={searchTerm}
-          filters={filters}
+          events={filteredEvents}
           onEventAction={handleEventAction}
           onSort={handleSort}
           sortConfig={sortConfig}
@@ -135,7 +181,7 @@ const EventManagement = () => {
         onClose={onEventDetailClose}
         event={selectedEvent}
       />
-      <FilterModal
+      <EventFilterModal
         isOpen={isFilterOpen}
         onClose={onFilterClose}
         onApplyFilters={handleFilter}
@@ -152,11 +198,12 @@ const EventManagement = () => {
         event={selectedEvent}
         onSave={handleEditEvent}
       />
-      <ConfirmActionModal
+      <EventConfirmActionModal
         isOpen={isConfirmOpen}
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}
         actionType={actionType}
+        eventName={selectedEvent?.name}
       />
     </div>
   );

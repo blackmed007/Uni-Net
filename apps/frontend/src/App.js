@@ -7,7 +7,6 @@ import Login from './pages/Login';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import NewUserOnboardingPage from './pages/user/NewUserOnboardingPage';
 import UserDashboardPage from './pages/user/UserDashboardPage';
 import UserEventsPage from './pages/user/UserEventsPage';
 import UserStudyGroupsPage from './pages/user/UserStudyGroupsPage';
@@ -18,7 +17,7 @@ import UserNavbar from './components/user/UserNavbar';
 import useDarkMode from './hooks/useDarkMode';
 import { initializeMockData } from './utils/mockDataGenerator';
 
-const ProtectedRoute = ({ children, requireAdmin = false, requireProfileCompleted = true }) => {
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const userDataString = localStorage.getItem('userData');
   const user = userDataString ? JSON.parse(userDataString) : null;
 
@@ -30,10 +29,6 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireProfileComplete
     return <Navigate to="/user/dashboard" replace />;
   }
 
-  if (!requireAdmin && requireProfileCompleted && !user.profileCompleted) {
-    return <Navigate to="/user/onboarding" replace />;
-  }
-
   return children;
 };
 
@@ -43,11 +38,11 @@ const UserLayout = ({ children }) => {
   const user = userDataString ? JSON.parse(userDataString) : null;
 
   return (
-    <div className={`flex h-screen ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`flex h-screen ${isDarkMode ? 'dark' : ''} bg-black`}>
       <UserSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <UserNavbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} user={user} />
-        <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 p-6">
+        <div className="flex-1 overflow-auto bg-black text-gray-100 transition-colors duration-300 p-6">
           {children}
         </div>
       </div>
@@ -66,7 +61,7 @@ function App() {
   return (
     <NextUIProvider>
       <Router>
-        <div className="App">
+        <div className={`App bg-black min-h-screen ${isDarkMode ? 'dark' : ''}`}>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Home />} />
@@ -83,11 +78,7 @@ function App() {
             } />
 
             {/* User routes */}
-            <Route path="/user/onboarding" element={
-              <ProtectedRoute requireProfileCompleted={false}>
-                <NewUserOnboardingPage />
-              </ProtectedRoute>
-            } />
+            <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/user/*" element={
               <ProtectedRoute>
                 <UserLayout>
@@ -97,6 +88,7 @@ function App() {
                     <Route path="study-groups" element={<UserStudyGroupsPage />} />
                     <Route path="blog" element={<UserBlogPage />} />
                     <Route path="settings" element={<UserSettingsPage />} />
+                    <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
                   </Routes>
                 </UserLayout>
               </ProtectedRoute>

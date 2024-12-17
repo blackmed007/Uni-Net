@@ -1,27 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
 import { Plus, Edit, Trash } from "lucide-react";
 
-const CityManagement = () => {
-  const [cities, setCities] = useState([]);
+const CityManagement = ({ cities, onCityUpdate }) => {
   const [newCity, setNewCity] = useState('');
   const [editingCity, setEditingCity] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
-    setCities(storedCities);
-  }, []);
-
-  const saveCities = (updatedCities) => {
-    setCities(updatedCities);
-    localStorage.setItem('cities', JSON.stringify(updatedCities));
-  };
-
   const handleAddCity = () => {
     if (newCity.trim()) {
       const updatedCities = [...cities, { id: Date.now(), name: newCity.trim() }];
-      saveCities(updatedCities);
+      onCityUpdate(updatedCities);
       setNewCity('');
     }
   };
@@ -35,25 +24,27 @@ const CityManagement = () => {
     const updatedCities = cities.map(c => 
       c.id === editingCity.id ? editingCity : c
     );
-    saveCities(updatedCities);
+    onCityUpdate(updatedCities);
     setIsModalOpen(false);
     setEditingCity(null);
   };
 
   const handleDeleteCity = (id) => {
     const updatedCities = cities.filter(c => c.id !== id);
-    saveCities(updatedCities);
+    onCityUpdate(updatedCities);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">City Management</h2>
       <div className="flex space-x-2">
         <Input
           placeholder="Enter city name"
           value={newCity}
           onChange={(e) => setNewCity(e.target.value)}
+          className="flex-grow"
         />
-        <Button color="primary" onPress={handleAddCity} startContent={<Plus size={20} />}>
+        <Button color="primary" onPress={handleAddCity} startContent={<Plus size={16} />}>
           Add City
         </Button>
       </div>
@@ -69,10 +60,10 @@ const CityManagement = () => {
               <TableCell>
                 <div className="flex space-x-2">
                   <Button isIconOnly size="sm" variant="light" onPress={() => handleEditCity(city)}>
-                    <Edit size={20} />
+                    <Edit size={16} />
                   </Button>
                   <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleDeleteCity(city.id)}>
-                    <Trash size={20} />
+                    <Trash size={16} />
                   </Button>
                 </div>
               </TableCell>

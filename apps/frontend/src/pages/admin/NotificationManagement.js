@@ -3,10 +3,10 @@ import { Input, Button, useDisclosure } from "@nextui-org/react";
 import { Search, Filter, Plus } from "lucide-react";
 import NotificationListTable from '../../components/admin/notification/NotificationListTable';
 import NotificationDetailModal from '../../components/admin/notification/NotificationDetailModal';
-import FilterModal from '../../components/common/FilterModal';
+import NotificationFilterModal from '../../components/admin/notification/NotificationFilterModal';
 import CreateNotificationModal from '../../components/admin/notification/CreateNotificationModal';
 import EditNotificationModal from '../../components/admin/notification/EditNotificationModal';
-import ConfirmActionModal from '../../components/common/ConfirmActionModal';
+import NotificationConfirmActionModal from '../../components/admin/notification/NotificationConfirmActionModal';
 
 const NotificationManagement = () => {
   const [notifications, setNotifications] = useState([]);
@@ -82,10 +82,24 @@ const NotificationManagement = () => {
   };
 
   const handleCreateNotification = (newNotification) => {
-    const notificationWithId = { ...newNotification, id: Date.now() };
+    const lastId = notifications.length > 0 ? parseInt(notifications[notifications.length - 1].id) : 0;
+    const newId = ((lastId + 1) % 1000).toString().padStart(3, '0');
+    const notificationWithId = { ...newNotification, id: newId };
     const updatedNotifications = [...notifications, notificationWithId];
     saveNotifications(updatedNotifications);
     onCreateClose();
+  };
+
+  const formatDateTime = (dateTimeString) => {
+    const options = { 
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    return new Date(dateTimeString).toLocaleString('en-GB', options).replace(',', ' at');
   };
 
   return (
@@ -102,7 +116,12 @@ const NotificationManagement = () => {
         <Button color="primary" onPress={onFilterOpen} startContent={<Filter size={20} />}>
           Filters
         </Button>
-        <Button color="success" onPress={onCreateOpen} startContent={<Plus size={20} />}>
+        <Button 
+          color="success" 
+          onPress={onCreateOpen} 
+          startContent={<Plus size={20} />}
+          className="bg-gradient-to-r from-green-400 to-blue-500 text-white"
+        >
           Create Notification
         </Button>
       </div>
@@ -111,13 +130,15 @@ const NotificationManagement = () => {
         searchTerm={searchTerm}
         filters={filters}
         onNotificationAction={handleNotificationAction}
+        formatDateTime={formatDateTime}
       />
       <NotificationDetailModal
         isOpen={isNotificationDetailOpen}
         onClose={onNotificationDetailClose}
         notification={selectedNotification}
+        formatDateTime={formatDateTime}
       />
-      <FilterModal
+      <NotificationFilterModal
         isOpen={isFilterOpen}
         onClose={onFilterClose}
         onApplyFilters={handleFilter}
@@ -134,7 +155,7 @@ const NotificationManagement = () => {
         notification={selectedNotification}
         onSave={handleEditNotification}
       />
-      <ConfirmActionModal
+      <NotificationConfirmActionModal
         isOpen={isConfirmOpen}
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}

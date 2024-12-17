@@ -5,7 +5,7 @@ import UserListTable from '../../components/admin/user/UserListTable';
 import UserDetailModal from '../../components/admin/user/UserDetailModal';
 import UserFilterModal from '../../components/admin/user/UserFilterModal';
 import EditUserModal from '../../components/admin/user/EditUserModal';
-import ConfirmActionModal from '../../components/common/ConfirmActionModal';
+import UserConfirmActionModal from '../../components/admin/user/UserConfirmActionModal';
 import CreateUserModal from '../../components/admin/user/CreateUserModal';
 
 const UserManagement = () => {
@@ -40,6 +40,16 @@ const UserManagement = () => {
     setUsers(storedUsers);
     setUniversities(storedUniversities);
     setCities(storedCities);
+
+    const handleStorageChange = () => {
+      const updatedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      setUsers(updatedUsers);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const handleSearch = (e) => {
@@ -104,12 +114,14 @@ const UserManagement = () => {
     );
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
+    window.dispatchEvent(new Event('storage'));
   };
 
   const deleteUser = (userId) => {
     const updatedUsers = users.filter(user => user.id !== userId);
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
+    window.dispatchEvent(new Event('storage'));
   };
 
   const handleEditUser = (updatedUser) => {
@@ -118,18 +130,23 @@ const UserManagement = () => {
     );
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
+    window.dispatchEvent(new Event('storage'));
     onEditClose();
   };
 
   const handleCreateUser = (newUser) => {
-    const updatedUsers = [...users, { ...newUser, id: Date.now().toString(), createdAt: new Date().toISOString() }];
+    const lastId = users.length > 0 ? parseInt(users[users.length - 1].id) : 0;
+    const newId = ((lastId + 1) % 1000).toString().padStart(3, '0');
+    const updatedUsers = [...users, { ...newUser, id: newId, createdAt: new Date().toISOString() }];
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
+    window.dispatchEvent(new Event('storage'));
     onCreateClose();
   };
 
   const filteredUsers = users.filter(user => {
     const searchFields = [
+      user.id,
       user.firstName,
       user.lastName,
       user.email,
@@ -141,7 +158,7 @@ const UserManagement = () => {
     ];
     
     const matchesSearch = searchFields.some(field => 
-      field && field.toLowerCase().includes(searchTerm.toLowerCase())
+      field && field.toString().toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const matchesFilters = (
@@ -178,14 +195,14 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-4xl font-bold">User Management</h1>
+      <h1 className="text-4xl font-bold text-white">User Management</h1>
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
           placeholder="Search users..."
           value={searchTerm}
           onChange={handleSearch}
           startContent={<Search className="text-gray-400" size={20} />}
-          className="w-full sm:w-1/2"
+          className="w-full sm:w-1/2 bg-gray-800 text-white rounded-full"
         />
         <Button color="primary" onPress={onFilterOpen} startContent={<Filter size={20} />}>
           Filters
@@ -211,6 +228,25 @@ const UserManagement = () => {
         isOpen={isUserDetailOpen}
         onClose={onUserDetailClose}
         user={selectedUser}
+        onEditUser={() => { onUserDetailClose(); onEditOpen(); }}
+        onDeleteUser={(userId) => {
+          onUserDetailClose();
+          setActionType('delete');
+          setSelectedUser({ id: userId });
+          onConfirmOpen();
+        }}
+        onBanUser={(userId) => {
+          onUserDetailClose();
+          setActionType('suspend');
+          setSelectedUser({ id: userId });
+          onConfirmOpen();
+        }}
+        onActivateUser={(userId) => {
+          onUserDetailClose();
+          setActionType('activate');
+          setSelectedUser({ id: userId });
+          onConfirmOpen();
+        }}
       />
       <UserFilterModal
         isOpen={isFilterOpen}
@@ -228,7 +264,7 @@ const UserManagement = () => {
         universities={universities}
         cities={cities}
       />
-      <ConfirmActionModal
+      <UserConfirmActionModal
         isOpen={isConfirmOpen}
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}

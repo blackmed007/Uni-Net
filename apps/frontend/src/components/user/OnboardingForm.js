@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Input, Button, Select, SelectItem } from "@nextui-org/react";
+import { motion } from "framer-motion";
 
 const OnboardingForm = ({ onComplete }) => {
   const [formData, setFormData] = useState({
@@ -12,7 +13,6 @@ const OnboardingForm = ({ onComplete }) => {
   const [universities, setUniversities] = useState([]);
 
   useEffect(() => {
-    // Fetch cities and universities from localStorage
     const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
     const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
     setCities(storedCities);
@@ -37,26 +37,20 @@ const OnboardingForm = ({ onComplete }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (formData.city && formData.university && formData.gender) {
-      // Update user data in localStorage
-      const userData = JSON.parse(localStorage.getItem('userData'));
-      const updatedUser = { ...userData, ...formData, profileCompleted: true };
-      localStorage.setItem('userData', JSON.stringify(updatedUser));
-
-      // Update user in users array
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const updatedUsers = users.map(user => 
-        user.id === updatedUser.id ? updatedUser : user
-      );
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-      onComplete(updatedUser);
+      onComplete(formData);
     } else {
       alert("Please fill in all required fields.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <motion.form 
+      onSubmit={handleSubmit} 
+      className="space-y-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <Select
         label="City"
         placeholder="Select your city"
@@ -92,6 +86,7 @@ const OnboardingForm = ({ onComplete }) => {
       >
         <SelectItem key="Male" value="Male">Male</SelectItem>
         <SelectItem key="Female" value="Female">Female</SelectItem>
+        <SelectItem key="Other" value="Other">Other</SelectItem>
       </Select>
       <Input
         type="file"
@@ -99,10 +94,10 @@ const OnboardingForm = ({ onComplete }) => {
         onChange={handleImageUpload}
         label="Profile Picture (optional)"
       />
-      <Button type="submit" color="primary">
+      <Button type="submit" color="primary" className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
         Complete Profile
       </Button>
-    </form>
+    </motion.form>
   );
 };
 

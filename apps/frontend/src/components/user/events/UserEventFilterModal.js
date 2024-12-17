@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Chip } from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Chip, Input } from "@nextui-org/react";
 import { motion } from "framer-motion";
 
-const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, universities, cities }) => {
+const UserEventFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters }) => {
   const [filters, setFilters] = useState(initialFilters);
+  const [cities, setCities] = useState([]);
+  const [universities, setUniversities] = useState([]);
 
   useEffect(() => {
     setFilters(initialFilters);
+    // Fetch cities and universities from localStorage or API
+    const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
+    const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
+    setCities(storedCities);
+    setUniversities(storedUniversities);
   }, [initialFilters]);
 
   const handleFilterChange = (key, value) => {
@@ -20,11 +27,11 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
 
   const handleResetFilters = () => {
     setFilters({
-      role: '',
-      university: '',
-      city: '',
-      gender: '',
+      type: '',
       status: '',
+      date: '',
+      city: '',
+      university: '',
     });
   };
 
@@ -86,72 +93,64 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
             transition={{ duration: 0.5 }}
             className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600"
           >
-            Filter Users
+            Filter Events
           </motion.h2>
         </ModalHeader>
         <ModalBody>
           <motion.div 
-            className="grid grid-cols-2 gap-4"
+            className="space-y-4"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
             <Select
-              label="Role"
-              placeholder="Select role"
-              selectedKeys={filters.role ? [filters.role] : []}
-              onChange={(e) => handleFilterChange('role', e.target.value)}
-              className="max-w-xs"
+              label="Type"
+              placeholder="Select event type"
+              selectedKeys={filters.type ? [filters.type] : []}
+              onChange={(e) => handleFilterChange('type', e.target.value)}
             >
-              <SelectItem key="Admin" value="Admin">Admin</SelectItem>
-              <SelectItem key="Student" value="Student">Student</SelectItem>
+              <SelectItem key="Workshop" value="Workshop">Workshop</SelectItem>
+              <SelectItem key="Seminar" value="Seminar">Seminar</SelectItem>
+              <SelectItem key="Conference" value="Conference">Conference</SelectItem>
+              <SelectItem key="Social" value="Social">Social</SelectItem>
+            </Select>
+            <Select
+              label="Status"
+              placeholder="Select event status"
+              selectedKeys={filters.status ? [filters.status] : []}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+            >
+              <SelectItem key="Upcoming" value="Upcoming">Upcoming</SelectItem>
+              <SelectItem key="Ongoing" value="Ongoing">Ongoing</SelectItem>
+              <SelectItem key="Completed" value="Completed">Completed</SelectItem>
+              <SelectItem key="Cancelled" value="Cancelled">Cancelled</SelectItem>
+            </Select>
+            <Input
+              label="Date"
+              type="date"
+              placeholder="Select date"
+              value={filters.date}
+              onChange={(e) => handleFilterChange('date', e.target.value)}
+            />
+            <Select
+              label="City"
+              placeholder="Select city"
+              selectedKeys={filters.city ? [filters.city] : []}
+              onChange={(e) => handleFilterChange('city', e.target.value)}
+            >
+              {cities.map(city => (
+                <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+              ))}
             </Select>
             <Select
               label="University"
               placeholder="Select university"
               selectedKeys={filters.university ? [filters.university] : []}
               onChange={(e) => handleFilterChange('university', e.target.value)}
-              className="max-w-xs"
             >
-              {universities.map((university) => (
-                <SelectItem key={university.id} value={university.name}>
-                  {university.name}
-                </SelectItem>
+              {universities.map(university => (
+                <SelectItem key={university.id} value={university.name}>{university.name}</SelectItem>
               ))}
-            </Select>
-            <Select
-              label="City"
-              placeholder="Select city"
-              selectedKeys={filters.city ? [filters.city] : []}
-              onChange={(e) => handleFilterChange('city', e.target.value)}
-              className="max-w-xs"
-            >
-              {cities.map((city) => (
-                <SelectItem key={city.id} value={city.name}>
-                  {city.name}
-                </SelectItem>
-              ))}
-            </Select>
-            <Select
-              label="Gender"
-              placeholder="Select gender"
-              selectedKeys={filters.gender ? [filters.gender] : []}
-              onChange={(e) => handleFilterChange('gender', e.target.value)}
-              className="max-w-xs"
-            >
-              <SelectItem key="Male" value="Male">Male</SelectItem>
-              <SelectItem key="Female" value="Female">Female</SelectItem>
-              <SelectItem key="Other" value="Other">Other</SelectItem>
-            </Select>
-            <Select
-              label="Status"
-              placeholder="Select status"
-              selectedKeys={filters.status ? [filters.status] : []}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="max-w-xs"
-            >
-              <SelectItem key="Active" value="Active">Active</SelectItem>
-              <SelectItem key="Suspended" value="Suspended">Suspended</SelectItem>
             </Select>
           </motion.div>
           <motion.div 
@@ -168,12 +167,7 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
             color="danger" 
             variant="flat" 
             onPress={handleResetFilters}
-            className="bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-80 transition-opacity"
-            style={{
-              color: 'white !important',
-              fontWeight: '600',
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-            }}
+            className="bg-gradient-to-r from-red-500 to-pink-500 text-white"
           >
             Reset
           </Button>
@@ -190,4 +184,4 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
   );
 };
 
-export default UserFilterModal;
+export default UserEventFilterModal;
