@@ -12,23 +12,15 @@ import UserEventsPage from './pages/user/UserEventsPage';
 import UserStudyGroupsPage from './pages/user/UserStudyGroupsPage';
 import UserBlogPage from './pages/user/UserBlogPage';
 import UserSettingsPage from './pages/user/UserSettingsPage';
+import OnboardingPage from './pages/user/OnboardingPage';
 import UserSidebar from './components/user/UserSidebar';
 import UserNavbar from './components/user/UserNavbar';
 import useDarkMode from './hooks/useDarkMode';
 import { initializeMockData } from './utils/mockDataGenerator';
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const userDataString = localStorage.getItem('userData');
-  const user = userDataString ? JSON.parse(userDataString) : null;
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (requireAdmin && user.role !== 'Admin') {
-    return <Navigate to="/user/dashboard" replace />;
-  }
-
+// TODO: Re-implement route protection and onboarding flow
+// This is temporarily disabled for development purposes
+const ProtectedRoute = ({ children }) => {
   return children;
 };
 
@@ -52,6 +44,7 @@ const UserLayout = ({ children }) => {
 
 function App() {
   const [isDarkMode] = useDarkMode();
+  
   useEffect(() => {
     if (!localStorage.getItem('users')) {
       initializeMockData();
@@ -70,28 +63,25 @@ function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogPost />} />
 
-            {/* Admin routes */}
-            <Route path="/admin/*" element={
-              <ProtectedRoute requireAdmin={true}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
+            {/* TODO: Re-implement onboarding protection */}
+            <Route path="/onboarding" element={<OnboardingPage />} />
 
-            {/* User routes */}
+            {/* TODO: Re-implement admin route protection */}
+            <Route path="/admin/*" element={<AdminDashboard />} />
+
+            {/* User routes - Layout wrapper removed for development */}
             <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/user/*" element={
-              <ProtectedRoute>
-                <UserLayout>
-                  <Routes>
-                    <Route path="dashboard" element={<UserDashboardPage />} />
-                    <Route path="events" element={<UserEventsPage />} />
-                    <Route path="study-groups" element={<UserStudyGroupsPage />} />
-                    <Route path="blog" element={<UserBlogPage />} />
-                    <Route path="settings" element={<UserSettingsPage />} />
-                    <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
-                  </Routes>
-                </UserLayout>
-              </ProtectedRoute>
+              <UserLayout>
+                <Routes>
+                  <Route path="dashboard" element={<UserDashboardPage />} />
+                  <Route path="events" element={<UserEventsPage />} />
+                  <Route path="study-groups" element={<UserStudyGroupsPage />} />
+                  <Route path="blog" element={<UserBlogPage />} />
+                  <Route path="settings" element={<UserSettingsPage />} />
+                  <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
+                </Routes>
+              </UserLayout>
             } />
 
             {/* Catch-all route for undefined paths */}

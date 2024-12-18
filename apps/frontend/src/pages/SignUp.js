@@ -55,20 +55,33 @@ const SignUp = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        // TODO: Implement backend API call for user registration
-        // const response = await api.register(formData);
-        // if (response.success) {
-        //   navigate('/user/dashboard');
-        // } else {
-        //   setErrors({ form: response.error });
-        // }
-        
-        // Temporary: Simulate successful registration
+        // Create user data object
         const userData = {
           email: formData.email,
-          role: 'User'
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: 'User',
+          onboardingCompleted: true, // TODO: Change back to false when implementing onboarding
+          createdAt: new Date().toISOString()
         };
+
+        // Store in localStorage
         localStorage.setItem('userData', JSON.stringify(userData));
+
+        // Get existing users or initialize empty array
+        const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        
+        // Add new user to users array
+        existingUsers.push({
+          ...userData,
+          id: existingUsers.length + 1,
+          password: formData.password // Note: In production, password should be hashed
+        });
+        
+        // Update users in localStorage
+        localStorage.setItem('users', JSON.stringify(existingUsers));
+
+        // TODO: Change this to navigate('/onboarding') when implementing onboarding
         navigate('/user/dashboard');
       } catch (error) {
         setErrors({ form: "An error occurred during registration. Please try again." });
@@ -83,7 +96,7 @@ const SignUp = () => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url(assets/login-signup/background.avif)',
+          backgroundImage: 'url(/assets/login-signup/background.avif)',
           filter: 'brightness(30%)'
         }}
       ></div>
