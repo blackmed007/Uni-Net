@@ -3,13 +3,32 @@ import { Card, CardBody, Image } from "@nextui-org/react";
 import { motion } from 'framer-motion';
 
 const features = [
-  { title: "Events", icon: "assets/home/Features-Events.avif", description: "Discover and join exciting campus events" },
-  { title: "Study Groups", icon: "assets/home/Features-Study Groups .avif", description: "Connect with peers for collaborative learning" },
-  { title: "Blog", icon: "assets/home/Features-Blog .avif", description: "Share your experiences and read others'" },
-  { title: "Exchange Language", icon: "assets/home/Features-Language Exchange .avif", description: "Practice languages with native speakers" },
+  { 
+    title: "Events", 
+    icon: "assets/home/Features-Events.avif", 
+    description: "Discover and join exciting campus events",
+    comingSoon: false
+  },
+  { 
+    title: "Study Groups", 
+    icon: "assets/home/Features-Study Groups .avif", 
+    description: "Connect with peers for collaborative learning",
+    comingSoon: true
+  },
+  { 
+    title: "Blog", 
+    icon: "assets/home/Features-Blog .avif", 
+    description: "Share your experiences and read others'",
+    comingSoon: false
+  },
+  { 
+    title: "Language Exchange", // Changed from "Exchange Language" for better readability
+    icon: "assets/home/Features-Language Exchange .avif", 
+    description: "Practice languages with native speakers",
+    comingSoon: true
+  },
 ];
 
-// FeatureCard component with animation
 const FeatureCard = ({ feature, index }) => (
   <motion.div
     initial={{ opacity: 0, y: 50 }}
@@ -32,7 +51,14 @@ const FeatureCard = ({ feature, index }) => (
           />
         </motion.div>
         <div className="flex-grow flex flex-col justify-between">
-          <h3 className="text-xl font-semibold mb-4 text-white text-center">{feature.title}</h3>
+          <div className="flex flex-col items-center gap-2 mb-4">
+            <h3 className="text-xl font-semibold text-white text-center">{feature.title}</h3>
+            {feature.comingSoon && (
+              <span className="text-gray-400 text-xs bg-gray-800/50 px-2 py-0.5 rounded-full">
+                Coming Soon
+              </span>
+            )}
+          </div>
           <p className="text-center text-white text-sm">{feature.description}</p>
         </div>
       </CardBody>

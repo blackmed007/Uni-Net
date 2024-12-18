@@ -2,28 +2,33 @@ import React from 'react';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Button } from "@nextui-org/react";
 
 const Header = () => {
+  const scrollToOurStory = (e) => {
+    e.preventDefault();
+    const element = document.getElementById('our-story');
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <Navbar shouldHideOnScroll className="bg-black">
       <NavbarBrand>
-      <Link href="/" color="Foreground">
-        <img src="assets/home/main-logo.avif" alt="Logo" className="w-8 h-8" />
-        <p className="font-bold text-inherit">UniLife</p>
+        <Link href="/" color="Foreground">
+          <img src="assets/home/main-logo.avif" alt="Logo" className="w-8 h-8" />
+          <p className="font-bold text-inherit">UniLife</p>
         </Link>
-
       </NavbarBrand>
       <NavbarContent className="hidden sm:flex gap-4" justify="center">
         <NavbarItem>
-          <Link color="Foreground" href="#our-story">
+          <Link color="Foreground" href="#our-story" onClick={scrollToOurStory}>
             Our Story
           </Link>
         </NavbarItem>
         <NavbarItem>
-          <Link color="Foreground" href="#join-team">
+          <Link color="Foreground" href="https://github.com/0xk3v/uninet" target="_blank">
             Join Our Team
           </Link>
         </NavbarItem>
         <NavbarItem>
-          <Link color="Foreground" href="/blog">
+          <Link color="Foreground" href="/blog" target="_blank">
             Blog
           </Link>
         </NavbarItem>

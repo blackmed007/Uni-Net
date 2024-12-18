@@ -29,9 +29,8 @@ const OurStory = () => {
                 return prev;
               }
             });
-          }, 40); // Adjust for faster/slower typing
+          }, 40);
         });
-        // Pause between paragraphs
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     };
@@ -39,16 +38,8 @@ const OurStory = () => {
     animateParagraphs();
   }, []);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { duration: 0.5 }
-    },
-  };
-
   return (
-    <div className="bg-black py-16">
+    <section id="our-story" className="bg-black py-16">
       <div className="container mx-auto px-4">
         <h2 className="text-4xl font-bold text-center mb-12 text-white">Our Story</h2>
         <Card className="bg-black">
@@ -58,9 +49,9 @@ const OurStory = () => {
             </div>
             <motion.div 
               className="md:w-1/2 md:pl-8"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
             >
               <div className="space-y-6">
                 {paragraphs.map((paragraph, index) => (
@@ -91,7 +82,7 @@ const OurStory = () => {
           </CardBody>
         </Card>
       </div>
-    </div>
+    </section>
   );
 };
 

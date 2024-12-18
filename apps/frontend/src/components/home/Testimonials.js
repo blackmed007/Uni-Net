@@ -2,10 +2,26 @@ import React from 'react';
 import { Card, CardBody, Avatar } from "@nextui-org/react";
 
 const testimonials = [
-  { name: "John Doe", avatar: "assets/home/testimonials1.avif", text: "This platform has made my university experience so much better! I've made friends from all over the world" },
-  { name: "Jane Smith", avatar: "assets/home/testimonials2.avif", text: "The study groups feature helped me improve my grades and connect with classmates" },
-  { name: "Raymond Ndlovu", avatar: "assets/home/testimonials3.avif", text: "I love the events section! I Brealy had any friends , if it wasn't for this website i would be still alone ): , I even became white thanks to it  " },
-  { name: "Emily Brown", avatar: "assets/home/testimonials4.avif", text: "The language exchange feature is amazing. I've improved my language skills while making new friends" },
+  { 
+    name: "John Doe", 
+    avatar: "assets/home/testimonials1.avif", 
+    text: "This platform has made my university experience so much better! I've made friends from all over the world" 
+  },
+  { 
+    name: "Jane Smith", 
+    avatar: "assets/home/testimonials2.avif", 
+    text: "The blog feature helped me share my experiences and connect with others who have similar interests" 
+  },
+  { 
+    name: "Raymond Ndlovu", 
+    avatar: "assets/home/testimonials3.avif", 
+    text: "The events feature is amazing! I've attended several campus activities and made great friends through it" 
+  },
+  { 
+    name: "Emily Brown", 
+    avatar: "assets/home/testimonials4.avif", 
+    text: "Through the events platform, I discovered amazing campus activities that made my university life more exciting" 
+  },
 ];
 
 const Testimonials = () => {
