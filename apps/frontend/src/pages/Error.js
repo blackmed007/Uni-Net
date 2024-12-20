@@ -2,16 +2,14 @@ import React from 'react';
 import { Button } from "@nextui-org/react";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, RefreshCcw, AlertTriangle } from "lucide-react";
+import { Home, RefreshCcw, AlertTriangle, X, CheckCircle2, Shield } from "lucide-react";
 
 const Error = ({ status }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const getErrorMessage = () => {
-    // Check if status is passed as prop
     const errorStatus = status || 404;
-
     switch (errorStatus) {
       case 404:
         return "The page you're looking for doesn't exist.";
@@ -24,67 +22,118 @@ const Error = ({ status }) => {
     }
   };
 
+  const iconVariants = {
+    hidden: { scale: 0, rotate: -180 },
+    visible: { 
+      scale: 1, 
+      rotate: 0,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 20
+      }
+    }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.2
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black"></div>
+    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black" />
+      <div className="absolute inset-0">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute h-2 w-2 bg-purple-500 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.1, 0.3, 0.1],
+            }}
+            transition={{
+              duration: 3 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+          />
+        ))}
+      </div>
       
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
         className="relative z-10 text-center space-y-8 max-w-lg"
       >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="mx-auto"
-        >
-          <AlertTriangle size={64} className="mx-auto text-red-500" />
-        </motion.div>
-
-        <div className="space-y-4">
-          <motion.h1 
-            className="text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-purple-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+        <div className="relative">
+          <motion.div
+            variants={iconVariants}
+            className="relative z-10 mx-auto w-32 h-32 flex items-center justify-center"
           >
-            Oops!
-          </motion.h1>
-          
-          <motion.p
-            className="text-xl text-gray-400"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            {getErrorMessage()}
-          </motion.p>
-
-          {status && (
-            <motion.p
-              className="text-sm text-gray-500"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              Error Code: {status}
-            </motion.p>
-          )}
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-purple-500/20 rounded-full blur-xl animate-pulse" />
+            <AlertTriangle size={64} className="text-red-500" />
+          </motion.div>
         </div>
+
+        <motion.div 
+          className="space-y-6"
+          variants={containerVariants}
+        >
+          <motion.div
+            className="relative"
+            animate={{
+              rotate: [0, 5, -5, 0],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <h1 className="text-8xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-purple-500 to-blue-500">
+              Oops!
+            </h1>
+          </motion.div>
+          
+          <motion.div 
+            className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+            variants={containerVariants}
+          >
+            <p className="text-xl text-gray-300">
+              {getErrorMessage()}
+            </p>
+            {status && (
+              <div className="mt-4 inline-block px-4 py-2 bg-white/5 rounded-full">
+                <span className="text-gray-400">Error Code: </span>
+                <span className="text-red-400 font-mono">{status}</span>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
 
         <motion.div
           className="flex justify-center gap-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          variants={containerVariants}
         >
           <Button
             color="primary"
             variant="shadow"
             startContent={<Home size={18} />}
-            className="bg-gradient-to-r from-purple-600 to-blue-600"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300"
             onClick={() => navigate('/')}
           >
             Back to Home
@@ -95,6 +144,7 @@ const Error = ({ status }) => {
             variant="bordered"
             startContent={<RefreshCcw size={18} />}
             onClick={() => window.location.reload()}
+            className="hover:bg-white/5 transition-colors duration-300"
           >
             Try Again
           </Button>
