@@ -23,10 +23,15 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
       alert('All fields are required');
       return;
     }
-    onSave({
+
+    const userToSave = {
       ...newUser,
-      id: Date.now().toString(), // Generate a unique ID
-    });
+      registrationDate: new Date().toISOString(),
+      status: 'Active'
+    };
+
+    onSave(userToSave);
+    
     setNewUser({
       firstName: '',
       lastName: '',
@@ -37,7 +42,6 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
       gender: '',
       status: 'Active',
     });
-    onClose();
   };
 
   return (
@@ -91,6 +95,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
           >
             <div className="grid grid-cols-2 gap-4">
               <Input
+                key="firstName-input"
                 label="First Name"
                 value={newUser.firstName}
                 onChange={(e) => handleChange('firstName', e.target.value)}
@@ -98,6 +103,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
                 className="bg-gray-800 text-white"
               />
               <Input
+                key="lastName-input"
                 label="Last Name"
                 value={newUser.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
@@ -106,7 +112,9 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
               />
             </div>
             <Input
+              key="email-input"
               label="Email"
+              type="email"
               value={newUser.email}
               onChange={(e) => handleChange('email', e.target.value)}
               required
@@ -114,31 +122,33 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
             />
             <div className="grid grid-cols-2 gap-4">
               <Select
+                key="role-select"
                 label="Role"
-                selectedKeys={newUser.role ? [newUser.role] : []}
+                value={newUser.role}
                 onChange={(e) => handleChange('role', e.target.value)}
                 required
                 className="bg-gray-800 text-white"
               >
-                <SelectItem key="Admin" value="Admin">Admin</SelectItem>
-                <SelectItem key="Student" value="Student">Student</SelectItem>
+                <SelectItem key="Admin">Admin</SelectItem>
+                <SelectItem key="Student">Student</SelectItem>
               </Select>
               <Select
+                key="gender-select"
                 label="Gender"
-                selectedKeys={newUser.gender ? [newUser.gender] : []}
+                value={newUser.gender}
                 onChange={(e) => handleChange('gender', e.target.value)}
                 required
                 className="bg-gray-800 text-white"
               >
-                <SelectItem key="Male" value="Male">Male</SelectItem>
-                <SelectItem key="Female" value="Female">Female</SelectItem>
-                <SelectItem key="Other" value="Other">Other</SelectItem>
+                <SelectItem key="Male">Male</SelectItem>
+                <SelectItem key="Female">Female</SelectItem>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Select
+                key="university-select"
                 label="University"
-                selectedKeys={newUser.university ? [newUser.university] : []}
+                value={newUser.university}
                 onChange={(e) => handleChange('university', e.target.value)}
                 required
                 className="bg-gray-800 text-white"
@@ -150,8 +160,9 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
                 ))}
               </Select>
               <Select
+                key="city-select"
                 label="City"
-                selectedKeys={newUser.city ? [newUser.city] : []}
+                value={newUser.city}
                 onChange={(e) => handleChange('city', e.target.value)}
                 required
                 className="bg-gray-800 text-white"

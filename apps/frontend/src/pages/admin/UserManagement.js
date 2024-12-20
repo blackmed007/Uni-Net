@@ -26,21 +26,55 @@ const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
-  const { isOpen: isUserDetailOpen, onOpen: onUserDetailOpen, onClose: onUserDetailClose } = useDisclosure();
-  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
-  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const { 
+    isOpen: isFilterOpen, 
+    onOpen: onFilterOpen, 
+    onClose: onFilterClose 
+  } = useDisclosure();
+  const { 
+    isOpen: isUserDetailOpen, 
+    onOpen: onUserDetailOpen, 
+    onClose: onUserDetailClose 
+  } = useDisclosure();
+  const { 
+    isOpen: isEditOpen, 
+    onOpen: onEditOpen, 
+    onClose: onEditClose 
+  } = useDisclosure();
+  const { 
+    isOpen: isConfirmOpen, 
+    onOpen: onConfirmOpen, 
+    onClose: onConfirmClose 
+  } = useDisclosure();
+  const { 
+    isOpen: isCreateOpen, 
+    onOpen: onCreateOpen, 
+    onClose: onCreateClose 
+  } = useDisclosure();
 
   useEffect(() => {
-    const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-    const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
-    const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
-    
-    setUsers(storedUsers);
-    setUniversities(storedUniversities);
-    setCities(storedCities);
+    // Load initial data
+    const loadInitialData = () => {
+      const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
+      const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
+      
+      // Ensure all users have required fields
+      const processedUsers = storedUsers.map(user => ({
+        ...user,
+        id: user.id || String(Date.now()),
+        registrationDate: user.registrationDate || new Date().toISOString(),
+        status: user.status || 'Active'
+      }));
+      
+      setUsers(processedUsers);
+      setUniversities(storedUniversities);
+      setCities(storedCities);
+    };
 
+    loadInitialData();
+
+    // Listen for storage changes
     const handleStorageChange = () => {
       const updatedUsers = JSON.parse(localStorage.getItem('users') || '[]');
       setUsers(updatedUsers);
@@ -74,6 +108,7 @@ const UserManagement = () => {
   const handleUserAction = (action, user) => {
     setSelectedUser(user);
     setActionType(action);
+    
     switch (action) {
       case 'view':
         onUserDetailOpen();
@@ -135,63 +170,82 @@ const UserManagement = () => {
   };
 
   const handleCreateUser = (newUser) => {
-    const lastId = users.length > 0 ? parseInt(users[users.length - 1].id) : 0;
-    const newId = ((lastId + 1) % 1000).toString().padStart(3, '0');
-    const updatedUsers = [...users, { ...newUser, id: newId, createdAt: new Date().toISOString() }];
+    const lastId = users.length > 0 ? Math.max(...users.map(u => parseInt(u.id))) : 0;
+    const newId = String(lastId + 1).padStart(3, '0');
+    
+    const userWithDefaults = {
+      ...newUser,
+      id: newId,
+      registrationDate: new Date().toISOString(),
+      status: 'Active'
+    };
+
+    const updatedUsers = [...users, userWithDefaults];
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
     window.dispatchEvent(new Event('storage'));
     onCreateClose();
   };
 
-  const filteredUsers = users.filter(user => {
-    const searchFields = [
-      user.id,
-      user.firstName,
-      user.lastName,
-      user.email,
-      user.role,
-      user.university,
-      user.city,
-      user.gender,
-      user.status
-    ];
-    
-    const matchesSearch = searchFields.some(field => 
-      field && field.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  // Filter and sort users
+  const getFilteredAndSortedUsers = () => {
+    let filtered = users.filter(user => {
+      const searchFields = [
+        user.id,
+        user.firstName,
+        user.lastName,
+        user.email,
+        user.role,
+        user.university,
+        user.city,
+        user.gender,
+        user.status
+      ];
+      
+      const matchesSearch = searchFields.some(field => 
+        field && field.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
-    const matchesFilters = (
-      (!filters.role || user.role === filters.role) &&
-      (!filters.university || user.university === filters.university) &&
-      (!filters.city || user.city === filters.city) &&
-      (!filters.gender || user.gender === filters.gender) &&
-      (!filters.status || user.status === filters.status)
-    );
+      const matchesFilters = (
+        (!filters.role || user.role === filters.role) &&
+        (!filters.university || user.university === filters.university) &&
+        (!filters.city || user.city === filters.city) &&
+        (!filters.gender || user.gender === filters.gender) &&
+        (!filters.status || user.status === filters.status)
+      );
 
-    return matchesSearch && matchesFilters;
-  });
+      return matchesSearch && matchesFilters;
+    });
 
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    
-    const aValue = a[sortConfig.key] || '';
-    const bValue = b[sortConfig.key] || '';
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
 
-    if (aValue < bValue) {
-      return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (sortConfig.key === 'name') {
+          aValue = `${a.firstName} ${a.lastName}`;
+          bValue = `${b.firstName} ${b.lastName}`;
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
     }
-    if (aValue > bValue) {
-      return sortConfig.direction === 'ascending' ? 1 : -1;
-    }
-    return 0;
-  });
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentUsers = sortedUsers.slice(indexOfFirstItem, indexOfLastItem);
+    return filtered;
+  };
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const filteredAndSortedUsers = getFilteredAndSortedUsers();
+  const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
+  const currentUsers = filteredAndSortedUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="space-y-6">
@@ -211,19 +265,22 @@ const UserManagement = () => {
           Create User
         </Button>
       </div>
+
       <UserListTable
         users={currentUsers}
         onUserAction={handleUserAction}
         onSort={handleSort}
         sortConfig={sortConfig}
       />
+
       <div className="flex justify-center mt-4">
         <Pagination
-          total={Math.ceil(sortedUsers.length / itemsPerPage)}
+          total={totalPages}
           page={currentPage}
-          onChange={paginate}
+          onChange={setCurrentPage}
         />
       </div>
+
       <UserDetailModal
         isOpen={isUserDetailOpen}
         onClose={onUserDetailClose}
@@ -248,6 +305,7 @@ const UserManagement = () => {
           onConfirmOpen();
         }}
       />
+
       <UserFilterModal
         isOpen={isFilterOpen}
         onClose={onFilterClose}
@@ -256,6 +314,7 @@ const UserManagement = () => {
         universities={universities}
         cities={cities}
       />
+
       <EditUserModal
         isOpen={isEditOpen}
         onClose={onEditClose}
@@ -264,12 +323,14 @@ const UserManagement = () => {
         universities={universities}
         cities={cities}
       />
+
       <UserConfirmActionModal
         isOpen={isConfirmOpen}
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}
         actionType={actionType}
       />
+
       <CreateUserModal
         isOpen={isCreateOpen}
         onClose={onCreateClose}

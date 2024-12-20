@@ -41,12 +41,21 @@ const Blog = () => {
                 </div>
               </div>
               <CardHeader className="flex flex-col items-start p-6">
-                <h2 className="text-2xl font-semibold mb-2 text-white hover:text-blue-400 transition-colors duration-200">
+                <h2 className="text-2xl font-semibold mb-4 text-white hover:text-blue-400 transition-colors duration-200">
                   {post.title}
                 </h2>
-                <div className="flex items-center text-sm text-gray-400">
-                  <span className="mr-4">By {post.author}</span>
-                  <span>{formatDate(post.date)}</span>
+                <div className="flex items-center space-x-4">
+                  <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                    <img 
+                      src={post.authorImage || 'https://via.placeholder.com/40'} 
+                      alt={post.author}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-white">{post.author}</span>
+                    <span className="text-sm text-gray-400">{formatDate(post.date)}</span>
+                  </div>
                 </div>
               </CardHeader>
               <CardBody className="p-6">

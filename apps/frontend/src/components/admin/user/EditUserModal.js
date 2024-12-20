@@ -6,7 +6,16 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
   const [editedUser, setEditedUser] = useState(user || {});
 
   useEffect(() => {
-    setEditedUser(user || {});
+    if (user) {
+      setEditedUser({
+        ...user,
+        role: user.role || '',
+        university: user.university || '',
+        city: user.city || '',
+        gender: user.gender || '',
+        status: user.status || 'Active'
+      });
+    }
   }, [user]);
 
   const handleChange = (key, value) => {
@@ -18,8 +27,14 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
       alert('All fields are required');
       return;
     }
-    onSave(editedUser);
-    onClose();
+
+    const userToSave = {
+      ...editedUser,
+      id: editedUser.id,
+      registrationDate: editedUser.registrationDate || new Date().toISOString(),
+    };
+
+    onSave(userToSave);
   };
 
   return (
@@ -73,6 +88,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
           >
             <div className="grid grid-cols-2 gap-4">
               <Input
+                key="firstName-input"
                 label="First Name"
                 value={editedUser.firstName || ''}
                 onChange={(e) => handleChange('firstName', e.target.value)}
@@ -80,6 +96,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
                 className="bg-gray-800 text-white"
               />
               <Input
+                key="lastName-input"
                 label="Last Name"
                 value={editedUser.lastName || ''}
                 onChange={(e) => handleChange('lastName', e.target.value)}
@@ -88,6 +105,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
               />
             </div>
             <Input
+              key="email-input"
               label="Email"
               value={editedUser.email || ''}
               onChange={(e) => handleChange('email', e.target.value)}
@@ -96,29 +114,31 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
             />
             <div className="grid grid-cols-2 gap-4">
               <Select
+                key="role-select"
                 label="Role"
                 selectedKeys={editedUser.role ? [editedUser.role] : []}
                 onChange={(e) => handleChange('role', e.target.value)}
                 required
                 className="bg-gray-800 text-white"
               >
-                <SelectItem key="Admin" value="Admin">Admin</SelectItem>
-                <SelectItem key="Student" value="Student">Student</SelectItem>
+                <SelectItem key="Admin">Admin</SelectItem>
+                <SelectItem key="Student">Student</SelectItem>
               </Select>
               <Select
+                key="gender-select"
                 label="Gender"
                 selectedKeys={editedUser.gender ? [editedUser.gender] : []}
                 onChange={(e) => handleChange('gender', e.target.value)}
                 required
                 className="bg-gray-800 text-white"
               >
-                <SelectItem key="Male" value="Male">Male</SelectItem>
-                <SelectItem key="Female" value="Female">Female</SelectItem>
-                <SelectItem key="Other" value="Other">Other</SelectItem>
+                <SelectItem key="Male">Male</SelectItem>
+                <SelectItem key="Female">Female</SelectItem>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Select
+                key="university-select"
                 label="University"
                 selectedKeys={editedUser.university ? [editedUser.university] : []}
                 onChange={(e) => handleChange('university', e.target.value)}
@@ -132,6 +152,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
                 ))}
               </Select>
               <Select
+                key="city-select"
                 label="City"
                 selectedKeys={editedUser.city ? [editedUser.city] : []}
                 onChange={(e) => handleChange('city', e.target.value)}
@@ -146,14 +167,15 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
               </Select>
             </div>
             <Select
+              key="status-select"
               label="Status"
               selectedKeys={editedUser.status ? [editedUser.status] : []}
               onChange={(e) => handleChange('status', e.target.value)}
               required
               className="bg-gray-800 text-white"
             >
-              <SelectItem key="Active" value="Active">Active</SelectItem>
-              <SelectItem key="Suspended" value="Suspended">Suspended</SelectItem>
+              <SelectItem key="Active">Active</SelectItem>
+              <SelectItem key="Suspended">Suspended</SelectItem>
             </Select>
           </motion.div>
         </ModalBody>

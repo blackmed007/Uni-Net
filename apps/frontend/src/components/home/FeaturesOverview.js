@@ -22,7 +22,7 @@ const features = [
     comingSoon: false
   },
   { 
-    title: "Language Exchange", // Changed from "Exchange Language" for better readability
+    title: "Language Exchange", 
     icon: "assets/home/Features-Language Exchange .avif", 
     description: "Practice languages with native speakers",
     comingSoon: true

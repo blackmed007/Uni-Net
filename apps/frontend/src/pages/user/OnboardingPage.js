@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input, Button, Select, SelectItem } from "@nextui-org/react";
-import { motion } from "framer-motion";
+import { Button, Select, SelectItem } from "@nextui-org/react";import { motion } from "framer-motion";
 import { Upload, X } from 'lucide-react';
 
 const OnboardingPage = () => {
@@ -134,7 +133,6 @@ const OnboardingPage = () => {
           >
             <SelectItem key="male" value="Male">Male</SelectItem>
             <SelectItem key="female" value="Female">Female</SelectItem>
-            <SelectItem key="other" value="Other">Other</SelectItem>
           </Select>
 
           <div className="space-y-2">

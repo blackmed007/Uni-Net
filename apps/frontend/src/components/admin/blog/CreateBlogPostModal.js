@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Upload, X } from "lucide-react";
+import { Upload, X, Image } from "lucide-react";
 import { motion } from "framer-motion";
 
 const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
   const [newPost, setNewPost] = useState({
     title: '',
     author: '',
+    authorImage: '',
     category: '',
     content: '',
     excerpt: '',
@@ -17,17 +18,25 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
     views: 0,
     date: new Date().toISOString(),
   });
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedAuthorImage, setUploadedAuthorImage] = useState(null);
 
   const handleChange = (key, value) => {
     setNewPost(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = (e, type) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setNewPost(prev => ({ ...prev, image: reader.result }));
+        if (type === 'post') {
+          setNewPost(prev => ({ ...prev, image: reader.result }));
+          setUploadedImage(reader.result);
+        } else if (type === 'author') {
+          setNewPost(prev => ({ ...prev, authorImage: reader.result }));
+          setUploadedAuthorImage(reader.result);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -98,6 +107,59 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
                 isRequired
               />
             </div>
+
+            {/* Author Image Section */}
+            <div>
+              <p className="text-small font-bold mb-2">Author Image</p>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <p className="text-xs mb-1">Upload Author Image</p>
+                  <label className="flex items-center justify-center w-full h-[38px] px-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'author')}
+                      className="hidden"
+                    />
+                    <Upload className="text-gray-400 mr-2" size={16} />
+                    <span className="text-sm text-gray-400">Choose file</span>
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs mb-1">Author Image URL</p>
+                  <Input
+                    placeholder="Enter author image URL"
+                    value={newPost.authorImage}
+                    onChange={(e) => handleChange('authorImage', e.target.value)}
+                    startContent={<Image className="text-gray-400" size={16} />}
+                    className="h-[38px]"
+                  />
+                </div>
+              </div>
+              {(uploadedAuthorImage || newPost.authorImage) && (
+                <div className="relative mt-4 w-20 h-20">
+                  <img 
+                    src={uploadedAuthorImage || newPost.authorImage} 
+                    alt="Author" 
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                  <Button
+                    isIconOnly
+                    color="danger"
+                    variant="flat"
+                    size="sm"
+                    onPress={() => {
+                      setUploadedAuthorImage(null);
+                      handleChange('authorImage', '');
+                    }}
+                    className="absolute -top-2 -right-2"
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <Textarea
               label="Excerpt"
               placeholder="Enter post excerpt"
@@ -131,25 +193,32 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
                 onPress={() => document.getElementById('dropzone-file').click()}
                 startContent={<Upload size={20} />}
               >
-                Upload Image
+                Upload Post Image
               </Button>
             </div>
             <input
               id="dropzone-file"
               type="file"
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={(e) => handleImageUpload(e, 'post')}
               accept="image/*"
             />
-            {newPost.image && (
+            {(uploadedImage || newPost.image) && (
               <div className="relative">
-                <img src={newPost.image} alt="Preview" className="max-w-full h-auto rounded-lg" />
+                <img 
+                  src={uploadedImage || newPost.image} 
+                  alt="Preview" 
+                  className="max-w-full h-auto rounded-lg"
+                />
                 <Button
                   isIconOnly
                   color="danger"
                   variant="flat"
                   size="sm"
-                  onPress={() => handleChange('image', null)}
+                  onPress={() => {
+                    setUploadedImage(null);
+                    handleChange('image', null);
+                  }}
                   className="absolute top-2 right-2"
                 >
                   <X size={20} />

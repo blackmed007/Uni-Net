@@ -45,11 +45,17 @@ const BlogPost = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent">
           <div className="container mx-auto px-4 h-full flex flex-col justify-end pb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">{post.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">{post.title}</h1>
             <div className="flex items-center space-x-4 mb-4">
-              <img src={post.authorImage || 'https://via.placeholder.com/40'} alt={post.author} className="w-10 h-10 rounded-full" />
+              <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
+                <img 
+                  src={post.authorImage || 'https://via.placeholder.com/48'} 
+                  alt={post.author} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div>
-                <p className="font-medium text-white">{post.author}</p>
+                <p className="font-medium text-white text-lg">{post.author}</p>
                 <p className="text-sm text-gray-300">{formatDate(post.date)}</p>
               </div>
             </div>
@@ -66,9 +72,14 @@ const BlogPost = () => {
             <div className="prose prose-invert prose-lg max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: post.content }} />
           </CardBody>
           <CardFooter className="flex justify-between items-center p-6 border-t border-gray-800">
-            <Chip color="primary" variant="flat" className="bg-blue-600 text-white">{post.category}</Chip>
+            <div className="flex items-center space-x-4">
+              <Chip color="primary" variant="flat" className="bg-blue-600 text-white">{post.category}</Chip>
+              <div className="text-sm text-gray-400">
+                {post.views} view{post.views !== 1 ? 's' : ''}
+              </div>
+            </div>
             <div className="text-sm text-gray-400">
-              {post.views} view{post.views !== 1 ? 's' : ''} • Last updated: {formatDate(post.date)}
+              Last updated: {formatDate(post.date)}
             </div>
           </CardFooter>
         </Card>
