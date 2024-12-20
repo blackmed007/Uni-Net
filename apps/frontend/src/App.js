@@ -13,6 +13,8 @@ import UserStudyGroupsPage from './pages/user/UserStudyGroupsPage';
 import UserBlogPage from './pages/user/UserBlogPage';
 import UserSettingsPage from './pages/user/UserSettingsPage';
 import OnboardingPage from './pages/user/OnboardingPage';
+import Error from './pages/Error';
+import UnderMaintenance from './pages/UnderMaintenance';
 import UserSidebar from './components/user/UserSidebar';
 import UserNavbar from './components/user/UserNavbar';
 import useDarkMode from './hooks/useDarkMode';
@@ -51,6 +53,13 @@ function App() {
     }
   }, []);
 
+  // For maintenance mode - you can make this dynamic based on your needs
+  const isMaintenanceMode = false;
+
+  if (isMaintenanceMode) {
+    return <UnderMaintenance />;
+  }
+
   return (
     <NextUIProvider>
       <Router>
@@ -63,13 +72,19 @@ function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogPost />} />
 
+            {/* Error and Maintenance routes */}
+            <Route path="/maintenance" element={<UnderMaintenance />} />
+            <Route path="/error" element={<Error status={500} />} />
+            <Route path="/403" element={<Error status={403} />} />
+            <Route path="/404" element={<Error status={404} />} />
+
             {/* TODO: Re-implement onboarding protection */}
             <Route path="/onboarding" element={<OnboardingPage />} />
 
             {/* TODO: Re-implement admin route protection */}
             <Route path="/admin/*" element={<AdminDashboard />} />
 
-            {/* User routes - Layout wrapper removed for development */}
+            {/* User routes */}
             <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/user/*" element={
               <UserLayout>
@@ -79,13 +94,14 @@ function App() {
                   <Route path="study-groups" element={<UserStudyGroupsPage />} />
                   <Route path="blog" element={<UserBlogPage />} />
                   <Route path="settings" element={<UserSettingsPage />} />
-                  <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
+                  {/* Catch undefined user routes */}
+                  <Route path="*" element={<Error status={404} />} />
                 </Routes>
               </UserLayout>
             } />
 
             {/* Catch-all route for undefined paths */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Error status={404} />} />
           </Routes>
         </div>
       </Router>

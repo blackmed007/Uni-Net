@@ -26,17 +26,19 @@ const GeneralSettingsForm = ({ initialSettings, onSave }) => {
         >
           <SelectItem key="active" value="active">Active</SelectItem>
           <SelectItem key="underMaintenance" value="underMaintenance">Under Maintenance</SelectItem>
-          <SelectItem key="comingSoon" value="comingSoon">Coming Soon</SelectItem>
         </Select>
         <div className="flex items-center justify-between">
           <span className="text-sm">Enable Dark Mode by Default</span>
           <Switch
-            checked={settings.enableDarkModeByDefault}
-            onChange={(e) => handleChange('enableDarkModeByDefault', e.target.checked)}
+            isSelected={true}
+            isDisabled={true}
             size="sm"
             color="primary"
             startContent={<Moon className="text-default-400" size={16} />}
           />
+        </div>
+        <div className="mt-2 p-2 bg-gray-800 rounded-lg">
+          <p className="text-sm text-yellow-400">Limited feature, coming soon. Some settings are currently fixed.</p>
         </div>
         <Button 
           type="submit" 
