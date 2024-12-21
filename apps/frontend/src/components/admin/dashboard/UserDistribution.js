@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
-import { userDistributionData } from './DummyData_Dash'; // TODO: Remove this import when connecting to backend
+import { userDistributionData } from './DummyData_Dash';
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+const GENDER_COLORS = ['#3B82F6', '#EC4899'];
+const ROLE_COLORS = ['#10B981', '#8B5CF6', '#F59E0B'];
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -15,7 +16,10 @@ const CustomTooltip = ({ active, payload }) => {
       >
         <p className="font-bold text-gray-100">{payload[0].name}</p>
         <p style={{ color: payload[0].payload.fill }}>
-          Value: {payload[0].value}
+          Count: {payload[0].value}
+        </p>
+        <p style={{ color: payload[0].payload.fill }}>
+          Percentage: {((payload[0].value / payload[0].payload.total) * 100).toFixed(1)}%
         </p>
       </motion.div>
     );
@@ -24,66 +28,89 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 const UserDistribution = () => {
-  const [data, setData] = useState(userDistributionData); // TODO: Initialize with [] when connecting to backend
+  const [data, setData] = useState(userDistributionData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // TODO: Uncomment and implement the following useEffect when connecting to backend
-  /*
-  useEffect(() => {
-    const fetchUserDistribution = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('/api/user-distribution');
-        if (!response.ok) {
-          throw new Error('Failed to fetch user distribution data');
-        }
-        const result = await response.json();
-        setData(result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Calculate totals for percentage calculations
+  const genderTotal = data.genders.reduce((sum, item) => sum + item.value, 0);
+  const roleTotal = data.roles.reduce((sum, item) => sum + item.value, 0);
 
-    fetchUserDistribution();
-  }, []);
-  */
+  // Add total to each item for tooltip percentage calculation
+  const genderData = data.genders.map(item => ({ ...item, total: genderTotal }));
+  const roleData = data.roles.map(item => ({ ...item, total: roleTotal }));
 
   if (isLoading) return <div>Loading user distribution data...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={30}
-          outerRadius={50}
-          fill="#8884d8"
-          paddingAngle={5}
-          dataKey="value"
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          labelLine={false}
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip content={<CustomTooltip />} />
-        <Legend 
-          verticalAlign="bottom" 
-          height={36}
-          iconType="circle"
-          iconSize={8}
-          wrapperStyle={{ fontSize: '10px' }}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="w-full h-full flex">
+      {/* Gender Distribution */}
+      <div className="w-1/2 h-full">
+        <h3 className="text-sm font-semibold text-center mb-2 text-gray-300">Gender Distribution</h3>
+        <ResponsiveContainer width="100%" height="90%">
+          <PieChart>
+            <Pie
+              data={genderData}
+              cx="50%"
+              cy="50%"
+              innerRadius={30}
+              outerRadius={50}
+              fill="#8884d8"
+              paddingAngle={5}
+              dataKey="value"
+              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              labelLine={false}
+            >
+              {genderData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              verticalAlign="bottom" 
+              height={36}
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: '10px' }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Role Distribution */}
+      <div className="w-1/2 h-full">
+        <h3 className="text-sm font-semibold text-center mb-2 text-gray-300">User Roles</h3>
+        <ResponsiveContainer width="100%" height="90%">
+          <PieChart>
+            <Pie
+              data={roleData}
+              cx="50%"
+              cy="50%"
+              innerRadius={30}
+              outerRadius={50}
+              fill="#8884d8"
+              paddingAngle={5}
+              dataKey="value"
+              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              labelLine={false}
+            >
+              {roleData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={ROLE_COLORS[index % ROLE_COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              verticalAlign="bottom" 
+              height={36}
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: '10px' }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 };
 
