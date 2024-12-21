@@ -7,14 +7,17 @@ const RegisteredEvents = ({ events }) => {
     console.log(`View details for event ${eventId}`);
   };
 
+  // Only show the last 3 events
+  const recentEvents = events.slice(-3);
+
   return (
     <Card>
       <CardBody>
-        {events.length === 0 ? (
+        {recentEvents.length === 0 ? (
           <div className="p-4">You haven't registered for any events yet</div>
         ) : (
           <div className="space-y-4">
-            {events.map(event => (
+            {recentEvents.map(event => (
               <div key={event.id} className="flex items-center justify-between p-2 border-b last:border-b-0">
                 <div className="flex items-center space-x-2">
                   <Calendar className="text-primary" size={20} />

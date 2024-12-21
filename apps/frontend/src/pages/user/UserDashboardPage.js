@@ -12,16 +12,33 @@ const UserDashboardPage = () => {
   const [user, setUser] = useState(null);
   const [studyGroups, setStudyGroups] = useState([]);
   const [events, setEvents] = useState([]);
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
   const [isDarkMode, toggleDarkMode] = useDarkMode();
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
     const storedGroups = JSON.parse(localStorage.getItem('studyGroups') || '[]');
     const storedEvents = JSON.parse(localStorage.getItem('events') || '[]');
+    const storedPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
+    const storedBookmarks = JSON.parse(localStorage.getItem('bookmarkedPosts') || '[]');
     
     setUser(userData);
     setStudyGroups(storedGroups);
     setEvents(storedEvents);
+    setBlogPosts(storedPosts);
+    setBookmarkedPosts(storedBookmarks);
+  }, []);
+
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'bookmarkedPosts') {
+        setBookmarkedPosts(JSON.parse(e.newValue || '[]'));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   if (!user) {
@@ -42,6 +59,8 @@ const UserDashboardPage = () => {
               user={user} 
               studyGroups={studyGroups} 
               events={events}
+              blogPosts={blogPosts}
+              bookmarkedPosts={bookmarkedPosts}
               NotificationsList={NotificationsList}
               JoinedStudyGroups={JoinedStudyGroups}
               RegisteredEvents={RegisteredEvents}
