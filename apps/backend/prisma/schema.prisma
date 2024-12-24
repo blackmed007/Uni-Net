@@ -24,6 +24,33 @@ model User {
   gender      Gender?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt @map("updatedAt")
+
+  events UsersOnEvents[]
+}
+
+model Event {
+  id               String   @id @default(uuid())
+  name             String
+  description      String
+  datetime         DateTime
+  location         String
+  event_type       String
+  organizer        String
+  max_participants Int
+  speaker          String
+  event_thumbnail  String
+
+  participants UsersOnEvents[]
+}
+
+model UsersOnEvents {
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  event    Event    @relation(fields: [eventId], references: [id])
+  eventId  String
+  joinedAt DateTime @default(now())
+
+  @@id([userId, eventId])
 }
 
 enum Gender {
