@@ -39,10 +39,6 @@ const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJ
     onBookmark(event.id);
   };
 
-  const handleJoin = () => {
-    onJoin(event.id);
-  };
-
   return (
     <motion.div
       variants={cardVariants}
@@ -106,7 +102,7 @@ const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJ
               <Button
                 color={isJoined ? "success" : "primary"}
                 variant="solid"
-                onPress={handleJoin}
+                onPress={() => onJoin(event.id)}
                 size="sm"
                 className={isJoined ? "bg-green-500 text-white" : "bg-white text-black hover:bg-gray-200"}
               >
