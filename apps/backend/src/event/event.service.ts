@@ -59,12 +59,29 @@ export class EventService {
     }
   }
 
-  findAll() {
-    return `This action returns all event`;
+  async findAll() {
+    try {
+      const events = await this.prisma.event.findMany();
+
+      return events;
+    } catch (error) {
+      this.logger.error(`${error} - Error while fetching events`);
+      throw new InternalServerErrorException(`Error while fetching events`);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} event`;
+  async findOne(id: string) {
+    try {
+      const appointment = await this.prisma.event.findUnique({
+        where: {
+          id,
+        },
+      });
+      return appointment;
+    } catch (error) {
+      this.logger.error(`${error} - Error while fetching events`);
+      throw new InternalServerErrorException(`Error while fetching an event`);
+    }
   }
 
   update(id: number, updateEventDto: UpdateEventDto) {
