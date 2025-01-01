@@ -17,13 +17,11 @@ export class UsersService {
       where: { id: userId },
     });
 
-    // Handle error if user does not exist
     if (!user) {
       this.logger.log(`User with ID ${userId} not found`);
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    // Update the user with the provided data and set status to true
     return this.prisma.user.update({
       where: { id: userId },
       data: {
