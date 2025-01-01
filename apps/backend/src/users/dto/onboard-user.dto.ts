@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsIn, IsString } from 'class-validator';
 
 export class OnboardUserDto {
   @IsString()
@@ -10,8 +10,8 @@ export class OnboardUserDto {
   @IsString()
   profile_url: string;
 
-  @IsString()
-  gender: string;
+  @IsIn(['male', 'female'])
+  gender: 'male' | 'female';
 
   @IsString()
   cityId: string;
