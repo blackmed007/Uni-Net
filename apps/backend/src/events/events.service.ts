@@ -22,9 +22,7 @@ export class EventService {
     timestamp: true,
   });
 
-  create(createEventDto: CreateEventDto) {
-    console.log(createEventDto);
-
+  async create(createEventDto: CreateEventDto) {
     try {
       const { event_date, event_time, ...eventDto } = createEventDto;
 
@@ -33,7 +31,7 @@ export class EventService {
         datetime: `${event_date}T${event_time}`,
       };
 
-      return this.prisma.event.create({
+      return await this.prisma.event.create({
         data: eventData,
       });
     } catch (error) {
@@ -62,7 +60,6 @@ export class EventService {
   async findAll() {
     try {
       const events = await this.prisma.event.findMany();
-
       return events;
     } catch (error) {
       this.logger.error(`${error} - Error while fetching events`);
