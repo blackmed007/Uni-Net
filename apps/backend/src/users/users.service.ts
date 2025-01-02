@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { OnboardUserDto } from './dto/onboard-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 // import { UpdateUserDto } from './dto/update-user.dto';
@@ -28,11 +33,49 @@ export class UsersService {
         ...onboardUserDto,
         status: true,
       },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        status: true,
+        profile_url: true,
+        gender: true,
+        cityId: true,
+        universityId: true,
+        events: true,
+        city: true,
+        university: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll() {
+    try {
+      return await this.prisma.user.findMany({
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          email: true,
+          status: true,
+          profile_url: true,
+          gender: true,
+          cityId: true,
+          universityId: true,
+          events: true,
+          city: true,
+          university: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`${error} - Error while fetching users`);
+      throw new InternalServerErrorException(`Error while fetching users`);
+    }
   }
 
   findOne(id: number) {
