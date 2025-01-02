@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { EventModule } from './event/event.module';
+import { EventModule } from './events/events.module';
+import { UsersModule } from './users/users.module';
+import { CitiesModule } from './cities/cities.module';
+import { UniversitiesModule } from './universities/universities.module';
 
 @Module({
   imports: [
@@ -12,6 +15,9 @@ import { EventModule } from './event/event.module';
     AuthModule,
     PrismaModule,
     EventModule,
+    UsersModule,
+    CitiesModule,
+    UniversitiesModule,
   ],
 })
 export class AppModule {}

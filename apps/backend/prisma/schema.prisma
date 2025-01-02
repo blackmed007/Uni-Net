@@ -52,13 +52,17 @@ model UsersOnEvents {
 }
 
 model University {
-  id   String @id @default(uuid())
-  name String
-  User User[]
+  id        String   @id @default(uuid())
+  name      String
+  User      User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @map("updatedAt")
 }
 
 model City {
-  id   String @id @default(uuid())
-  name String
-  User User[]
+  id        String   @id @default(uuid())
+  name      String
+  User      User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @map("updatedAt")
 }
