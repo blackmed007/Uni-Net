@@ -4,37 +4,59 @@ import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdow
 import { Bell, Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 
-const CustomNavbar = ({ isDarkMode, toggleDarkMode, adminProfile }) => {
+const CustomNavbar = ({ adminProfile }) => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [isIconToggled, setIsIconToggled] = useState(false);
 
   const handleSettingsClick = () => {
     navigate('/admin/settings');
   };
 
   useEffect(() => {
+    const checkIsMobile = () => {
+      const isMobileView = window.innerWidth <= 768;
+      setIsMobile(isMobileView);
+      if (!isMobileView) {
+        setIsSearchVisible(false);
+      }
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  useEffect(() => {
     const controlNavbar = () => {
       if (typeof window !== 'undefined') {
-        if (window.scrollY > lastScrollY) { // if scroll down hide the navbar
+        if (window.scrollY > lastScrollY) {
           setIsVisible(false);
-        } else { // if scroll up show the navbar
+        } else {
           setIsVisible(true);
         }
-        // remember current page location to use in the next move
         setLastScrollY(window.scrollY);
       }
     };
 
     if (typeof window !== 'undefined') {
       window.addEventListener('scroll', controlNavbar);
-
-      // cleanup function
       return () => {
         window.removeEventListener('scroll', controlNavbar);
       };
     }
   }, [lastScrollY]);
+
+  const toggleSearch = () => {
+    setIsSearchVisible(!isSearchVisible);
+  };
+
+  const handleIconToggle = () => {
+    setIsIconToggled(!isIconToggled);
+  };
 
   return (
     <AnimatePresence>
@@ -61,31 +83,73 @@ const CustomNavbar = ({ isDarkMode, toggleDarkMode, adminProfile }) => {
               </motion.div>
             </NavbarBrand>
 
-            <NavbarContent justify="end">
-              <NavbarItem>
-                <motion.div className="relative" whileHover={{ scale: 1.05 }}>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="bg-gray-800 bg-opacity-50 text-gray-100 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
-                  />
-                  <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                </motion.div>
-              </NavbarItem>
+            <NavbarContent justify="end" className="gap-2">
+              {/* Search Input - Responsive */}
+              <AnimatePresence>
+                {(!isMobile || isSearchVisible) && (
+                  <NavbarItem className="flex-grow-0">
+                    <motion.div
+                      className="relative w-full md:w-auto"
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Search..."
+                        className="bg-gray-800 bg-opacity-50 text-gray-100 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 w-full md:w-64"
+                      />
+                      <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                    </motion.div>
+                  </NavbarItem>
+                )}
+              </AnimatePresence>
+
+              {/* Mobile Search Toggle */}
+              {isMobile && (
+                <NavbarItem>
+                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <Button
+                      isIconOnly
+                      variant="light"
+                      onClick={toggleSearch}
+                      className="text-gray-400 hover:text-gray-100 transition-colors duration-300"
+                    >
+                      <Search size={24} />
+                    </Button>
+                  </motion.div>
+                </NavbarItem>
+              )}
+
+              {/* Theme Toggle */}
               <NavbarItem>
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                  <Button isIconOnly variant="light" onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-100 transition-colors duration-300">
-                    {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
+                  <Button 
+                    isIconOnly 
+                    variant="light" 
+                    onClick={handleIconToggle}
+                    className="text-gray-400 hover:text-gray-100 transition-colors duration-300"
+                  >
+                    {isIconToggled ? <Sun size={24} /> : <Moon size={24} />}
                   </Button>
                 </motion.div>
               </NavbarItem>
-              <NavbarItem>
+
+              {/* Notifications */}
+              <NavbarItem className="hidden sm:flex">
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                  <Button isIconOnly variant="light" className="text-gray-400 hover:text-gray-100 transition-colors duration-300">
+                  <Button 
+                    isIconOnly 
+                    variant="light" 
+                    className="text-gray-400 hover:text-gray-100 transition-colors duration-300"
+                  >
                     <Bell size={24} />
                   </Button>
                 </motion.div>
               </NavbarItem>
+
+              {/* User Profile Dropdown */}
               <NavbarItem>
                 <Dropdown placement="bottom-end">
                   <DropdownTrigger>
@@ -106,11 +170,17 @@ const CustomNavbar = ({ isDarkMode, toggleDarkMode, adminProfile }) => {
                   >
                     <DropdownItem key="profile" className="h-14 gap-2">
                       <p className="font-semibold">Signed in as</p>
-                      <p className="font-semibold">{adminProfile.email}</p>
+                      <p className="font-semibold text-xs">{adminProfile.email}</p>
                     </DropdownItem>
                     <DropdownItem key="settings" onPress={handleSettingsClick}>
                       My Settings
                     </DropdownItem>
+                    {/* Show notifications in dropdown on mobile */}
+                    {isMobile && (
+                      <DropdownItem key="notifications">
+                        Notifications
+                      </DropdownItem>
+                    )}
                     <DropdownItem key="logout" color="danger">
                       Log Out
                     </DropdownItem>

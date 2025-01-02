@@ -31,6 +31,17 @@ const UserDistribution = () => {
   const [data, setData] = useState(userDistributionData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // Calculate totals for percentage calculations
   const genderTotal = data.genders.reduce((sum, item) => sum + item.value, 0);
@@ -43,73 +54,57 @@ const UserDistribution = () => {
   if (isLoading) return <div>Loading user distribution data...</div>;
   if (error) return <div>Error: {error}</div>;
 
+  const ChartSection = ({ title, data, colors }) => (
+    <div className="w-1/2 h-full">
+      <h3 className={`${isMobile ? 'text-sm' : 'text-sm'} font-semibold text-center mb-2 text-gray-300`}>
+        {title}
+      </h3>
+      <ResponsiveContainer width="100%" height={isMobile ? 210 : "90%"}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={isMobile ? 29 : 30}
+            outerRadius={isMobile ? 46 : 50}
+            fill="#8884d8"
+            paddingAngle={5}
+            dataKey="value"
+            label={isMobile ? null : ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            labelLine={false}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend 
+            verticalAlign="bottom" 
+            height={isMobile ? 35 : 36}
+            iconType="circle"
+            iconSize={isMobile ? 8 : 8}
+            wrapperStyle={{ 
+              fontSize: isMobile ? '10px' : '10px',
+              paddingTop: isMobile ? '10px' : '0'
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+
   return (
     <div className="w-full h-full flex">
-      {/* Gender Distribution */}
-      <div className="w-1/2 h-full">
-        <h3 className="text-sm font-semibold text-center mb-2 text-gray-300">Gender Distribution</h3>
-        <ResponsiveContainer width="100%" height="90%">
-          <PieChart>
-            <Pie
-              data={genderData}
-              cx="50%"
-              cy="50%"
-              innerRadius={30}
-              outerRadius={50}
-              fill="#8884d8"
-              paddingAngle={5}
-              dataKey="value"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              labelLine={false}
-            >
-              {genderData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              verticalAlign="bottom" 
-              height={36}
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: '10px' }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Role Distribution */}
-      <div className="w-1/2 h-full">
-        <h3 className="text-sm font-semibold text-center mb-2 text-gray-300">User Roles</h3>
-        <ResponsiveContainer width="100%" height="90%">
-          <PieChart>
-            <Pie
-              data={roleData}
-              cx="50%"
-              cy="50%"
-              innerRadius={30}
-              outerRadius={50}
-              fill="#8884d8"
-              paddingAngle={5}
-              dataKey="value"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              labelLine={false}
-            >
-              {roleData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={ROLE_COLORS[index % ROLE_COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              verticalAlign="bottom" 
-              height={36}
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: '10px' }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      <ChartSection 
+        title="Gender Distribution" 
+        data={genderData} 
+        colors={GENDER_COLORS} 
+      />
+      <ChartSection 
+        title="User Roles" 
+        data={roleData} 
+        colors={ROLE_COLORS} 
+      />
     </div>
   );
 };
