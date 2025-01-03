@@ -41,7 +41,8 @@ const UserEventsPage = () => {
   // Centralized message state
   const [messageState, setMessageState] = useState({
     isVisible: false,
-    message: ""
+    message: "",
+    timeoutId: null
   });
 
   // Load initial data
@@ -88,11 +89,28 @@ const UserEventsPage = () => {
 
   // Message handlers
   const showMessage = useCallback((message) => {
-    setMessageState({
-      isVisible: true,
-      message
-    });
-  }, []);
+    // Clear any existing timeout
+    if (messageState.timeoutId) {
+      clearTimeout(messageState.timeoutId);
+    }
+
+    // Reset the state first
+    setMessageState(prev => ({
+      ...prev,
+      isVisible: false,
+      message: '',
+      timeoutId: null
+    }));
+
+    // Set new message after a small delay
+    setTimeout(() => {
+      setMessageState({
+        isVisible: true,
+        message,
+        timeoutId: null
+      });
+    }, 50);
+  }, [messageState]);
 
   const handleCloseMessage = useCallback(() => {
     setMessageState(prev => ({
@@ -162,10 +180,20 @@ const UserEventsPage = () => {
     setEvents(updatedEvents);
     localStorage.setItem('events', JSON.stringify(updatedEvents));
 
-    showMessage(isCurrentlyJoined 
-      ? "You have successfully left the event." 
-      : "You have successfully joined the event! An email will be sent to you with any updates. Make sure to have your student ID with you and arrive on time."
-    );
+    // Reset message state first
+    setMessageState({
+      isVisible: false,
+      message: "",
+      timeoutId: null
+    });
+
+    // Show new message after a small delay
+    setTimeout(() => {
+      showMessage(isCurrentlyJoined 
+        ? "You have successfully left the event." 
+        : "You have successfully joined the event! An email will be sent to you with any updates. Make sure to have your student ID with you and arrive on time."
+      );
+    }, 50);
   }, [events, joinedEvents, user, selectedEvent, showMessage]);
 
   const handleBookmarkEvent = useCallback((eventId) => {

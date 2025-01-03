@@ -1,10 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from "@nextui-org/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 const EventJoinMessage = ({ message, isVisible, onClose }) => {
-  if (!message) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Lock scroll when modal is visible
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      // Reset scroll lock
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isVisible]);
+
+  if (!mounted || !message) return null;
 
   const getMessageType = () => {
     if (message.includes("successfully")) return "success";
@@ -38,32 +68,56 @@ const EventJoinMessage = ({ message, isVisible, onClose }) => {
 
   const styles = getMessageStyles();
 
+  const handleContentClick = (e) => {
+    e.stopPropagation();
+  };
+
   return (
     <AnimatePresence>
       {isVisible && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-          <div 
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm" 
-            onClick={onClose} 
-          />
+        <div 
+          className="fixed inset-0 z-[1000]"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            touchAction: 'none',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0, y: 0, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 0, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          
+          <motion.div
             className="relative w-full max-w-md mx-4"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            onClick={handleContentClick}
           >
-            <div className={`
-              bg-gradient-to-b ${styles.bgGradient}
-              rounded-xl
-              overflow-hidden
-              shadow-2xl
-              backdrop-blur-md
-            `}>
-              {/* Accent gradient overlay */}
+            <div 
+              className={`
+                bg-gradient-to-b ${styles.bgGradient}
+                rounded-xl
+                overflow-hidden
+                shadow-2xl
+                backdrop-blur-md
+                relative
+              `}
+            >
               <div className={`absolute inset-0 bg-gradient-to-br ${styles.accentGradient} opacity-10`} />
               
-              {/* Content */}
               <div className="relative p-6">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0">
@@ -89,7 +143,10 @@ const EventJoinMessage = ({ message, isVisible, onClose }) => {
                       min-w-[80px]
                       px-4
                     "
-                    onPress={onClose}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      onClose();
+                    }}
                   >
                     Close
                   </Button>
