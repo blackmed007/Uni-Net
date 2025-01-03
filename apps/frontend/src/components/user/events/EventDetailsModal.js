@@ -2,17 +2,20 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip, Progress } from "@nextui-org/react";
 import { MapPin, Calendar, Clock, Share2, Users, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 
 const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }) => {
   const [showScrollArrow, setShowScrollArrow] = useState(true);
   const bodyRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: ['marker']
   });
 
   const mapContainerStyle = {
@@ -26,8 +29,27 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
   };
 
   const onLoad = useCallback(function callback(map) {
+    mapRef.current = map;
     const bounds = new window.google.maps.LatLngBounds(center);
     map.fitBounds(bounds);
+
+    // Create and add the advanced marker
+    if (window.google && window.google.maps && window.google.maps.marker) {
+      const advancedMarker = new window.google.maps.marker.AdvancedMarkerElement({
+        map,
+        position: center,
+        title: event?.name || 'Event Location'
+      });
+      markerRef.current = advancedMarker;
+    }
+  }, [event]);
+
+  const onUnmount = useCallback(function callback() {
+    if (markerRef.current) {
+      markerRef.current.map = null;
+      markerRef.current = null;
+    }
+    mapRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -187,6 +209,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
                 center={center}
                 zoom={14}
                 onLoad={onLoad}
+                onUnmount={onUnmount}
                 options={{
                   styles: [
                     { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
@@ -194,9 +217,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
                     { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
                   ],
                 }}
-              >
-                <Marker position={center} />
-              </GoogleMap>
+              />
             ) : (
               <div className="w-full h-[300px] bg-gray-800 flex items-center justify-center">
                 <p className="text-gray-400">Loading map...</p>
