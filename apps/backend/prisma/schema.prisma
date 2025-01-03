@@ -66,3 +66,16 @@ model City {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @map("updatedAt")
 }
+
+model Blog {
+  id                 String @id @default(uuid())
+  title              String
+  content            String
+  author             String
+  category           String
+  author_profile_url String
+  status             String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @map("updatedAt")
+}
