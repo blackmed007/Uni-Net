@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Input, Button, Link } from "@nextui-org/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff } from 'lucide-react';
+import AuthAPI from '../services/auth.api';
 
 const AnimatedErrorMessage = ({ message }) => {
   return (
@@ -33,6 +34,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const emailRef = useRef(null);
@@ -40,36 +42,28 @@ const Login = () => {
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!email) newErrors.email = "Email is required";
-    if (!password) newErrors.password = "Password is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      // TODO: Implement backend authentication
-      // For demonstration, we're using a dummy check
-      if (email === 'admin@example.com' && password === 'adminpassword') {
-        const userData = {
-          email: email,
-          role: 'Admin'
-        };
-        localStorage.setItem('userData', JSON.stringify(userData));
-        navigate('/admin/dashboard');
-      } else if (email === 'user@example.com' && password === 'userpassword') {
-        const userData = {
-          email: email,
-          role: 'User'
-        };
-        localStorage.setItem('userData', JSON.stringify(userData));
-        navigate('/user/dashboard');
-      } else {
-        setErrors({ form: "Invalid email or password" });
+    setErrors({});
+    
+    try {
+      setIsLoading(true);
+      
+      await AuthAPI.signin({ email, password });
+      
+      // After successful login, navigate to appropriate page
+      navigate('/user/dashboard');
+    } catch (error) {
+      try {
+        // Check if error message is JSON string containing validation errors
+        const errorData = JSON.parse(error.message);
+        setErrors(errorData);
+      } catch {
+        // If not JSON, set as form error
+        setErrors({ form: error.message });
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,6 +108,8 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyPress={(e) => handleKeyPress(e, passwordRef)}
+              isInvalid={!!errors.email}
+              errorMessage={errors.email}
               classNames={{
                 input: ["bg-transparent", "text-white", "placeholder:text-gray-400"],
                 label: "text-white",
@@ -121,19 +117,6 @@ const Login = () => {
               }}
               autoFocus
             />
-            <AnimatePresence>
-              {errors.email && (
-                <motion.p
-                  className="text-red-500 text-sm mt-1"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {errors.email}
-                </motion.p>
-              )}
-            </AnimatePresence>
           </motion.div>
           <motion.div whileTap={{ scale: 0.98 }}>
             <Input
@@ -143,6 +126,8 @@ const Login = () => {
               type={isVisible ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              isInvalid={!!errors.password}
+              errorMessage={errors.password}
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -164,22 +149,14 @@ const Login = () => {
                 </button>
               }
             />
-            <AnimatePresence>
-              {errors.password && (
-                <motion.p
-                  className="text-red-500 text-sm mt-1"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {errors.password}
-                </motion.p>
-              )}
-            </AnimatePresence>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button type="submit" className="w-full bg-purple-700 text-white hover:bg-purple-600">
+            <Button 
+              type="submit"
+              className="w-full bg-purple-700 text-white hover:bg-purple-600"
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
               Login
             </Button>
           </motion.div>

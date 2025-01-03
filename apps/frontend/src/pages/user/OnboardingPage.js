@@ -1,42 +1,116 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Select, SelectItem } from "@nextui-org/react";import { motion } from "framer-motion";
+import { Button, Select, SelectItem } from "@nextui-org/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X } from 'lucide-react';
+import AuthAPI from '../../services/auth.api';
+
+const API_URL = 'http://localhost:5000/api/v1';
+
+const AnimatedErrorMessage = ({ message }) => (
+  <motion.div
+    className="bg-red-500 text-white px-4 py-3 rounded-md mb-4"
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+  >
+    {message}
+  </motion.div>
+);
 
 const OnboardingPage = () => {
   const [formData, setFormData] = useState({
-    university: '',
-    city: '',
+    universityId: '',
+    cityId: '',
     gender: '',
     profileImage: null
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [pageLoading, setPageLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load universities and cities from localStorage
-    const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
-    const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
-    setUniversities(storedUniversities);
-    setCities(storedCities);
-  }, []);
+    const token = AuthAPI.getToken();
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const headers = {
+          'Authorization': `Bearer ${token}`
+        };
+
+        const [universitiesRes, citiesRes] = await Promise.all([
+          fetch(`${API_URL}/universities`, { headers }),
+          fetch(`${API_URL}/cities`, { headers })
+        ]);
+
+        if (!universitiesRes.ok || !citiesRes.ok) {
+          throw new Error('Failed to fetch data');
+        }
+
+        const [universitiesData, citiesData] = await Promise.all([
+          universitiesRes.json(),
+          citiesRes.json()
+        ]);
+
+        setUniversities(universitiesData);
+        setCities(citiesData);
+      } catch (err) {
+        setError('Failed to load initial data. Please refresh the page.');
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
 
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+    setError('');
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, profileImage: reader.result }));
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setError('Please upload a valid image file (JPEG, PNG, or GIF)');
+      return;
     }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB');
+      return;
+    }
+
+    try {
+      const base64 = await convertFileToBase64(file);
+      setImagePreview(base64);
+      setFormData(prev => ({ ...prev, profileImage: base64 }));
+      setError('');
+    } catch (err) {
+      setError('Failed to process image. Please try again.');
+    }
+  };
+
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
   };
 
   const removeImage = () => {
@@ -44,25 +118,42 @@ const OnboardingPage = () => {
     setImagePreview(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.university || !formData.city || !formData.gender) {
-      alert('Please fill in all required fields');
-      return;
+    setIsLoading(true);
+    
+    try {
+      await AuthAPI.onboard({
+        ...formData,
+        profile_url: formData.profileImage || '',
+        gender: formData.gender.toLowerCase()
+      });
+      navigate('/user/dashboard');
+    } catch (error) {
+      try {
+        const errorData = JSON.parse(error.message);
+        setError(Object.values(errorData)[0]); // Show first error message
+      } catch {
+        setError(error.message || 'Failed to complete onboarding');
+      }
+    } finally {
+      setIsLoading(false);
     }
-
-    // Update user data in localStorage
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    const updatedUserData = {
-      ...userData,
-      ...formData,
-      onboardingCompleted: true
-    };
-    localStorage.setItem('userData', JSON.stringify(updatedUserData));
-
-    // Navigate to dashboard
-    navigate('/user/dashboard');
   };
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-2xl"
+        >
+          Loading...
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4"
@@ -80,21 +171,27 @@ const OnboardingPage = () => {
         className="relative w-full max-w-md p-8 bg-black bg-opacity-20 backdrop-blur-sm rounded-lg shadow-lg border border-gray-800"
       >
         <h2 className="text-3xl font-bold text-center mb-8">Complete Your Profile</h2>
+        
+        <AnimatePresence>
+          {error && <AnimatedErrorMessage message={error} />}
+        </AnimatePresence>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <Select
             label="University"
             placeholder="Select your university"
-            value={formData.university}
-            onChange={(e) => handleChange('university', e.target.value)}
+            value={formData.universityId}
+            onChange={(e) => handleChange('universityId', e.target.value)}
             className="w-full"
             classNames={{
               label: "text-white",
               trigger: "bg-transparent border-white/20",
-              listbox: "bg-black/60 backdrop-blur-xl",
+              listbox: "bg-black/60 backdrop-blur-xl text-white",
+              popoverContent: "bg-black/60 backdrop-blur-xl",
             }}
           >
             {universities.map((uni) => (
-              <SelectItem key={uni.id} value={uni.name}>
+              <SelectItem key={uni.id} value={uni.id} className="text-white">
                 {uni.name}
               </SelectItem>
             ))}
@@ -103,17 +200,18 @@ const OnboardingPage = () => {
           <Select
             label="City"
             placeholder="Select your city"
-            value={formData.city}
-            onChange={(e) => handleChange('city', e.target.value)}
+            value={formData.cityId}
+            onChange={(e) => handleChange('cityId', e.target.value)}
             className="w-full"
             classNames={{
               label: "text-white",
               trigger: "bg-transparent border-white/20",
-              listbox: "bg-black/60 backdrop-blur-xl",
+              listbox: "bg-black/60 backdrop-blur-xl text-white",
+              popoverContent: "bg-black/60 backdrop-blur-xl",
             }}
           >
             {cities.map((city) => (
-              <SelectItem key={city.id} value={city.name}>
+              <SelectItem key={city.id} value={city.id} className="text-white">
                 {city.name}
               </SelectItem>
             ))}
@@ -128,11 +226,12 @@ const OnboardingPage = () => {
             classNames={{
               label: "text-white",
               trigger: "bg-transparent border-white/20",
-              listbox: "bg-black/60 backdrop-blur-xl",
+              listbox: "bg-black/60 backdrop-blur-xl text-white",
+              popoverContent: "bg-black/60 backdrop-blur-xl",
             }}
           >
-            <SelectItem key="male" value="Male">Male</SelectItem>
-            <SelectItem key="female" value="Female">Female</SelectItem>
+            <SelectItem key="male" value="male" className="text-white">Male</SelectItem>
+            <SelectItem key="female" value="female" className="text-white">Female</SelectItem>
           </Select>
 
           <div className="space-y-2">
@@ -145,7 +244,7 @@ const OnboardingPage = () => {
                 </div>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/gif"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
@@ -160,7 +259,7 @@ const OnboardingPage = () => {
                 <button
                   type="button"
                   onClick={removeImage}
-                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70"
+                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -171,8 +270,10 @@ const OnboardingPage = () => {
           <Button
             type="submit"
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+            isLoading={isLoading}
+            disabled={isLoading}
           >
-            Complete Profile
+            {isLoading ? 'Completing Profile...' : 'Complete Profile'}
           </Button>
         </form>
       </motion.div>
