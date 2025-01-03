@@ -89,12 +89,10 @@ const UserEventsPage = () => {
 
   // Message handlers
   const showMessage = useCallback((message) => {
-    // Clear any existing timeout
     if (messageState.timeoutId) {
       clearTimeout(messageState.timeoutId);
     }
 
-    // Reset the state first
     setMessageState(prev => ({
       ...prev,
       isVisible: false,
@@ -102,7 +100,6 @@ const UserEventsPage = () => {
       timeoutId: null
     }));
 
-    // Set new message after a small delay
     setTimeout(() => {
       setMessageState({
         isVisible: true,
@@ -140,17 +137,35 @@ const UserEventsPage = () => {
     
     if (!eventToJoin) return;
 
-    if (eventToJoin.status === "Cancelled") {
-      showMessage("Sorry, this event has been cancelled.");
-      return;
+    const isCurrentlyJoined = joinedEvents.includes(eventId);
+
+    // Check event status before allowing join
+    switch (eventToJoin.status) {
+      case "Cancelled":
+        showMessage("Sorry, this event has been cancelled. Keep an eye out for similar events coming up!");
+        return;
+      case "Completed":
+        showMessage("This event has already taken place. Check out our upcoming events or join our waitlist to be notified about similar events in the future.");
+        return;
+      case "Upcoming":
+        if (!isCurrentlyJoined) {
+          showMessage("Great choice! Join now to secure your spot. We'll send you a reminder as the event date approaches.");
+        }
+        break;
+      case "Ongoing":
+        if (!isCurrentlyJoined) {
+          showMessage("This event is happening now! Join quickly to participate.");
+        }
+        break;
+      default:
+        showMessage("Unable to join event at this time. Please try again later.");
+        return;
     }
 
     if (eventToJoin.participants.length >= eventToJoin.maxParticipants) {
-      showMessage("Sorry, this event is already full.");
+      showMessage("Sorry, this event is already full. Join our waitlist to be notified if a spot opens up!");
       return;
     }
-
-    const isCurrentlyJoined = joinedEvents.includes(eventId);
 
     setJoinedEvents(prev => {
       const newJoinedEvents = isCurrentlyJoined
@@ -189,10 +204,16 @@ const UserEventsPage = () => {
 
     // Show new message after a small delay
     setTimeout(() => {
-      showMessage(isCurrentlyJoined 
-        ? "You have successfully left the event." 
-        : "You have successfully joined the event! An email will be sent to you with any updates. Make sure to have your student ID with you and arrive on time."
-      );
+      if (isCurrentlyJoined) {
+        showMessage("You have successfully left the event. We hope to see you at future events!");
+      } else {
+        const isUpcoming = eventToJoin.status === "Upcoming";
+        showMessage(
+          isUpcoming
+          ? "You're all set! We'll email you the event details and reminders. Remember to bring your student ID and arrive 10 minutes early."
+          : "You've successfully joined! The event is happening now - head over to the location. Don't forget your student ID!"
+        );
+      }
     }, 50);
   }, [events, joinedEvents, user, selectedEvent, showMessage]);
 
