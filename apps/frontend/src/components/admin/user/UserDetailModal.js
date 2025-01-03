@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, ModalContent, ModalBody, Button, Avatar, Chip, Tooltip } from "@nextui-org/react";
-import { User, Mail, Calendar, MapPin, Briefcase, Users, Activity, Edit2, Ban, UserCheck, Trash2, AlertTriangle } from "lucide-react";
+import { User, Mail, Calendar, MapPin, Briefcase, Activity, Edit2, Ban, UserCheck, Trash2, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const UserDetailModal = ({ isOpen, onClose, user, onEditUser, onDeleteUser, onBanUser, onActivateUser }) => {
@@ -11,7 +11,7 @@ const UserDetailModal = ({ isOpen, onClose, user, onEditUser, onDeleteUser, onBa
   const tabs = [
     { key: "info", label: "Overview", icon: User },
     { key: "activity", label: "Activity", icon: Activity },
-    { key: "groups", label: "Groups", icon: Users },
+    { key: "events", label: "Joined Events", icon: Calendar }
   ];
 
   const getStatusColor = (status) => {
@@ -32,7 +32,7 @@ const UserDetailModal = ({ isOpen, onClose, user, onEditUser, onDeleteUser, onBa
             <InfoItem icon={Mail} label="Email" value={user.email} />
             <InfoItem icon={Briefcase} label="Role" value={user.role} />
             <InfoItem icon={Calendar} label="Joined" value={new Date(user.registrationDate).toLocaleDateString()} />
-            <InfoItem icon={Users} label="Gender" value={user.gender} />
+            <InfoItem icon={User} label="Gender" value={user.gender} />
             <InfoItem icon={MapPin} label="University" value={user.university} />
             <InfoItem icon={MapPin} label="City" value={user.city} />
           </div>
@@ -40,16 +40,34 @@ const UserDetailModal = ({ isOpen, onClose, user, onEditUser, onDeleteUser, onBa
       case "activity":
         return (
           <div className="space-y-4">
+            <div className="text-sm text-gray-400 mb-4">The 3 most recent activities</div>
             <ActivityItem action="Logged in" timestamp="2023-09-05 14:30" />
             <ActivityItem action="Updated profile picture" timestamp="2023-09-04 10:15" />
-            <ActivityItem action="Joined study group 'Advanced Mathematics'" timestamp="2023-09-03 16:45" />
+            <ActivityItem action="Joined event 'Advanced Mathematics Workshop'" timestamp="2023-09-03 16:45" />
           </div>
         );
-      case "groups":
+      case "events":
         return (
           <div className="space-y-4">
-            <GroupItem name="Advanced Mathematics" members={15} role="Member" />
-            <GroupItem name="Python Programming" members={20} role="Admin" />
+            <div className="text-sm text-gray-400 mb-4">Last 3 joined events</div>
+            <EventItem 
+              name="Advanced Mathematics Workshop" 
+              date="Sep 15, 2023"
+              location="Main Campus"
+              status="Upcoming"
+            />
+            <EventItem 
+              name="Programming Bootcamp" 
+              date="Sep 10, 2023"
+              location="Tech Hub"
+              status="Completed"
+            />
+            <EventItem 
+              name="Data Science Seminar" 
+              date="Sep 5, 2023"
+              location="Virtual"
+              status="Completed"
+            />
           </div>
         );
       default:
@@ -159,13 +177,23 @@ const ActivityItem = ({ action, timestamp }) => (
   </div>
 );
 
-const GroupItem = ({ name, members, role }) => (
+const EventItem = ({ name, date, location, status }) => (
   <div className="flex justify-between items-center py-3 px-4 bg-gray-800 rounded-lg">
     <div>
       <span className="text-sm font-medium text-white">{name}</span>
-      <p className="text-xs text-gray-400">{members} members</p>
+      <div className="flex items-center mt-1">
+        <Calendar size={12} className="text-gray-400 mr-2" />
+        <span className="text-xs text-gray-400">{date}</span>
+        <MapPin size={12} className="text-gray-400 ml-4 mr-2" />
+        <span className="text-xs text-gray-400">{location}</span>
+      </div>
     </div>
-    <Chip size="sm" color="secondary">{role}</Chip>
+    <Chip 
+      size="sm" 
+      color={status === 'Upcoming' ? 'warning' : 'success'}
+    >
+      {status}
+    </Chip>
   </div>
 );
 

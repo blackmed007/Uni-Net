@@ -3,3 +3,4 @@ dist
 build
 .env
 pnpm-lock.yaml
+apps/frontend/project_structure.text

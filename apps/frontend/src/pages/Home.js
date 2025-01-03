@@ -9,72 +9,62 @@ import Universities from '../components/home/Universities';
 import Footer from '../components/home/Footer';
 import ScrollArrow from '../components/home/ScrollArrow';
 
-// Animation variants for section transitions
-const sectionVariants = {
-  hidden: { opacity: 50, y: 50 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { duration: 0.4, ease: "easeOut" }
+const MOTION_VARIANTS = {
+  section: {
+    hidden: { opacity: 0.5, y: 50 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" }
+    }
   }
 };
+
+const Section = ({ id, children, className = '' }) => (
+  <motion.section
+    id={id}
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, amount: 0.3 }}
+    variants={MOTION_VARIANTS.section}
+    className={`my-24 ${className}`}
+  >
+    {children}
+  </motion.section>
+);
 
 const Home = () => {
   const { scrollYProgress } = useScroll();
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
 
-  // Function to scroll to the features section
-  const scrollToFeatures = () => {
+  const handleFeaturesScroll = () => {
     const featuresSection = document.getElementById('features');
-    if (featuresSection) {
-      featuresSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    featuresSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
+      
       <main>
         <div className="relative">
           <Hero />
           <div className="absolute bottom-8 left-0 right-0">
-            <ScrollArrow onClick={scrollToFeatures} />
+            <ScrollArrow onClick={handleFeaturesScroll} />
           </div>
         </div>
 
-        <motion.section
-          id="features"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={sectionVariants}
-          className="my-24"
-          aria-label="Features Overview"
-        >
+        <Section id="features" aria-label="Features Overview">
           <FeaturesOverview />
-        </motion.section>
+        </Section>
 
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={sectionVariants}
-          className="my-24"
-          aria-label="Our Story"
-        >
+        <Section aria-label="Our Story">
           <OurStory />
-        </motion.section>
+        </Section>
 
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={sectionVariants}
-          className="my-24"
-          aria-label="Testimonials"
-        >
+        <Section aria-label="Testimonials">
           <Testimonials />
-        </motion.section>
+        </Section>
 
         <motion.section
           style={{ scale }}
@@ -84,6 +74,7 @@ const Home = () => {
           <Universities />
         </motion.section>
       </main>
+
       <Footer />
     </div>
   );

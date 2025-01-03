@@ -141,7 +141,6 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
             >
               <SelectItem key="Male" value="Male">Male</SelectItem>
               <SelectItem key="Female" value="Female">Female</SelectItem>
-              <SelectItem key="Other" value="Other">Other</SelectItem>
             </Select>
             <Select
               label="Status"

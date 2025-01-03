@@ -12,23 +12,17 @@ import UserEventsPage from './pages/user/UserEventsPage';
 import UserStudyGroupsPage from './pages/user/UserStudyGroupsPage';
 import UserBlogPage from './pages/user/UserBlogPage';
 import UserSettingsPage from './pages/user/UserSettingsPage';
+import OnboardingPage from './pages/user/OnboardingPage';
+import Error from './pages/Error';
+import UnderMaintenance from './pages/UnderMaintenance';
 import UserSidebar from './components/user/UserSidebar';
 import UserNavbar from './components/user/UserNavbar';
 import useDarkMode from './hooks/useDarkMode';
 import { initializeMockData } from './utils/mockDataGenerator';
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const userDataString = localStorage.getItem('userData');
-  const user = userDataString ? JSON.parse(userDataString) : null;
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (requireAdmin && user.role !== 'Admin') {
-    return <Navigate to="/user/dashboard" replace />;
-  }
-
+// TODO: Re-implement route protection and onboarding flow
+// This is temporarily disabled for development purposes
+const ProtectedRoute = ({ children }) => {
   return children;
 };
 
@@ -52,11 +46,19 @@ const UserLayout = ({ children }) => {
 
 function App() {
   const [isDarkMode] = useDarkMode();
+  
   useEffect(() => {
     if (!localStorage.getItem('users')) {
       initializeMockData();
     }
   }, []);
+
+  // For maintenance mode - you can make this dynamic based on your needs
+  const isMaintenanceMode = false;
+
+  if (isMaintenanceMode) {
+    return <UnderMaintenance />;
+  }
 
   return (
     <NextUIProvider>
@@ -70,32 +72,36 @@ function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogPost />} />
 
-            {/* Admin routes */}
-            <Route path="/admin/*" element={
-              <ProtectedRoute requireAdmin={true}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
+            {/* Error and Maintenance routes */}
+            <Route path="/maintenance" element={<UnderMaintenance />} />
+            <Route path="/error" element={<Error status={500} />} />
+            <Route path="/403" element={<Error status={403} />} />
+            <Route path="/404" element={<Error status={404} />} />
+
+            {/* TODO: Re-implement onboarding protection */}
+            <Route path="/onboarding" element={<OnboardingPage />} />
+
+            {/* TODO: Re-implement admin route protection */}
+            <Route path="/admin/*" element={<AdminDashboard />} />
 
             {/* User routes */}
             <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/user/*" element={
-              <ProtectedRoute>
-                <UserLayout>
-                  <Routes>
-                    <Route path="dashboard" element={<UserDashboardPage />} />
-                    <Route path="events" element={<UserEventsPage />} />
-                    <Route path="study-groups" element={<UserStudyGroupsPage />} />
-                    <Route path="blog" element={<UserBlogPage />} />
-                    <Route path="settings" element={<UserSettingsPage />} />
-                    <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
-                  </Routes>
-                </UserLayout>
-              </ProtectedRoute>
+              <UserLayout>
+                <Routes>
+                  <Route path="dashboard" element={<UserDashboardPage />} />
+                  <Route path="events" element={<UserEventsPage />} />
+                  <Route path="study-groups" element={<UserStudyGroupsPage />} />
+                  <Route path="blog" element={<UserBlogPage />} />
+                  <Route path="settings" element={<UserSettingsPage />} />
+                  {/* Catch undefined user routes */}
+                  <Route path="*" element={<Error status={404} />} />
+                </Routes>
+              </UserLayout>
             } />
 
             {/* Catch-all route for undefined paths */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Error status={404} />} />
           </Routes>
         </div>
       </Router>

@@ -34,6 +34,8 @@ const BlogPostListTable = ({ blogPosts, searchTerm, filters, onPostAction, forma
             <p className="text-bold text-tiny capitalize text-default-400">{post.excerpt.substring(0, 50)}...</p>
           </div>
         );
+      case 'author':
+        return <span className="text-bold text-small">{cellValue}</span>;
       case 'category':
         return <Chip color="primary" size="sm" variant="flat">{cellValue}</Chip>;
       case 'date':

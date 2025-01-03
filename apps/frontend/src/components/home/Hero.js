@@ -2,26 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@nextui-org/react";
 import { motion, AnimatePresence } from 'framer-motion';
 
-const headlines = [
+// Headlines that rotate in the hero section
+const HEADLINES = [
   "Making Your University Life Experience Better",
   "Connecting Students Across Campuses Worldwide",
   "Empowering Global Education Communities",
   "Bridging Cultures in Higher Education"
 ];
 
+const HEADLINE_ROTATION_INTERVAL = 5000;
+
 const Hero = () => {
+    // Controls the automatic rotation of headlines
   const [currentHeadline, setCurrentHeadline] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentHeadline((prev) => (prev + 1) % headlines.length);
-    }, 5000);
-
+    const interval = setInterval(handleHeadlineRotation, HEADLINE_ROTATION_INTERVAL);
     return () => clearInterval(interval);
   }, []);
+  // Cycles through headlines with smooth transitions
+  const handleHeadlineRotation = () => {
+    setCurrentHeadline((prev) => (prev + 1) % HEADLINES.length);
+  };
 
   const handleGetStarted = () => {
-    console.log("Get Started button clicked");
     window.location.href = "/signup";
   };
 
@@ -55,7 +59,7 @@ const Hero = () => {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="text-4xl md:text-6xl font-bold mb-6 text-white"
             >
-              {headlines[currentHeadline]}
+              {HEADLINES[currentHeadline]}
             </motion.h1>
           </AnimatePresence>
           <motion.p

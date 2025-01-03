@@ -2,59 +2,20 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip, Progress } from "@nextui-org/react";
 import { MapPin, Calendar, Clock, Share2, Users, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyCPB21vXzkWAB0B4qsLow1op3YO2cZHWHo'; // Replace with your actual Google Maps API key
-
-const EventJoinMessage = ({ message, isVisible, onClose }) => {
-  return (
-    <AnimatePresence>
-      {isVisible && (
-        <Modal
-          isOpen={isVisible}
-          onClose={onClose}
-          motionProps={{
-            variants: {
-              enter: {
-                y: 0,
-                opacity: 1,
-                transition: {
-                  duration: 0.3,
-                  ease: "easeOut",
-                },
-              },
-              exit: {
-                y: -20,
-                opacity: 0,
-                transition: {
-                  duration: 0.2,
-                  ease: "easeIn",
-                },
-              },
-            }
-          }}
-        >
-          <ModalContent className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6 rounded-lg">
-            <p className="text-center text-lg">{message}</p>
-            <Button color="white" variant="light" onPress={onClose} className="mt-4">
-              Close
-            </Button>
-          </ModalContent>
-        </Modal>
-      )}
-    </AnimatePresence>
-  );
-};
+const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 
 const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }) => {
   const [showScrollArrow, setShowScrollArrow] = useState(true);
-  const [joinMessage, setJoinMessage] = useState("");
-  const [showJoinMessage, setShowJoinMessage] = useState(false);
   const bodyRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: ['marker']
   });
 
   const mapContainerStyle = {
@@ -68,8 +29,27 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
   };
 
   const onLoad = useCallback(function callback(map) {
+    mapRef.current = map;
     const bounds = new window.google.maps.LatLngBounds(center);
     map.fitBounds(bounds);
+
+    // Create and add the advanced marker
+    if (window.google && window.google.maps && window.google.maps.marker) {
+      const advancedMarker = new window.google.maps.marker.AdvancedMarkerElement({
+        map,
+        position: center,
+        title: event?.name || 'Event Location'
+      });
+      markerRef.current = advancedMarker;
+    }
+  }, [event]);
+
+  const onUnmount = useCallback(function callback() {
+    if (markerRef.current) {
+      markerRef.current.map = null;
+      markerRef.current = null;
+    }
+    mapRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -99,20 +79,6 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const handleJoin = () => {
-    if (event.participants.length >= event.maxParticipants) {
-      setJoinMessage("Sorry, this event is already full.");
-    } else if (event.status === "Cancelled") {
-      setJoinMessage("Sorry, this event has been cancelled.");
-    } else {
-      setJoinMessage(isJoined 
-        ? "You have successfully left the event." 
-        : "Congratulations! An email will be sent to you with any updates. Make sure to have your student ID with you and arrive on time.");
-      onJoin(event.id);
-    }
-    setShowJoinMessage(true);
-  };
-
   return (
     <Modal 
       isOpen={isOpen} 
@@ -121,11 +87,6 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
       scrollBehavior="inside"
     >
       <ModalContent className="bg-gray-900 bg-opacity-50 backdrop-blur-md border border-gray-800">
-        <EventJoinMessage
-          message={joinMessage}
-          isVisible={showJoinMessage}
-          onClose={() => setShowJoinMessage(false)}
-        />
         <ModalHeader className="flex flex-col gap-1">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -225,7 +186,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
               <div className="grid grid-cols-2 gap-4">
                 {event.speakers.map((speaker, index) => (
                   <div key={index} className="flex items-center space-x-2">
-                    <img src={speaker.image || 'https://via.placeholder.com/40'} alt={speaker.name} className="w-10 h-10 rounded-full" />
+                    <img src={speaker.image || '/api/placeholder/40/40'} alt={speaker.name} className="w-10 h-10 rounded-full" />
                     <div>
                       <p className="font-medium text-white">{speaker.name}</p>
                       <p className="text-sm text-gray-400">{speaker.role}</p>
@@ -248,6 +209,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
                 center={center}
                 zoom={14}
                 onLoad={onLoad}
+                onUnmount={onUnmount}
                 options={{
                   styles: [
                     { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
@@ -255,9 +217,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
                     { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
                   ],
                 }}
-              >
-                <Marker position={center} />
-              </GoogleMap>
+              />
             ) : (
               <div className="w-full h-[300px] bg-gray-800 flex items-center justify-center">
                 <p className="text-gray-400">Loading map...</p>
@@ -271,7 +231,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
           </Button>
           <Button 
             color="primary"
-            onPress={handleJoin}
+            onPress={() => onJoin(event.id)}
             className="bg-gradient-to-r from-purple-500 to-blue-500 text-white"
           >
             {isJoined ? "Leave Event" : "Join Event"}

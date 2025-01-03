@@ -5,10 +5,6 @@ import { Bell, Mail } from "lucide-react";
 const NotificationSettingsForm = ({ initialSettings, onSave }) => {
   const [settings, setSettings] = useState(initialSettings);
 
-  const handleChange = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(settings);
@@ -21,8 +17,8 @@ const NotificationSettingsForm = ({ initialSettings, onSave }) => {
         <div className="flex items-center justify-between">
           <span className="text-sm">Enable Email Notifications</span>
           <Switch
-            checked={settings.enableEmailNotifications}
-            onChange={(e) => handleChange('enableEmailNotifications', e.target.checked)}
+            isSelected={true}
+            isDisabled={true}
             size="sm"
             color="primary"
             startContent={<Mail className="text-default-400" size={16} />}
@@ -31,8 +27,8 @@ const NotificationSettingsForm = ({ initialSettings, onSave }) => {
         <div className="flex items-center justify-between">
           <span className="text-sm">Enable Push Notifications</span>
           <Switch
-            checked={settings.enablePushNotifications}
-            onChange={(e) => handleChange('enablePushNotifications', e.target.checked)}
+            isSelected={true}
+            isDisabled={true}
             size="sm"
             color="primary"
             startContent={<Bell className="text-default-400" size={16} />}
@@ -40,13 +36,21 @@ const NotificationSettingsForm = ({ initialSettings, onSave }) => {
         </div>
         <Select
           label="Default Notification Frequency"
-          selectedKeys={[settings.defaultNotificationFrequency]}
-          onChange={(e) => handleChange('defaultNotificationFrequency', e.target.value)}
+          selectedKeys={["immediate"]}
+          isDisabled={true}
         >
           <SelectItem key="immediate" value="immediate">Immediate</SelectItem>
           <SelectItem key="daily" value="daily">Daily Digest</SelectItem>
           <SelectItem key="weekly" value="weekly">Weekly Digest</SelectItem>
         </Select>
+        <div className="mt-2 p-2 bg-gray-800 rounded-lg">
+          <p className="text-sm text-yellow-400">Limited feature, coming soon. Notification settings are currently fixed:</p>
+          <ul className="text-sm text-gray-300 mt-1 ml-4 list-disc">
+            <li>Email notifications enabled</li>
+            <li>Push notifications enabled</li>
+            <li>Notification frequency set to immediate</li>
+          </ul>
+        </div>
         <Button 
           type="submit" 
           color="primary"
