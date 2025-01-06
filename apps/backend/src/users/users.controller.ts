@@ -11,6 +11,7 @@ import {
   NotFoundException,
   UseInterceptors,
   UploadedFile,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,14 +19,19 @@ import { OnboardUserDto } from './dto/onboard-user.dto';
 import { JwtGuard } from 'src/auth/guard';
 import { Request as ExpressRequest } from 'express';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { JoinEventDto } from './dto/join-event.dto';
+import { ImagesService } from 'src/images/images.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly imagessService: ImagesService,
+  ) {}
 
   @Post('onboard')
   @UseGuards(JwtGuard)
-  @UseInterceptors(FileInterceptor('profile_url')) // 'profile_url' is the name of the file input
+  @UseInterceptors(FileInterceptor('profile_url'))
   async onboard(
     @Request() req: ExpressRequest,
     @UploadedFile() file: Express.Multer.File,
@@ -37,8 +43,8 @@ export class UsersController {
       throw new NotFoundException('User not found');
     }
     if (file) {
-      const profileUrl = await this.usersService.uploadImage(file, userId);
-      onboardUserDto.profile_url = profileUrl; // Set the profile_url to the URL returned from uploadImage
+      const profileUrl = await this.imagessService.uploadImage(file, userId);
+      onboardUserDto.profile_url = profileUrl;
     }
 
     return this.usersService.onboard(userId, onboardUserDto);
@@ -51,6 +57,28 @@ export class UsersController {
     return this.usersService.getCurrentUser(userId);
   }
 
+  @Post('join-event')
+  @UseGuards(JwtGuard)
+  async joinEvent(
+    @Request() req: ExpressRequest,
+    @Body() joinEventDto: JoinEventDto,
+  ) {
+    const userId = (req.user as { id: string }).id;
+    const role = (req.user as { role: string }).role;
+
+    if (role === 'admin' && req.body.userId) {
+      return this.usersService.joinEvent(req.body.userId, joinEventDto);
+    }
+
+    if (role === 'user') {
+      return this.usersService.joinEvent(userId, joinEventDto);
+    }
+
+    throw new ForbiddenException(
+      'You do not have permission to join this event',
+    );
+  }
+
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -58,7 +86,7 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+    return this.usersService.findOne(id);
   }
 
   @Patch(':id')
