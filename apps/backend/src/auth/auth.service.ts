@@ -35,7 +35,7 @@ export class AuthService {
           role: 'user',
         },
       });
-      return this.signToken(user.id, user.email);
+      return this.signToken(user.id, user.email, user.role);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -72,7 +72,7 @@ export class AuthService {
       if (!pwdMatches) {
         throw new ForbiddenException('Incorrect Credentials!');
       }
-      return this.signToken(user.id, user.email);
+      return this.signToken(user.id, user.email, user.role);
     } catch (error) {
       if (error instanceof PrismaClientInitializationError) {
         throw new InternalServerErrorException(
@@ -86,10 +86,12 @@ export class AuthService {
   async signToken(
     userId: string,
     email: string,
+    role: string,
   ): Promise<{ access_token: string }> {
     const payload = {
       sub: userId,
       email,
+      role,
     };
 
     // Get JWT_SECRET from environment variable configs
@@ -97,7 +99,7 @@ export class AuthService {
 
     // Signing a token
     const token = this.jwt.sign(payload, {
-      expiresIn: '15m',
+      expiresIn: '45m',
       secret,
     });
 
