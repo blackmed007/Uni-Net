@@ -6,7 +6,8 @@ import {
 } from '@nestjs/common';
 import { OnboardUserDto } from './dto/onboard-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-// import { UpdateUserDto } from './dto/update-user.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class UsersService {
@@ -17,7 +18,8 @@ export class UsersService {
   });
 
   async onboard(userId: string, onboardUserDto: OnboardUserDto) {
-    // Fetch the user by ID
+    this.logger.log(onboardUserDto);
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -50,6 +52,30 @@ export class UsersService {
         updatedAt: true,
       },
     });
+  }
+
+  async uploadImage(
+    file: Express.Multer.File,
+    userId: string,
+  ): Promise<string> {
+    const uploadPath = path.join(__dirname, '..', '..', 'uploads'); // Ensure this directory exists
+
+    // Ensure the uploads directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath);
+    }
+
+    const imageName = `${Date.now()}-${userId}-${file.originalname}`;
+    const filePath = path.join(uploadPath, imageName);
+
+    console.log('loging the path');
+    console.log(filePath);
+
+    // Write the file to the filesystem
+    fs.writeFileSync(filePath, file.buffer);
+
+    // Return the URL to access the image
+    return `http://localhost/api/v1/uploads/${imageName}`; // Adjust the URL as needed
   }
 
   async findAll() {
