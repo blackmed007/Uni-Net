@@ -34,9 +34,11 @@ model Event {
   datetime         DateTime
   location         String
   event_type       String
+  event_status     String
   organizer        String
   max_participants Int
-  speaker          String
+  agenda           Json
+  speaker          Json
   event_thumbnail  String
 
   participants UsersOnEvents[]
