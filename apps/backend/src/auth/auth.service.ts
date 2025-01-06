@@ -32,6 +32,7 @@ export class AuthService {
           last_name: authDto.last_name,
           email: authDto.email,
           password: hashedPassword,
+          role: 'user',
         },
       });
       return this.signToken(user.id, user.email);

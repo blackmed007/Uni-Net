@@ -17,11 +17,11 @@ import ActivityOverview from '../../components/admin/dashboard/ActivityOverview'
 import EngagementTrend from '../../components/admin/dashboard/EngagementTrend';
 import UserDistribution from '../../components/admin/dashboard/UserDistribution';
 import RecentActivity from '../../components/admin/dashboard/RecentActivity';
-import { summaryData } from '../../components/admin/dashboard/DummyData_Dash'; // TODO: Remove this import when connecting to backend
+import { summaryData } from '../../components/admin/dashboard/DummyData_Dash';
 
 const DashboardOverview = () => {
   const [dashboardData, setDashboardData] = useState({
-    summaryData: summaryData, // TODO: Initialize with [] when connecting to backend
+    summaryData: summaryData,
     activityData: [],
     engagementData: [],
     userDistributionData: [],
@@ -85,9 +85,10 @@ const DashboardOverview = () => {
         <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">Dashboard Overview</h1>
         <Button
           auto
-          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full px-3 py-1 text-xs hover:opacity-80 transition duration-300"
+          disabled
+          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full px-3 py-1 text-xs opacity-50 cursor-not-allowed"
         >
-          Last 7 days
+          Last 7 months
         </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

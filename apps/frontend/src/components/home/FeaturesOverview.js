@@ -2,43 +2,79 @@ import React from 'react';
 import { Card, CardBody, Image } from "@nextui-org/react";
 import { motion } from 'framer-motion';
 
-const features = [
-  { title: "Events", icon: "assets/home/Features-Events.avif", description: "Discover and join exciting campus events" },
-  { title: "Study Groups", icon: "assets/home/Features-Study Groups .avif", description: "Connect with peers for collaborative learning" },
-  { title: "Blog", icon: "assets/home/Features-Blog .avif", description: "Share your experiences and read others'" },
-  { title: "Exchange Language", icon: "assets/home/Features-Language Exchange .avif", description: "Practice languages with native speakers" },
+const FEATURES = [
+  { 
+    id: 'events',
+    title: "Events", 
+    icon: "assets/home/Features-Events.avif", 
+    description: "Discover and join exciting campus events",
+    comingSoon: false
+  },
+  { 
+    id: 'study-groups',
+    title: "Study Groups", 
+    icon: "assets/home/Features-Study Groups .avif", 
+    description: "Connect with peers for collaborative learning",
+    comingSoon: true
+  },
+  { 
+    id: 'blog',
+    title: "Blog", 
+    icon: "assets/home/Features-Blog .avif", 
+    description: "Share your experiences and read others'",
+    comingSoon: false
+  },
+  { 
+    id: 'language',
+    title: "Language Exchange", 
+    icon: "assets/home/Features-Language Exchange .avif", 
+    description: "Practice languages with native speakers",
+    comingSoon: true
+  },
 ];
 
-// FeatureCard component with animation
-const FeatureCard = ({ feature, index }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 50 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.2, duration: 0.5 }}
-    className="flex flex-col h-full"
-  >
-    <Card className="bg-black-900 h-full">
-      <CardBody className="flex flex-col items-center p-6 h-full">
-        <motion.div 
-          animate={{ y: [0, -8, 0] }} 
-          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-          className="mb-20"
-          style={{ width: '164px', height: '64px' }}
-        >
-          <Image
-            src={feature.icon}
-            alt={feature.title}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-          />
-        </motion.div>
-        <div className="flex-grow flex flex-col justify-between">
-          <h3 className="text-xl font-semibold mb-4 text-white text-center">{feature.title}</h3>
-          <p className="text-center text-white text-sm">{feature.description}</p>
-        </div>
-      </CardBody>
-    </Card>
-  </motion.div>
-);
+const FeatureCard = ({ feature, index }) => {
+  const { title, icon, description, comingSoon } = feature;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.2, duration: 0.5 }}
+      className="flex flex-col h-full"
+    >
+      <Card className="bg-black-900 h-full">
+        <CardBody className="flex flex-col items-center p-6 h-full">
+          <motion.div 
+            animate={{ y: [0, -8, 0] }} 
+            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+            className="mb-20"
+            style={{ width: '164px', height: '64px' }}
+          >
+            <Image
+              src={icon}
+              alt={title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+            />
+          </motion.div>
+          <div className="flex-grow flex flex-col justify-between">
+            <div className="flex flex-col items-center gap-2 mb-4">
+              <h3 className="text-xl font-semibold text-white text-center">
+                {title}
+              </h3>
+              {comingSoon && (
+                <span className="text-gray-400 text-xs bg-gray-800/50 px-2 py-0.5 rounded-full">
+                  Coming Soon
+                </span>
+              )}
+            </div>
+            <p className="text-center text-white text-sm">{description}</p>
+          </div>
+        </CardBody>
+      </Card>
+    </motion.div>
+  );
+};
 
 const FeaturesOverview = () => {
   return (
@@ -52,9 +88,13 @@ const FeaturesOverview = () => {
         >
           Features
         </motion.h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" role="list" aria-label="Feature list">
-          {features.map((feature, index) => (
-            <div key={feature.title} role="listitem">
+        <div 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" 
+          role="list" 
+          aria-label="Feature list"
+        >
+          {FEATURES.map((feature, index) => (
+            <div key={feature.id} role="listitem">
               <FeatureCard feature={feature} index={index} />
             </div>
           ))}

@@ -37,21 +37,23 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="bg-gray-800 border border-gray-700 mb-4">
+            {post.image && (
+              <img src={post.image} alt={post.title} className="w-full h-48 object-cover rounded-lg mb-4" />
+            )}
+            <Card className="bg-gray-800 border border-gray-700 mb-6">
               <CardBody>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <User className="text-purple-400" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-400">Author</p>
-                      <p className="font-medium text-white">{post.author}</p>
+                  <div className="flex items-center space-x-4 col-span-2">
+                    <div className="relative w-16 h-16 flex-shrink-0">
+                      <img
+                        src={post.authorImage || 'https://via.placeholder.com/64'}
+                        alt={post.author}
+                        className="w-full h-full rounded-full object-cover"
+                      />
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="text-blue-400" size={20} />
                     <div>
-                      <p className="text-sm text-gray-400">Date</p>
-                      <p className="font-medium text-white">{formatDate(post.date)}</p>
+                      <p className="font-medium text-white">{post.author}</p>
+                      <p className="text-sm text-gray-400">{formatDate(post.date)}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">

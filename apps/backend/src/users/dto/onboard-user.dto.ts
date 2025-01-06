@@ -1,13 +1,7 @@
-import { IsIn, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class OnboardUserDto {
-  @IsString()
-  first_name: string;
-
-  @IsString()
-  last_name: string;
-
-  @IsString()
+  @IsOptional()
   profile_url: string;
 
   @IsIn(['male', 'female'])

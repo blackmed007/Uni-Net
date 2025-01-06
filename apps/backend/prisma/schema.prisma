@@ -18,6 +18,7 @@ model User {
   gender       String?
   cityId       String?
   universityId String?
+  role         String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt @map("updatedAt")
 

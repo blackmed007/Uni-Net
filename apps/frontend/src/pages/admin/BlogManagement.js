@@ -21,6 +21,7 @@ const BlogManagement = () => {
   });
   const [selectedPost, setSelectedPost] = useState(null);
   const [actionType, setActionType] = useState('');
+
   const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
   const { isOpen: isPostDetailOpen, onOpen: onPostDetailOpen, onClose: onPostDetailClose } = useDisclosure();
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
@@ -36,8 +37,17 @@ const BlogManagement = () => {
   }, []);
 
   const saveBlogPosts = (updatedPosts) => {
-    setBlogPosts(updatedPosts);
-    localStorage.setItem('blogPosts', JSON.stringify(updatedPosts));
+    // Ensure all posts have the necessary fields
+    const validatedPosts = updatedPosts.map(post => ({
+      ...post,
+      authorImage: post.authorImage || '', // Ensure authorImage exists
+      image: post.image || null,
+      views: post.views || 0,
+      date: post.date || new Date().toISOString()
+    }));
+
+    setBlogPosts(validatedPosts);
+    localStorage.setItem('blogPosts', JSON.stringify(validatedPosts));
   };
 
   const handleSearch = (e) => {
@@ -77,7 +87,13 @@ const BlogManagement = () => {
 
   const handleEditPost = (updatedPost) => {
     const updatedPosts = blogPosts.map(post => 
-      post.id === updatedPost.id ? updatedPost : post
+      post.id === updatedPost.id ? {
+        ...updatedPost,
+        authorImage: updatedPost.authorImage || post.authorImage || '', // Preserve or set authorImage
+        image: updatedPost.image || post.image || null,
+        date: post.date, // Preserve original date
+        views: post.views || 0 // Preserve view count
+      } : post
     );
     saveBlogPosts(updatedPosts);
     onEditClose();
@@ -89,6 +105,8 @@ const BlogManagement = () => {
     const postWithId = { 
       ...newPost, 
       id: newId,
+      authorImage: newPost.authorImage || '', // Ensure authorImage is set
+      image: newPost.image || null,
       views: 0,
       date: new Date().toISOString()
     };

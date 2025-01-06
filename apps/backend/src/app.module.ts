@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { CitiesModule } from './cities/cities.module';
 import { UniversitiesModule } from './universities/universities.module';
 import { BlogsModule } from './blogs/blogs.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { BlogsModule } from './blogs/blogs.module';
     EventModule,
     UsersModule,
     CitiesModule,
+    UploadsModule,
     UniversitiesModule,
     BlogsModule,
   ],

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
-import { Calendar, Clock, MapPin, Users, User, Image, Upload } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, User, Image, Upload, Link } from "lucide-react";
 import { motion } from "framer-motion";
 
 const EditEventModal = ({ isOpen, onClose, event, onSave }) => {
@@ -135,6 +135,13 @@ const EditEventModal = ({ isOpen, onClose, event, onSave }) => {
               startContent={<MapPin className="text-default-400" size={16} />}
               isRequired
             />
+            <Input
+              label="Location URL for Maps"
+              value={editedEvent.locationUrl || ''}
+              onChange={(e) => handleChange('locationUrl', e.target.value)}
+              startContent={<Link className="text-default-400" size={16} />}
+              placeholder="Enter maps URL"
+            />
             <Select
               label="Event Type"
               selectedKeys={editedEvent.type ? [editedEvent.type] : []}
@@ -237,7 +244,7 @@ const EditEventModal = ({ isOpen, onClose, event, onSave }) => {
                   <p className="text-xs mb-1">Image URL</p>
                   <Input
                     placeholder="Enter image URL"
-                    value={editedEvent.image}
+                    value={editedEvent.image || ''}
                     onChange={(e) => handleChange('image', e.target.value)}
                     startContent={<Image className="text-gray-400" size={16} />}
                     className="h-[38px]"

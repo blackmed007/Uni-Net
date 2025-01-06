@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
-import { Calendar, Clock, MapPin, Users, User, Image, Upload } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, User, Image, Upload, Link } from "lucide-react";
 import { motion } from "framer-motion";
 
 const CreateEventModal = ({ isOpen, onClose, onSave }) => {
@@ -9,6 +9,7 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
     date: '',
     time: '',
     location: '',
+    locationUrl: '',
     type: '',
     status: 'Upcoming',
     organizer: '',
@@ -16,7 +17,7 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
     description: '',
     agenda: [],
     speakers: [],
-    image: '',
+    image: ''
   });
   const [uploadedImage, setUploadedImage] = useState(null);
 
@@ -58,6 +59,7 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
       date: '',
       time: '',
       location: '',
+      locationUrl: '',
       type: '',
       status: 'Upcoming',
       organizer: '',
@@ -163,6 +165,13 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
               onChange={(e) => handleChange('location', e.target.value)}
               startContent={<MapPin className="text-default-400" size={16} />}
               isRequired
+            />
+            <Input
+              label="Location URL for Maps"
+              value={newEvent.locationUrl}
+              onChange={(e) => handleChange('locationUrl', e.target.value)}
+              startContent={<Link className="text-default-400" size={16} />}
+              placeholder="Enter maps URL"
             />
             <Select
               label="Event Type"

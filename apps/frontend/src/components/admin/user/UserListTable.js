@@ -4,31 +4,33 @@ import { Eye, Edit2, UserX, UserCheck, Trash2 } from "lucide-react";
 
 const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
   const columns = [
-    { name: '#ID', uid: 'id' },
-    { name: 'NAME', uid: 'name' },
-    { name: 'ROLE', uid: 'role' },
-    { name: 'STATUS', uid: 'status' },
-    { name: 'REGISTRATION DATE', uid: 'registrationDate' },
-    { name: 'GENDER', uid: 'gender' },
-    { name: 'UNIVERSITY', uid: 'university' },
-    { name: 'CITY', uid: 'city' },
+    { name: '#ID', uid: 'id', sortable: true },
+    { name: 'NAME', uid: 'name', sortable: true },
+    { name: 'ROLE', uid: 'role', sortable: true },
+    { name: 'STATUS', uid: 'status', sortable: true },
+    { name: 'REGISTRATION DATE', uid: 'registrationDate', sortable: true },
+    { name: 'GENDER', uid: 'gender', sortable: true },
+    { name: 'UNIVERSITY', uid: 'university', sortable: true },
+    { name: 'CITY', uid: 'city', sortable: true },
     { name: 'ACTIONS', uid: 'actions' },
   ];
 
   const renderCell = (user, columnKey) => {
     const cellValue = user[columnKey];
+
     switch (columnKey) {
       case 'id':
-        return <span className="text-xs font-medium text-gray-400">#{cellValue}</span>;
+        return <span className="text-xs font-medium text-gray-400">#{user.id}</span>;
       case 'name':
         return (
           <User
-            avatarProps={{ radius: 'lg', src: user.profilePicture || `https://i.pravatar.cc/150?u=${user.id}` }}
+            avatarProps={{ 
+              radius: "lg", 
+              src: user.profilePicture || `https://i.pravatar.cc/150?u=${user.id}` 
+            }}
             description={user.email}
             name={`${user.firstName} ${user.lastName}`}
-          >
-            {user.email}
-          </User>
+          />
         );
       case 'role':
         return (
@@ -37,21 +39,21 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
             size="sm"
             variant="flat"
           >
-            {cellValue}
+            {user.role}
           </Chip>
         );
       case 'status':
         return (
           <Chip
-            color={cellValue === 'Active' ? 'success' : 'warning'}
+            color={user.status === 'Active' ? 'success' : 'warning'}
             size="sm"
             variant="flat"
           >
-            {cellValue}
+            {user.status}
           </Chip>
         );
       case 'registrationDate':
-        return new Date(cellValue).toLocaleDateString();
+        return new Date(user.registrationDate).toLocaleDateString();
       case 'actions':
         return (
           <div className="flex items-center gap-2">
@@ -90,27 +92,52 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
     }
   };
 
+  // Prepare table items with keys
+  const tableItems = users.map(user => ({
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`,
+    role: user.role,
+    status: user.status,
+    registrationDate: user.registrationDate,
+    gender: user.gender,
+    university: user.university,
+    city: user.city,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profilePicture: user.profilePicture,
+    key: user.id // Explicit key for each item
+  }));
+
   return (
-    <Table aria-label="User list table">
+    <Table
+      aria-label="User list table"
+      selectionMode="none"
+      className="mt-4"
+    >
       <TableHeader columns={columns}>
         {(column) => (
           <TableColumn 
-            key={column.uid} 
+            key={column.uid}
             align={column.uid === 'actions' ? 'center' : 'start'}
-            onClick={() => column.uid !== 'actions' && onSort(column.uid)}
-            style={{ cursor: column.uid !== 'actions' ? 'pointer' : 'default' }}
+            onClick={() => column.sortable && onSort(column.uid)}
+            className={column.sortable ? 'cursor-pointer hover:bg-gray-800' : ''}
           >
             {column.name}
             {sortConfig.key === column.uid && (
-              <span>{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>
+              <span className="ml-2">
+                {sortConfig.direction === 'ascending' ? '↑' : '↓'}
+              </span>
             )}
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody items={users}>
+      <TableBody items={tableItems}>
         {(item) => (
           <TableRow key={item.id}>
-            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+            {(columnKey) => (
+              <TableCell>{renderCell(item, columnKey)}</TableCell>
+            )}
           </TableRow>
         )}
       </TableBody>

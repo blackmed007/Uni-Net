@@ -12,7 +12,8 @@ const RealTimeNotifications = ({ userId }) => {
     const userNotifications = storedNotifications.filter(notification => 
       notification.recipients.includes(userId) || notification.recipients.includes('all')
     );
-    setNotifications(userNotifications);
+    // Only display last 3 notifications in the dropdown
+    setNotifications(userNotifications.slice(-3));
     setUnreadCount(userNotifications.filter(n => !n.read).length);
 
     const intervalId = setInterval(() => {
@@ -20,7 +21,7 @@ const RealTimeNotifications = ({ userId }) => {
       const updatedUserNotifications = updatedNotifications.filter(notification => 
         notification.recipients.includes(userId) || notification.recipients.includes('all')
       );
-      setNotifications(updatedUserNotifications);
+      setNotifications(updatedUserNotifications.slice(-3));
       setUnreadCount(updatedUserNotifications.filter(n => !n.read).length);
     }, 30000);
 
@@ -28,12 +29,18 @@ const RealTimeNotifications = ({ userId }) => {
   }, [userId]);
 
   const handleMarkAsRead = (notificationId) => {
-    const updatedNotifications = notifications.map(notification =>
+    const allNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+    const updatedAllNotifications = allNotifications.map(notification =>
       notification.id === notificationId ? { ...notification, read: true } : notification
     );
-    setNotifications(updatedNotifications);
-    setUnreadCount(updatedNotifications.filter(n => !n.read).length);
-    localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+    localStorage.setItem('notifications', JSON.stringify(updatedAllNotifications));
+
+    const updatedUserNotifications = updatedAllNotifications
+      .filter(notification => notification.recipients.includes(userId) || notification.recipients.includes('all'))
+      .slice(-3);
+
+    setNotifications(updatedUserNotifications);
+    setUnreadCount(updatedUserNotifications.filter(n => !n.read).length);
   };
 
   return (
@@ -48,6 +55,9 @@ const RealTimeNotifications = ({ userId }) => {
       <PopoverContent>
         <Card className="bg-gray-800 border border-gray-700">
           <CardBody className="p-0">
+            <div className="p-2 border-b border-gray-700">
+              <p className="text-sm text-gray-400">Recent Notifications (3)</p>
+            </div>
             <AnimatePresence>
               {notifications.length === 0 ? (
                 <motion.p 
