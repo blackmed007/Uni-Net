@@ -32,7 +32,7 @@ export class EventService {
       };
 
       return await this.prisma.event.create({
-        data: eventData,
+        data: { ...eventData, event_thumbnail: eventData.event_image_url },
       });
     } catch (error) {
       this.logger.error(`${error} - Error while creating event`);
@@ -69,21 +69,48 @@ export class EventService {
 
   async findOne(id: string) {
     try {
-      const appointment = await this.prisma.event.findUnique({
+      const event = await this.prisma.event.findUnique({
         where: {
           id,
         },
       });
-      return appointment;
+      return event;
     } catch (error) {
       this.logger.error(`${error} - Error while fetching events`);
       throw new InternalServerErrorException(`Error while fetching an event`);
     }
   }
 
-  update(id: number, updateEventDto: UpdateEventDto) {
-    console.log(updateEventDto);
-    return `This action updates a #${id} event`;
+  async update(id: string, updateEventDto: UpdateEventDto) {
+    try {
+      const event = await this.prisma.event.update({
+        where: {
+          id,
+        },
+        data: updateEventDto,
+      });
+
+      return event;
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          this.logger.error(
+            `${HttpStatus.FORBIDDEN} - error while updating event`,
+          );
+          throw new ForbiddenException('error while updating event');
+        }
+      } else if (error instanceof PrismaClientValidationError) {
+        this.logger.error(error.message);
+        throw new BadRequestException(
+          'Invalid date format. Expected ISO-8601 DateTime',
+        );
+      } else {
+        this.logger.error(error);
+        throw new InternalServerErrorException(
+          'Server error while updating event - please try again later',
+        );
+      }
+    }
   }
 
   remove(id: number) {
