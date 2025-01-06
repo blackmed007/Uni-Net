@@ -2,7 +2,7 @@ import {
   Controller,
   Get,
   Body,
-  // Patch,
+  Patch,
   Param,
   Delete,
   Post,
@@ -17,6 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { OnboardUserDto } from './dto/onboard-user.dto';
 import { JwtGuard } from 'src/auth/guard';
 import { Request as ExpressRequest } from 'express';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -43,6 +44,13 @@ export class UsersController {
     return this.usersService.onboard(userId, onboardUserDto);
   }
 
+  @Get('me')
+  @UseGuards(JwtGuard)
+  async getMe(@Request() req: ExpressRequest) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getCurrentUser(userId);
+  }
+
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -53,13 +61,13 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-  //   return this.usersService.update(+id, updateUserDto);
-  // }
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+    return this.usersService.remove(id);
   }
 }
