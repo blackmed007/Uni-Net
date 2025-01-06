@@ -8,6 +8,7 @@ import { OnboardUserDto } from './dto/onboard-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -107,12 +108,59 @@ export class UsersService {
   findOne(id: number) {
     return `This action returns a #${id} user`;
   }
+  async getCurrentUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        status: true,
+        profile_url: true,
+        gender: true,
+        cityId: true,
+        universityId: true,
+        createdAt: true,
+      },
+    });
 
-  // update(id: number, updateUserDto: UpdateUserDto) {
-  //   return `This action updates a #${id} user`;
-  // }
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+    return user;
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+    });
+
+    return updatedUser;
+  }
+
+  async remove(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    await this.prisma.user.delete({
+      where: { id },
+    });
+
+    return { message: `User with ID ${id} has been removed` };
   }
 }
