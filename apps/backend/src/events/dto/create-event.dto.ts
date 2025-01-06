@@ -1,4 +1,18 @@
-import { IsDateString, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+
+type Speaker = {
+  name: string;
+  role: string;
+  image_url: string;
+};
 
 export class CreateEventDto {
   @IsString()
@@ -18,7 +32,12 @@ export class CreateEventDto {
   location: string;
 
   @IsString()
+  @IsIn(['Workshop', 'Social', 'Conference', 'Seminar'])
   event_type: string;
+
+  @IsString()
+  @IsIn(['Upcoming', 'Ongoing', 'Completed', 'Cancelled'])
+  event_status: string;
 
   @IsString()
   organizer: string;
@@ -26,9 +45,17 @@ export class CreateEventDto {
   @IsNumber()
   max_participants: number;
 
-  @IsString()
-  speaker: string;
+  @IsArray()
+  speaker: Speaker[];
 
+  @IsArray()
+  agenda: string[];
+
+  @IsOptional()
   @IsString()
-  event_thumbnail: string;
+  event_image_url: string;
+
+  @IsOptional()
+  @IsString()
+  image?: Express.Multer.File;
 }
