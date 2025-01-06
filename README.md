@@ -2,6 +2,16 @@
 
 Diploma final project
 
+# Running Database
+
+:warning: It's important for the project to run.
+
+Make sure you're on root directory of the project
+
+```bash
+docker compose up -d
+```
+
 # Running apps in this repo
 
 :warning: PNPM package manager should be installed :)
