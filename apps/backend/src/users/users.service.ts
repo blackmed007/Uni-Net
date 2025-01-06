@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import { OnboardUserDto } from './dto/onboard-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-// import { UpdateUserDto } from './dto/update-user.dto';
+import * as fs from 'fs';
+import * as path from 'path';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -17,7 +19,8 @@ export class UsersService {
   });
 
   async onboard(userId: string, onboardUserDto: OnboardUserDto) {
-    // Fetch the user by ID
+    this.logger.log(onboardUserDto);
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -52,6 +55,30 @@ export class UsersService {
     });
   }
 
+  async uploadImage(
+    file: Express.Multer.File,
+    userId: string,
+  ): Promise<string> {
+    const uploadPath = path.join(__dirname, '..', '..', 'uploads'); // Ensure this directory exists
+
+    // Ensure the uploads directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath);
+    }
+
+    const imageName = `${Date.now()}-${userId}-${file.originalname}`;
+    const filePath = path.join(uploadPath, imageName);
+
+    console.log('loging the path');
+    console.log(filePath);
+
+    // Write the file to the filesystem
+    fs.writeFileSync(filePath, file.buffer);
+
+    // Return the URL to access the image
+    return `http://localhost/api/v1/uploads/${imageName}`; // Adjust the URL as needed
+  }
+
   async findAll() {
     try {
       return await this.prisma.user.findMany({
@@ -81,12 +108,59 @@ export class UsersService {
   findOne(id: number) {
     return `This action returns a #${id} user`;
   }
+  async getCurrentUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        status: true,
+        profile_url: true,
+        gender: true,
+        cityId: true,
+        universityId: true,
+        createdAt: true,
+      },
+    });
 
-  // update(id: number, updateUserDto: UpdateUserDto) {
-  //   return `This action updates a #${id} user`;
-  // }
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+    return user;
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+    });
+
+    return updatedUser;
+  }
+
+  async remove(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    await this.prisma.user.delete({
+      where: { id },
+    });
+
+    return { message: `User with ID ${id} has been removed` };
   }
 }
