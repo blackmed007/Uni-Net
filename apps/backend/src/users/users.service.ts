@@ -1,4 +1,7 @@
 import {
+  BadRequestException,
+  ForbiddenException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -6,9 +9,12 @@ import {
 } from '@nestjs/common';
 import { OnboardUserDto } from './dto/onboard-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import * as fs from 'fs';
-import * as path from 'path';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { JoinEventDto } from './dto/join-event.dto';
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientValidationError,
+} from '@prisma/client/runtime/library';
 
 @Injectable()
 export class UsersService {
@@ -19,64 +25,60 @@ export class UsersService {
   });
 
   async onboard(userId: string, onboardUserDto: OnboardUserDto) {
-    this.logger.log(onboardUserDto);
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+      if (!user) {
+        this.logger.log(`User with ID ${userId} not found`);
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
 
-    if (!user) {
-      this.logger.log(`User with ID ${userId} not found`);
-      throw new NotFoundException(`User with ID ${userId} not found`);
+      return this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...onboardUserDto,
+          status: true,
+        },
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          email: true,
+          status: true,
+          profile_url: true,
+          gender: true,
+          cityId: true,
+          universityId: true,
+          events: true,
+          city: true,
+          university: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`${error} - Error while creating event`);
+
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          this.logger.error(
+            `${HttpStatus.FORBIDDEN} - Error while creating event`,
+          );
+          throw new ForbiddenException('Error while creating event');
+        }
+      } else if (error instanceof PrismaClientValidationError) {
+        this.logger.error(error.message);
+        throw new BadRequestException(
+          'Invalid date format. Expected ISO-8601 DateTime',
+        );
+      } else {
+        throw new InternalServerErrorException(
+          'Server error - please try again later',
+        );
+      }
     }
-
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...onboardUserDto,
-        status: true,
-      },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        status: true,
-        profile_url: true,
-        gender: true,
-        cityId: true,
-        universityId: true,
-        events: true,
-        city: true,
-        university: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-  }
-
-  async uploadImage(
-    file: Express.Multer.File,
-    userId: string,
-  ): Promise<string> {
-    const uploadPath = path.join(__dirname, '..', '..', 'uploads'); // Ensure this directory exists
-
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath);
-    }
-
-    const imageName = `${Date.now()}-${userId}-${file.originalname}`;
-    const filePath = path.join(uploadPath, imageName);
-
-    console.log('loging the path');
-    console.log(filePath);
-
-    // Write the file to the filesystem
-    fs.writeFileSync(filePath, file.buffer);
-
-    // Return the URL to access the image
-    return `http://localhost/api/v1/uploads/${imageName}`; // Adjust the URL as needed
   }
 
   async findAll() {
@@ -105,8 +107,33 @@ export class UsersService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          email: true,
+          status: true,
+          profile_url: true,
+          gender: true,
+          cityId: true,
+          universityId: true,
+          events: true,
+          city: true,
+          university: true,
+          createdAt: true,
+        },
+      });
+      return user;
+    } catch (error) {
+      this.logger.error(`${error} - Error while fetching user`);
+      throw new InternalServerErrorException(`Error while fetching a user`);
+    }
   }
   async getCurrentUser(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -122,6 +149,27 @@ export class UsersService {
         cityId: true,
         universityId: true,
         createdAt: true,
+        events: {
+          select: {
+            event: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                datetime: true,
+                location: true,
+                event_type: true,
+                event_status: true,
+                organizer: true,
+                max_participants: true,
+                agenda: true,
+                speaker: true,
+                event_thumbnail: true,
+              },
+            },
+            joinedAt: true,
+          },
+        },
       },
     });
 
@@ -129,7 +177,36 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    return user;
+    // Transform the events structure
+    const transformedUser = {
+      ...user,
+      events: user.events.map((eventEntry) => ({
+        ...eventEntry.event, // Spread the event fields
+        joinedAt: eventEntry.joinedAt, // Include joinedAt
+      })),
+    };
+
+    return transformedUser;
+  }
+
+  async joinEvent(userId: string, joinEventDto: JoinEventDto) {
+    const { eventId } = joinEventDto;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!user || !event) {
+      throw new ForbiddenException('User or Event not found');
+    }
+
+    return this.prisma.usersOnEvents.create({
+      data: {
+        userId,
+        eventId,
+      },
+    });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
