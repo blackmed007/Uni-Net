@@ -1,25 +1,39 @@
 import { useState, useEffect } from 'react';
 
 const useDarkMode = () => {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedMode = localStorage.getItem('darkMode');
-    return savedMode ? JSON.parse(savedMode) : false;
-  });
+  // Always initialize as dark mode
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
+  // Effect to enforce dark mode
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    try {
+      // Force dark mode in localStorage
+      localStorage.setItem('darkMode', 'true');
+      
+      // Force dark mode classes and attributes
+      const root = window.document.documentElement;
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
+      root.setAttribute('data-theme', 'dark');
+      
+      // Set dark mode CSS variables
+      document.body.style.setProperty('--background-color', '#000000');
+      document.body.style.setProperty('--text-color', '#ffffff');
+      
+      // Force NextUI dark theme
+      document.documentElement.setAttribute('data-nextui-theme', 'dark');
+    } catch (error) {
+      console.error('Error setting dark mode:', error);
     }
-  }, [isDarkMode]);
+  }, []);
 
+  // Toggle function that maintains dark mode
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
+    // Keep dark mode enabled
+    setIsDarkMode(true);
   };
 
-  return [isDarkMode, toggleDarkMode];
+  return [true, toggleDarkMode]; // Always return true for isDarkMode
 };
 
 export default useDarkMode;

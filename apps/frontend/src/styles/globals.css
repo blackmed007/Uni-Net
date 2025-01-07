@@ -2,6 +2,49 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: #000000;
+  color-scheme: dark;
+}
+
 body {
+  @apply bg-black text-white;
+}
+
+/* Force dark mode for NextUI components */
+[data-nextui-theme] {
+  --nextui-background: #000000;
+  --nextui-foreground: #ffffff;
+}
+
+/* Force dark mode for tables and other components */
+.nextui-table {
+  @apply bg-black;
+}
+
+.nextui-table-container {
+  @apply bg-black;
+}
+
+.nextui-table-header {
+  @apply bg-black text-white;
+}
+
+.nextui-table-body {
+  @apply bg-black text-white;
+}
+
+/* Ensure modals and dropdowns stay dark */
+.nextui-modal-content,
+.nextui-dropdown-content {
+  @apply bg-black text-white;
+}
+
+/* Force dark mode for input fields */
+.nextui-input-wrapper {
   @apply bg-black text-white;
 }
