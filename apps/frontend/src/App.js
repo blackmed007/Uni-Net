@@ -18,11 +18,15 @@ import UnderMaintenance from './pages/UnderMaintenance';
 import UserSidebar from './components/user/UserSidebar';
 import UserNavbar from './components/user/UserNavbar';
 import useDarkMode from './hooks/useDarkMode';
-import { initializeMockData } from './utils/mockDataGenerator';
 
-// TODO: Re-implement route protection and onboarding flow
-// This is temporarily disabled for development purposes
 const ProtectedRoute = ({ children }) => {
+  const token = sessionStorage.getItem('access_token');
+  const userData = localStorage.getItem('userData');
+  
+  if (!token || !userData) {
+    return <Navigate to="/login" />;
+  }
+  
   return children;
 };
 
@@ -46,12 +50,6 @@ const UserLayout = ({ children }) => {
 
 function App() {
   const [isDarkMode] = useDarkMode();
-  
-  useEffect(() => {
-    if (!localStorage.getItem('users')) {
-      initializeMockData();
-    }
-  }, []);
 
   // For maintenance mode - you can make this dynamic based on your needs
   const isMaintenanceMode = false;
@@ -78,26 +76,36 @@ function App() {
             <Route path="/403" element={<Error status={403} />} />
             <Route path="/404" element={<Error status={404} />} />
 
-            {/* TODO: Re-implement onboarding protection */}
-            <Route path="/onboarding" element={<OnboardingPage />} />
+            {/* Protected onboarding route */}
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
+            } />
 
-            {/* TODO: Re-implement admin route protection */}
-            <Route path="/admin/*" element={<AdminDashboard />} />
+            {/* Protected admin route */}
+            <Route path="/admin/*" element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
 
-            {/* User routes */}
+            {/* Protected user routes */}
             <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/user/*" element={
-              <UserLayout>
-                <Routes>
-                  <Route path="dashboard" element={<UserDashboardPage />} />
-                  <Route path="events" element={<UserEventsPage />} />
-                  <Route path="study-groups" element={<UserStudyGroupsPage />} />
-                  <Route path="blog" element={<UserBlogPage />} />
-                  <Route path="settings" element={<UserSettingsPage />} />
-                  {/* Catch undefined user routes */}
-                  <Route path="*" element={<Error status={404} />} />
-                </Routes>
-              </UserLayout>
+              <ProtectedRoute>
+                <UserLayout>
+                  <Routes>
+                    <Route path="dashboard" element={<UserDashboardPage />} />
+                    <Route path="events" element={<UserEventsPage />} />
+                    <Route path="study-groups" element={<UserStudyGroupsPage />} />
+                    <Route path="blog" element={<UserBlogPage />} />
+                    <Route path="settings" element={<UserSettingsPage />} />
+                    {/* Catch undefined user routes */}
+                    <Route path="*" element={<Error status={404} />} />
+                  </Routes>
+                </UserLayout>
+              </ProtectedRoute>
             } />
 
             {/* Catch-all route for undefined paths */}

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X } from "lucide-react";
 import AuthAPI from "../../services/auth.api";
 
-const API_URL = "http://localhost:5000/api/v1";
+const API_URL = "http://localhost:5003/api/v1";
 
 const AnimatedErrorMessage = ({ message }) => (
   <motion.div
