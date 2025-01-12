@@ -21,6 +21,7 @@ import { Request as ExpressRequest } from 'express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JoinEventDto } from './dto/join-event.dto';
 import { ImagesService } from 'src/images/images.service';
+import { Bookmark } from '@prisma/client';
 
 @Controller('users')
 export class UsersController {
@@ -97,5 +98,31 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+  @Post('bookmarks')
+  @UseGuards(JwtGuard)
+  async addBookmark(
+    @Request() req: ExpressRequest,
+    @Body('blogId') blogId: string,
+  ): Promise<Bookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.addBookmark(userId, blogId);
+  }
+
+  @Get('bookmarks')
+  @UseGuards(JwtGuard)
+  async getUserBookmarks(@Request() req: ExpressRequest): Promise<Bookmark[]> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserBookmarks(userId);
+  }
+
+  @Delete('bookmarks/:blogId')
+  @UseGuards(JwtGuard)
+  async removeBookmark(
+    @Request() req: ExpressRequest,
+    @Param('blogId') blogId: string,
+  ): Promise<Bookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.removeBookmark(userId, blogId);
   }
 }
