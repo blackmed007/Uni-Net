@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
+  id           String          @id @default(uuid())
   first_name   String
   last_name    String
-  email        String   @unique
+  email        String          @unique
   password     String
   status       Boolean?
   profile_url  String?
@@ -19,12 +19,14 @@ model User {
   cityId       String?
   universityId String?
   role         String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt @map("updatedAt")
+  events       UsersOnEvents[]
+  bookmarks    Bookmark[]
 
-  events     UsersOnEvents[]
-  city       City?           @relation(fields: [cityId], references: [id])
-  university University?     @relation(fields: [universityId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  city       City?       @relation(fields: [cityId], references: [id])
+  university University? @relation(fields: [universityId], references: [id])
 }
 
 model Event {
@@ -79,6 +81,19 @@ model Blog {
   author_profile_url String
   status             String
 
+  bookmarks Bookmark[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @map("updatedAt")
+}
+
+model Bookmark {
+  userId    String
+  blogId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  blog Blog @relation(fields: [blogId], references: [id])
+
+  @@id([userId, blogId])
 }
