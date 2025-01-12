@@ -15,6 +15,7 @@ import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
 } from '@prisma/client/runtime/library';
+import { Bookmark } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -239,5 +240,32 @@ export class UsersService {
     });
 
     return { message: `User with ID ${id} has been removed` };
+  }
+
+  async addBookmark(userId: string, blogId: string): Promise<Bookmark> {
+    return this.prisma.bookmark.create({
+      data: {
+        user: { connect: { id: userId } },
+        blog: { connect: { id: blogId } },
+      },
+    });
+  }
+
+  async getUserBookmarks(userId: string): Promise<Bookmark[]> {
+    return this.prisma.bookmark.findMany({
+      where: { userId },
+      include: { blog: true },
+    });
+  }
+
+  async removeBookmark(userId: string, blogId: string): Promise<Bookmark> {
+    return this.prisma.bookmark.delete({
+      where: {
+        userId_blogId: {
+          userId,
+          blogId,
+        },
+      },
+    });
   }
 }
