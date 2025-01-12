@@ -14,12 +14,10 @@ docker compose up -d
 
 # Running apps in this repo
 
-:warning: PNPM package manager should be installed :)
-
-Easy to install [Link to installation manual](https://pnpm.io/installation):
+## Running Seed Script (to add mock data)
 
 ```bash
-wget -qO- https://get.pnpm.io/install.sh | sh -
+pnpm seed
 ```
 
 ## Running both apps
