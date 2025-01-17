@@ -9,6 +9,7 @@ import ErrorTrackingDashboard from '../../components/admin/settings/ErrorTrackin
 import AuthSettingsForm from '../../components/admin/settings/AuthSettingsForm';
 import UniversityManagement from '../../components/admin/settings/UniversityManagement';
 import CityManagement from '../../components/admin/settings/CityManagement';
+import LocationAPI from '../../services/location.api';
 
 const SettingsManagement = ({ adminProfile, onProfileUpdate, settings, onSettingsUpdate }) => {
   const [activeTab, setActiveTab] = useState("profile");
@@ -27,42 +28,26 @@ const SettingsManagement = ({ adminProfile, onProfileUpdate, settings, onSetting
   }, []);
 
   useEffect(() => {
-    const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
-    const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
-    setUniversities(storedUniversities);
-    setCities(storedCities);
+    const fetchLocations = async () => {
+      try {
+        const universitiesData = await LocationAPI.fetchUniversities();
+        const citiesData = await LocationAPI.fetchCities();
+        setUniversities(universitiesData);
+        setCities(citiesData);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
 
-    if (storedUniversities.length === 0) {
-      const initialUniversities = [
-        { id: 1, name: 'Warsaw University of Technology' },
-        { id: 2, name: 'Jagiellonian University' },
-        { id: 3, name: 'Adam Mickiewicz University' },
-        { id: 4, name: 'Wrocław University of Science and Technology' },
-        { id: 5, name: 'University of Warsaw' }
-      ];
-      setUniversities(initialUniversities);
-      localStorage.setItem('universities', JSON.stringify(initialUniversities));
-    }
-
-    if (storedCities.length === 0) {
-      const initialCities = [
-        { id: 1, name: 'Poznan' },
-        { id: 2, name: 'Warsaw' },
-        { id: 3, name: 'Wroclaw' }
-      ];
-      setCities(initialCities);
-      localStorage.setItem('cities', JSON.stringify(initialCities));
-    }
+    fetchLocations();
   }, []);
 
-  const handleUniversityUpdate = (updatedUniversities) => {
+  const handleUniversityUpdate = async (updatedUniversities) => {
     setUniversities(updatedUniversities);
-    localStorage.setItem('universities', JSON.stringify(updatedUniversities));
   };
 
-  const handleCityUpdate = (updatedCities) => {
+  const handleCityUpdate = async (updatedCities) => {
     setCities(updatedCities);
-    localStorage.setItem('cities', JSON.stringify(updatedCities));
   };
 
   const tabs = [
