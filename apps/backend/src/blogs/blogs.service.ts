@@ -14,6 +14,7 @@ import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
 } from '@prisma/client/runtime/library';
+import { Blog } from '@prisma/client';
 
 @Injectable()
 export class BlogsService {
@@ -112,5 +113,16 @@ export class BlogsService {
       this.logger.error(`Error removing blog entry with id: ${id}`, error);
       throw new InternalServerErrorException('Could not remove blog entry');
     }
+  }
+
+  async incrementViews(blogId: string): Promise<Blog> {
+    return this.prisma.blog.update({
+      where: { id: blogId },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
   }
 }
