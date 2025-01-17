@@ -80,6 +80,8 @@ model Blog {
   category           String
   author_profile_url String
   status             String
+  excerpt            String
+  views              Int    @default(0)
 
   bookmarks Bookmark[]
 
