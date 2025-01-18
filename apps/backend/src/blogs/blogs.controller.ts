@@ -4,20 +4,35 @@ import {
   Post,
   Body,
   Patch,
+  UseInterceptors,
   Param,
   Delete,
+  UploadedFile,
 } from '@nestjs/common';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ImagesService } from 'src/images/images.service';
 
 @Controller('blogs')
 export class BlogsController {
-  constructor(private readonly blogsService: BlogsService) {}
+  constructor(
+    private readonly blogsService: BlogsService,
+    private readonly imagessService: ImagesService,
+  ) {}
 
   @Post()
-  create(@Body() createBlogDto: CreateBlogDto) {
+  @UseInterceptors(FileInterceptor('blog_image'))
+  async create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createBlogDto: CreateBlogDto,
+  ) {
+    if (file) {
+      const eventImageUrl = await this.imagessService.uploadImage(file, 'blog');
+      createBlogDto.blog_image = eventImageUrl;
+    }
     return this.blogsService.create(createBlogDto);
   }
 
