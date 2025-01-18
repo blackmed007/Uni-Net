@@ -3,14 +3,37 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
 import { Bell, Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
+import ProfileAPI from '../../services/profile.api';
 
-const CustomNavbar = ({ adminProfile }) => {
+const CustomNavbar = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isIconToggled, setIsIconToggled] = useState(false);
+  const [profileData, setProfileData] = useState({
+    fullName: '',
+    email: '',
+    profileImage: '',
+  });
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const data = await ProfileAPI.getCurrentProfile();
+      setProfileData({
+        fullName: `${data.first_name} ${data.last_name}`,
+        email: data.email,
+        profileImage: data.profile_url || "https://i.pravatar.cc/150?u=a042581f4e29026704d",
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const handleSettingsClick = () => {
     navigate('/admin/settings');
@@ -158,9 +181,9 @@ const CustomNavbar = ({ adminProfile }) => {
                       as="button"
                       className="transition-transform hover:scale-110"
                       color="secondary"
-                      name={adminProfile.fullName}
+                      name={profileData.fullName}
                       size="sm"
-                      src={adminProfile.profileImage}
+                      src={profileData.profileImage}
                     />
                   </DropdownTrigger>
                   <DropdownMenu 
@@ -170,7 +193,7 @@ const CustomNavbar = ({ adminProfile }) => {
                   >
                     <DropdownItem key="profile" className="h-14 gap-2">
                       <p className="font-semibold">Signed in as</p>
-                      <p className="font-semibold text-xs">{adminProfile.email}</p>
+                      <p className="font-semibold text-xs">{profileData.email}</p>
                     </DropdownItem>
                     <DropdownItem key="settings" onPress={handleSettingsClick}>
                       My Settings

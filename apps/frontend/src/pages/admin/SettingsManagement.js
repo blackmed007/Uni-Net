@@ -11,7 +11,7 @@ import UniversityManagement from '../../components/admin/settings/UniversityMana
 import CityManagement from '../../components/admin/settings/CityManagement';
 import LocationAPI from '../../services/location.api';
 
-const SettingsManagement = ({ adminProfile, onProfileUpdate, settings, onSettingsUpdate }) => {
+const SettingsManagement = ({ settings, onSettingsUpdate }) => {
   const [activeTab, setActiveTab] = useState("profile");
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
@@ -42,11 +42,11 @@ const SettingsManagement = ({ adminProfile, onProfileUpdate, settings, onSetting
     fetchLocations();
   }, []);
 
-  const handleUniversityUpdate = async (updatedUniversities) => {
+  const handleUniversityUpdate = (updatedUniversities) => {
     setUniversities(updatedUniversities);
   };
 
-  const handleCityUpdate = async (updatedCities) => {
+  const handleCityUpdate = (updatedCities) => {
     setCities(updatedCities);
   };
 
@@ -68,7 +68,7 @@ const SettingsManagement = ({ adminProfile, onProfileUpdate, settings, onSetting
   const renderContent = () => {
     switch (activeTab) {
       case "profile":
-        return <AdminProfileSettings initialSettings={adminProfile} onSave={onProfileUpdate} />;
+        return <AdminProfileSettings />;
       case "general":
         return <GeneralSettingsForm initialSettings={settings.general} onSave={(newSettings) => onSettingsUpdate('general', newSettings)} />;
       case "notifications":

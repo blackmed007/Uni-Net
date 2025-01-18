@@ -1,39 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Avatar } from "@nextui-org/react";
+import { Input, Button, Avatar, useToast } from "@nextui-org/react";
 import { User, Mail, Upload } from "lucide-react";
+import ProfileAPI from '../../../services/profile.api';
 
-const AdminProfileSettings = ({ initialSettings, onSave }) => {
+const AdminProfileSettings = () => {
   const [settings, setSettings] = useState({
     firstName: '',
     lastName: '',
     email: '',
     profileImage: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
+  // Fetch current profile data on component mount
   useEffect(() => {
-    if (initialSettings) {
-      // Assuming initialSettings now contains firstName and lastName
-      setSettings(initialSettings);
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const profileData = await ProfileAPI.getCurrentProfile();
+      setUserId(profileData.id);
+      setSettings({
+        firstName: profileData.first_name || '',
+        lastName: profileData.last_name || '',
+        email: profileData.email || '',
+        profileImage: profileData.profile_url || '',
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      // Handle error appropriately
     }
-  }, [initialSettings]);
+  };
 
   const handleChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(settings);
-  };
-
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setSelectedFile(file);
+      // Preview the image
       const reader = new FileReader();
       reader.onloadend = () => {
         setSettings(prev => ({ ...prev, profileImage: reader.result }));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!userId) return;
+
+    setIsLoading(true);
+    try {
+      const profileData = {
+        first_name: settings.firstName,
+        last_name: settings.lastName,
+        email: settings.email,
+      };
+
+      await ProfileAPI.updateFullProfile(userId, profileData, selectedFile);
+      
+      // Refresh profile data after update
+      await fetchProfileData();
+      
+      // Clear selected file after successful upload
+      setSelectedFile(null);
+      
+      // Show success message
+      // Note: Implement your preferred notification system here
+      console.log('Profile updated successfully');
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      // Show error message
+      // Note: Implement your preferred notification system here
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -51,6 +99,7 @@ const AdminProfileSettings = ({ initialSettings, onSave }) => {
             variant="flat"
             onPress={() => document.getElementById('profile-image-upload').click()}
             startContent={<Upload size={20} />}
+            isDisabled={isLoading}
           >
             Upload Image
           </Button>
@@ -69,6 +118,7 @@ const AdminProfileSettings = ({ initialSettings, onSave }) => {
             onChange={(e) => handleChange('firstName', e.target.value)}
             startContent={<User className="text-default-400" size={16} />}
             className="flex-1"
+            isDisabled={isLoading}
           />
           <Input
             label="Last Name"
@@ -76,6 +126,7 @@ const AdminProfileSettings = ({ initialSettings, onSave }) => {
             onChange={(e) => handleChange('lastName', e.target.value)}
             startContent={<User className="text-default-400" size={16} />}
             className="flex-1"
+            isDisabled={isLoading}
           />
         </div>
         <Input
@@ -84,12 +135,14 @@ const AdminProfileSettings = ({ initialSettings, onSave }) => {
           value={settings.email}
           onChange={(e) => handleChange('email', e.target.value)}
           startContent={<Mail className="text-default-400" size={16} />}
+          isDisabled={isLoading}
         />
         <Button 
           type="submit" 
           color="primary"
+          isLoading={isLoading}
         >
-          Save Profile Settings
+          {isLoading ? 'Saving...' : 'Save Profile Settings'}
         </Button>
       </form>
     </div>
