@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Upload, X } from 'lucide-react';
 
 const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
-  const [newUser, setNewUser] = useState({
+  const initialFormState = {
     firstName: '',
     lastName: '',
     email: '',
@@ -26,8 +26,9 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
     gender: '',
     status: 'Active',
     profile_url: null
-  });
+  };
 
+  const [newUser, setNewUser] = useState(initialFormState);
   const [imagePreview, setImagePreview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -94,10 +95,12 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
 
   const validateForm = () => {
     const newErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!newUser.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!newUser.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!newUser.email.trim()) newErrors.email = 'Email is required';
+    if (!newUser.firstName?.trim()) newErrors.firstName = 'First name is required';
+    if (!newUser.lastName?.trim()) newErrors.lastName = 'Last name is required';
+    if (!newUser.email?.trim()) newErrors.email = 'Email is required';
+    else if (!emailRegex.test(newUser.email)) newErrors.email = 'Invalid email format';
     if (!newUser.password) newErrors.password = 'Password is required';
     if (newUser.password && newUser.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
@@ -111,29 +114,27 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleClose = () => {
+    setNewUser(initialFormState);
+    setImagePreview(null);
+    setErrors({});
+    onClose();
+  };
+
   const handleSave = async () => {
     if (!validateForm()) return;
 
     try {
       setIsLoading(true);
-      await onSave(newUser);
+      const userData = {
+        ...newUser,
+        status: newUser.status === 'Active'
+      };
       
-      // Reset form
-      setNewUser({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        role: '',
-        universityId: '',
-        cityId: '',
-        gender: '',
-        status: 'Active',
-        profile_url: null
-      });
-      setImagePreview(null);
-      onClose();
+      await onSave(userData);
+      handleClose();
     } catch (error) {
+      console.error('Error creating user:', error);
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
       } else {
@@ -147,7 +148,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={onClose}
+      onClose={handleClose}
       classNames={{
         base: "bg-gray-900 bg-opacity-50 backdrop-blur-md border border-gray-800 rounded-3xl",
         header: "border-b border-gray-800",
@@ -368,6 +369,19 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
                 ))}
               </Select>
             </div>
+
+            <Select
+              label="Status"
+              selectedKeys={[newUser.status]}
+              onChange={(e) => handleChange('status', e.target.value)}
+              classNames={{
+                trigger: ["bg-transparent", "text-white"],
+                label: "text-white",
+              }}
+            >
+              <SelectItem key="Active" value="Active">Active</SelectItem>
+              <SelectItem key="Suspended" value="Suspended">Suspended</SelectItem>
+            </Select>
           </motion.div>
         </ModalBody>
 
@@ -375,7 +389,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
           <Button 
             color="danger" 
             variant="flat" 
-            onPress={onClose}
+            onPress={handleClose}
             className="bg-gradient-to-r from-red-500 to-pink-500 text-white"
             isDisabled={isLoading}
           >

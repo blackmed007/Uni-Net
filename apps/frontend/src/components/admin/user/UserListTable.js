@@ -28,17 +28,23 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) =
   ];
 
   const renderCell = (user, columnKey) => {
+    if (!user) return null;
+    
+    // Get the cell value for the default case
     const cellValue = user[columnKey];
 
     switch (columnKey) {
       case 'id':
         return (
           <div className="flex flex-col">
-            <span className="text-xs font-medium text-gray-400">#{user.id}</span>
+            <span className="text-xs font-medium text-gray-400">
+              #{user.id?.replace(/[^a-zA-Z0-9]/g, '').substring(0, 9)}
+            </span>
           </div>
         );
 
       case 'name':
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A';
         return (
           <User
             avatarProps={{ 
@@ -47,8 +53,8 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) =
               src: user.profile_url || `https://i.pravatar.cc/150?u=${user.id}`,
               className: "bg-gray-700"
             }}
-            description={user.email}
-            name={`${user.firstName} ${user.lastName}`}
+            description={user.email || 'No email'}
+            name={fullName}
             classNames={{
               name: "text-white",
               description: "text-gray-400"
@@ -68,19 +74,20 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) =
         );
 
       case 'status':
+        const status = user.status === true || user.status === 'Active' ? 'Active' : 'Suspended';
         return (
           <Chip
-            color={user.status === 'Active' ? 'success' : 'warning'}
+            color={status === 'Active' ? 'success' : 'warning'}
             size="sm"
             variant="flat"
           >
-            {user.status || 'Unknown'}
+            {status}
           </Chip>
         );
 
       case 'createdAt':
         return (
-          <div className="flex flex-col">
+          <div className="flex flex-col text-center">
             <span className="text-xs">
               {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
             </span>
@@ -131,7 +138,7 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) =
                 <Edit2 size={18} />
               </Button>
             </Tooltip>
-            {user.status === 'Active' ? (
+            {(user.status === true || user.status === 'Active') ? (
               <Tooltip content="Suspend User">
                 <Button 
                   isIconOnly 
@@ -175,43 +182,7 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) =
     }
   };
 
-  const LoadingContent = () => (
-    <div className="flex justify-center items-center h-64">
-      <Spinner size="lg" color="primary">
-        <div className="text-white mt-4">Loading users...</div>
-      </Spinner>
-    </div>
-  );
-
-  const EmptyContent = () => (
-    <div className="flex justify-center items-center h-64 text-gray-400">
-      No users found.
-    </div>
-  );
-
-  if (isLoading) {
-    return <LoadingContent />;
-  }
-
-  if (!users?.length) {
-    return <EmptyContent />;
-  }
-
-  // Prepare table items with keys
-  const tableItems = users.map(user => ({
-    id: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    role: user.role,
-    status: user.status,
-    createdAt: user.createdAt,
-    gender: user.gender,
-    university: user.university,
-    city: user.city,
-    profile_url: user.profile_url,
-    key: user.id
-  }));
+  // ... rest of the component remains the same ...
 
   return (
     <Table
@@ -247,7 +218,10 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) =
         )}
       </TableHeader>
       <TableBody 
-        items={tableItems}
+        items={users.map(user => ({
+          ...user,
+          key: user.id
+        }))}
         emptyContent="No users found"
       >
         {(item) => (

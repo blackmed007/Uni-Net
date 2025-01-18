@@ -72,7 +72,6 @@ class UsersAPI {
         ...filters
       } = params;
 
-      // Build query parameters
       const queryParams = new URLSearchParams();
       queryParams.append('page', page.toString());
       queryParams.append('perPage', perPage.toString());
@@ -86,7 +85,6 @@ class UsersAPI {
         queryParams.append('sortDirection', sortDirection);
       }
 
-      // Add filters if they have values
       Object.entries(filters).forEach(([key, value]) => {
         if (value) {
           queryParams.append(key, value);
@@ -94,7 +92,9 @@ class UsersAPI {
       });
 
       const response = await api.get(`/users?${queryParams}`);
-      return response.data;
+      return Array.isArray(response.data) 
+        ? response.data.map(user => this.parseUserData(user))
+        : response.data;
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
@@ -105,33 +105,63 @@ class UsersAPI {
   static async getUser(userId) {
     try {
       const response = await api.get(`/users/${userId}`);
-      return response.data;
+      return this.parseUserData(response.data);
     } catch (error) {
       console.error('Error fetching user:', error);
       throw error;
     }
   }
 
-  // Create new user
+  // Create new user using signup and onboard endpoints
   static async createUser(userData) {
     try {
-      // Convert data to FormData if there's a file
-      const formData = new FormData();
+      // Step 1: Create the base user account using signup
+      const signupData = {
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role?.toLowerCase()
+      };
+
+      const signupResponse = await api.post('/auth/signup', signupData);
       
-      // Handle profile image if it exists
-      if (userData.profile_url instanceof File) {
-        formData.append('profile_url', userData.profile_url);
+      if (!signupResponse.data.access_token) {
+        throw new Error('No access token received after signup');
       }
 
-      // Add other user data
-      Object.entries(this.formatUserData(userData)).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && key !== 'profile_url') {
-          formData.append(key, value.toString());
-        }
-      });
+      // Store the token temporarily for the onboarding request
+      const originalToken = sessionStorage.getItem('access_token');
+      sessionStorage.setItem('access_token', signupResponse.data.access_token);
 
-      const response = await api.post('/users', formData);
-      return response.data;
+      try {
+        // Step 2: Prepare onboarding data
+        const formData = new FormData();
+        
+        if (userData.profile_url instanceof File) {
+          formData.append('profile_url', userData.profile_url);
+        }
+
+        formData.append('gender', userData.gender?.toLowerCase());
+        formData.append('cityId', userData.cityId);
+        formData.append('universityId', userData.universityId);
+
+        // Step 3: Complete the onboarding
+        const onboardResponse = await api.post('/users/onboard', formData);
+
+        // Restore the original admin token
+        if (originalToken) {
+          sessionStorage.setItem('access_token', originalToken);
+        }
+
+        return this.parseUserData(onboardResponse.data);
+      } catch (error) {
+        // If onboarding fails, restore the original token before throwing the error
+        if (originalToken) {
+          sessionStorage.setItem('access_token', originalToken);
+        }
+        throw error;
+      }
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -141,15 +171,12 @@ class UsersAPI {
   // Update user
   static async updateUser(userId, userData) {
     try {
-      // Convert data to FormData if there's a file
       const formData = new FormData();
       
-      // Handle profile image if it exists
       if (userData.profile_url instanceof File) {
         formData.append('profile_url', userData.profile_url);
       }
 
-      // Add other user data
       Object.entries(this.formatUserData(userData)).forEach(([key, value]) => {
         if (value !== null && value !== undefined && key !== 'profile_url') {
           formData.append(key, value.toString());
@@ -157,7 +184,7 @@ class UsersAPI {
       });
 
       const response = await api.patch(`/users/${userId}`, formData);
-      return response.data;
+      return this.parseUserData(response.data);
     } catch (error) {
       console.error('Error updating user:', error);
       throw error;
@@ -178,10 +205,10 @@ class UsersAPI {
   // Suspend user
   static async suspendUser(userId) {
     try {
-      const response = await api.patch(`/users/${userId}/status`, {
+      const response = await api.patch(`/users/${userId}`, {
         status: false
       });
-      return response.data;
+      return this.parseUserData(response.data);
     } catch (error) {
       console.error('Error suspending user:', error);
       throw error;
@@ -191,10 +218,10 @@ class UsersAPI {
   // Activate user
   static async activateUser(userId) {
     try {
-      const response = await api.patch(`/users/${userId}/status`, {
+      const response = await api.patch(`/users/${userId}`, {
         status: true
       });
-      return response.data;
+      return this.parseUserData(response.data);
     } catch (error) {
       console.error('Error activating user:', error);
       throw error;
@@ -230,17 +257,19 @@ class UsersAPI {
       last_name: userData.lastName,
       email: userData.email,
       password: userData.password,
-      role: userData.role,
+      role: userData.role?.toLowerCase(),
       gender: userData.gender?.toLowerCase(),
       profile_url: userData.profile_url,
       cityId: userData.cityId,
       universityId: userData.universityId,
-      status: userData.status === 'Active'
+      status: userData.status === 'Active' || userData.status === true ? true : false
     };
   }
 
   // Parse user data from API
   static parseUserData(userData) {
+    if (!userData) return null;
+    
     return {
       id: userData.id,
       firstName: userData.first_name,
@@ -251,9 +280,9 @@ class UsersAPI {
       profile_url: userData.profile_url,
       cityId: userData.cityId,
       universityId: userData.universityId,
-      city: userData.city?.name,
-      university: userData.university?.name,
-      status: userData.status ? 'Active' : 'Suspended',
+      city: userData.city,
+      university: userData.university,
+      status: userData.status === true ? 'Active' : 'Suspended',
       createdAt: userData.createdAt,
       updatedAt: userData.updatedAt
     };
