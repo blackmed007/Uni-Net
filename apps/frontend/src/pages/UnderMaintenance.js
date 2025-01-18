@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@nextui-org/react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Wrench, 
   Mail, 
@@ -10,16 +10,8 @@ import {
   Database 
 } from "lucide-react";
 
-// Tool icons that rotate to show maintenance work in progress
 const TOOLS = [Wrench, Settings, Code, Database];
 const TOOL_ROTATION_INTERVAL = 3000;
-
-// Configuration for the maintenance countdown timer
-const INITIAL_COUNTDOWN = {
-  hours: 2,
-  minutes: 0,
-  seconds: 0
-};
 
 const SOCIAL_LINKS = [
   { id: 'twitter', name: 'Twitter' },
@@ -27,44 +19,77 @@ const SOCIAL_LINKS = [
   { id: 'instagram', name: 'Instagram' }
 ];
 
-const MOTION_VARIANTS = {
-  container: {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 }
-  },
-  toolIcon: (currentTool, index) => ({
-    animate: {
-      scale: currentTool === index ? 1 : 0.5,
-      opacity: currentTool === index ? 1 : 0,
-      rotate: [0, 10, -10, 0],
-    },
-    transition: {
-      scale: { duration: 0.3 },
-      opacity: { duration: 0.3 },
-      rotate: { duration: 5, repeat: Infinity, ease: "easeInOut" }
-    }
-  })
+// Enhanced background elements
+const FloatingGradient = ({ index }) => {
+  const size = Math.random() * 300 + 100; // Random size between 100 and 400
+  const duration = Math.random() * 20 + 10; // Random duration between 10 and 30 seconds
+  const delay = Math.random() * -20; // Random negative delay for staggered start
+
+  return (
+    <motion.div
+      className="absolute rounded-full blur-3xl opacity-10"
+      style={{
+        width: size,
+        height: size,
+        background: `radial-gradient(circle at center, 
+          ${index % 2 === 0 ? '#8B5CF6' : '#EC4899'} 0%, 
+          transparent 70%)`,
+      }}
+      animate={{
+        x: [
+          `${Math.random() * 100}%`,
+          `${Math.random() * 100}%`,
+          `${Math.random() * 100}%`
+        ],
+        y: [
+          `${Math.random() * 100}%`,
+          `${Math.random() * 100}%`,
+          `${Math.random() * 100}%`
+        ],
+        scale: [1, 1.2, 1],
+      }}
+      transition={{
+        duration: duration,
+        repeat: Infinity,
+        repeatType: "reverse",
+        ease: "easeInOut",
+        delay: delay,
+      }}
+    />
+  );
 };
 
-const BackgroundParticle = ({ index }) => (
-  <motion.div
-    key={index}
-    className="absolute h-2 w-2 bg-purple-500 rounded-full"
-    style={{
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-    }}
-    animate={{
-      scale: [1, 1.5, 1],
-      opacity: [0.1, 0.3, 0.1],
-    }}
-    transition={{
-      duration: 3 + Math.random() * 2,
-      repeat: Infinity,
-      delay: Math.random() * 2,
-    }}
-  />
-);
+const BackgroundParticle = ({ index }) => {
+  const size = Math.random() * 3 + 1; // Random size between 1 and 4 pixels
+  const initialX = Math.random() * 100;
+  const initialY = Math.random() * 100;
+  const duration = Math.random() * 15 + 10; // Random duration between 10 and 25 seconds
+
+  return (
+    <motion.div
+      className="absolute bg-purple-500 rounded-full"
+      style={{
+        width: size,
+        height: size,
+        left: `${initialX}%`,
+        top: `${initialY}%`,
+      }}
+      animate={{
+        opacity: [0.1, 0.5, 0.1],
+        scale: [1, 1.5, 1],
+        x: [0, Math.random() * 100 - 50, 0],
+        y: [0, Math.random() * 100 - 50, 0],
+      }}
+      transition={{
+        duration: duration,
+        repeat: Infinity,
+        repeatType: "reverse",
+        ease: "easeInOut",
+        delay: Math.random() * -20,
+      }}
+    />
+  );
+};
 
 const MaintenanceTimer = ({ timeLeft }) => {
   const formatTime = (value) => value.toString().padStart(2, '0');
@@ -97,69 +122,60 @@ const MaintenanceTimer = ({ timeLeft }) => {
   );
 };
 
-const SocialLinks = () => (
-  <motion.div
-    className="text-sm text-gray-400"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: 0.8 }}
-  >
-    <p className="mb-4">Stay updated on our progress</p>
-    <div className="flex justify-center gap-6">
-      {SOCIAL_LINKS.map(({ id, name }, index) => (
-        <motion.a
-          key={id}
-          href="#"
-          className="hover:text-purple-400 transition-colors relative group"
-          whileHover={{ scale: 1.1 }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 + index * 0.1 }}
-        >
-          <span>{name}</span>
-          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300" />
-        </motion.a>
-      ))}
-    </div>
-  </motion.div>
-);
-
 const MaintenanceIcon = ({ Tool, currentTool, index }) => (
   <motion.div
     key={index}
     className="absolute"
-    animate={MOTION_VARIANTS.toolIcon(currentTool, index).animate}
-    transition={MOTION_VARIANTS.toolIcon(currentTool, index).transition}
+    animate={{
+      scale: currentTool === index ? 1 : 0.5,
+      opacity: currentTool === index ? 1 : 0,
+    }}
+    transition={{
+      duration: 0.5,
+      ease: "easeInOut"
+    }}
   >
-    <div className="relative">
+    <motion.div
+      className="relative"
+      animate={{ rotate: currentTool === index ? [0, 10, -10, 0] : 0 }}
+      transition={{
+        duration: 5,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
       <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 to-red-500/20 rounded-full blur-lg" />
       <Tool size={64} className="text-purple-500 relative z-10" />
-    </div>
+    </motion.div>
   </motion.div>
 );
 
 const UnderMaintenance = () => {
-  const [timeLeft, setTimeLeft] = useState(INITIAL_COUNTDOWN);
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [currentTool, setCurrentTool] = useState(0);
 
-  // Timer effect: Calculates and updates the remaining maintenance time
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        const totalSeconds = prev.hours * 3600 + prev.minutes * 60 + prev.seconds - 1;
-        if (totalSeconds <= 0) {
-          clearInterval(timer);
-          return { hours: 0, minutes: 0, seconds: 0 };
-        }
-        
-        // Convert total seconds back to hours, minutes, seconds
+    const endTime = localStorage.getItem('maintenanceEndTime');
+    if (!endTime) return;
 
-        return {
-          hours: Math.floor(totalSeconds / 3600),
-          minutes: Math.floor((totalSeconds % 3600) / 60),
-          seconds: totalSeconds % 60
-        };
-      });
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const end = parseInt(endTime);
+      const distance = end - now;
+
+      if (distance <= 0) {
+        clearInterval(timer);
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        localStorage.removeItem('maintenanceEndTime');
+        window.location.reload();
+        return;
+      }
+
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft({ hours, minutes, seconds });
     }, 1000);
 
     return () => clearInterval(timer);
@@ -183,16 +199,26 @@ const UnderMaintenance = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black" />
+      {/* Enhanced background elements */}
+      <div className="fixed inset-0 bg-black/90" />
       
-      <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
-          <BackgroundParticle key={i} index={i} />
+      {/* Floating gradient backgrounds */}
+      <div className="fixed inset-0 overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <FloatingGradient key={`gradient-${i}`} index={i} />
         ))}
       </div>
-      
+
+      {/* Smooth moving particles */}
+      <div className="fixed inset-0 overflow-hidden">
+        {[...Array(30)].map((_, i) => (
+          <BackgroundParticle key={`particle-${i}`} index={i} />
+        ))}
+      </div>
+
       <motion.div
-        {...MOTION_VARIANTS.container}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className="relative z-10 text-center space-y-8 max-w-2xl"
       >
         <div className="relative h-32 mb-8">
@@ -259,7 +285,30 @@ const UnderMaintenance = () => {
           </Button>
         </motion.div>
 
-        <SocialLinks />
+        <motion.div
+          className="text-sm text-gray-400"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
+          <p className="mb-4">Stay updated on our progress</p>
+          <div className="flex justify-center gap-6">
+            {SOCIAL_LINKS.map(({ id, name }, index) => (
+              <motion.a
+                key={id}
+                href="#"
+                className="hover:text-purple-400 transition-colors relative group"
+                whileHover={{ scale: 1.1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 + index * 0.1 }}
+              >
+                <span>{name}</span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300" />
+              </motion.a>
+            ))}
+          </div>
+        </motion.div>
       </motion.div>
     </div>
   );
