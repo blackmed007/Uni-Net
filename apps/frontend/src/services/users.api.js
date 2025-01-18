@@ -60,41 +60,13 @@ api.interceptors.response.use(
 );
 
 class UsersAPI {
-  // Fetch users with filtering, sorting, and pagination
-  static async getUsers(params = {}) {
+  // Fetch all users
+  static async getUsers() {
     try {
-      const {
-        page = 1,
-        perPage = 10,
-        search = '',
-        sortBy = '',
-        sortDirection = 'asc',
-        ...filters
-      } = params;
-
-      const queryParams = new URLSearchParams();
-      queryParams.append('page', page.toString());
-      queryParams.append('perPage', perPage.toString());
-
-      if (search) {
-        queryParams.append('search', search);
-      }
-
-      if (sortBy) {
-        queryParams.append('sortBy', sortBy);
-        queryParams.append('sortDirection', sortDirection);
-      }
-
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          queryParams.append(key, value);
-        }
-      });
-
-      const response = await api.get(`/users?${queryParams}`);
+      const response = await api.get('/users');
       return Array.isArray(response.data) 
         ? response.data.map(user => this.parseUserData(user))
-        : response.data;
+        : [];
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
@@ -112,55 +84,52 @@ class UsersAPI {
     }
   }
 
-  // Create new user using signup and onboard endpoints
+  // Create new user
   static async createUser(userData) {
     try {
-      // Step 1: Create the base user account using signup
+      // First create the user account via auth signup
       const signupData = {
-        first_name: userData.firstName,
-        last_name: userData.lastName,
         email: userData.email,
         password: userData.password,
-        role: userData.role?.toLowerCase()
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        role: userData.role?.toLowerCase() || 'user'
       };
 
-      const signupResponse = await api.post('/auth/signup', signupData);
-      
-      if (!signupResponse.data.access_token) {
-        throw new Error('No access token received after signup');
+      const authResponse = await api.post('/auth/signup', signupData);
+
+      if (!authResponse.data.access_token) {
+        throw new Error('Failed to create user account');
       }
 
-      // Store the token temporarily for the onboarding request
+      // Store the original admin token
       const originalToken = sessionStorage.getItem('access_token');
-      sessionStorage.setItem('access_token', signupResponse.data.access_token);
 
       try {
-        // Step 2: Prepare onboarding data
+        // Set the new user's token for onboarding
+        const newUserToken = authResponse.data.access_token;
+        sessionStorage.setItem('access_token', newUserToken);
+
+        // Prepare onboarding data
         const formData = new FormData();
         
+        // Handle profile image if it exists
         if (userData.profile_url instanceof File) {
           formData.append('profile_url', userData.profile_url);
         }
 
-        formData.append('gender', userData.gender?.toLowerCase());
+        // Add onboarding data
+        formData.append('gender', userData.gender?.toLowerCase() || 'male');
         formData.append('cityId', userData.cityId);
         formData.append('universityId', userData.universityId);
 
-        // Step 3: Complete the onboarding
+        // Submit onboarding data
         const onboardResponse = await api.post('/users/onboard', formData);
 
-        // Restore the original admin token
-        if (originalToken) {
-          sessionStorage.setItem('access_token', originalToken);
-        }
-
         return this.parseUserData(onboardResponse.data);
-      } catch (error) {
-        // If onboarding fails, restore the original token before throwing the error
-        if (originalToken) {
-          sessionStorage.setItem('access_token', originalToken);
-        }
-        throw error;
+      } finally {
+        // Restore the original admin token
+        sessionStorage.setItem('access_token', originalToken);
       }
     } catch (error) {
       console.error('Error creating user:', error);
@@ -177,7 +146,8 @@ class UsersAPI {
         formData.append('profile_url', userData.profile_url);
       }
 
-      Object.entries(this.formatUserData(userData)).forEach(([key, value]) => {
+      const userDataFormatted = this.formatUserData(userData);
+      Object.entries(userDataFormatted).forEach(([key, value]) => {
         if (value !== null && value !== undefined && key !== 'profile_url') {
           formData.append(key, value.toString());
         }
@@ -228,28 +198,6 @@ class UsersAPI {
     }
   }
 
-  // Get user events
-  static async getUserEvents(userId) {
-    try {
-      const response = await api.get(`/users/${userId}/events`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user events:', error);
-      throw error;
-    }
-  }
-
-  // Get user activity
-  static async getUserActivity(userId) {
-    try {
-      const response = await api.get(`/users/${userId}/activity`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user activity:', error);
-      throw error;
-    }
-  }
-
   // Format user data for API
   static formatUserData(userData) {
     return {
@@ -262,7 +210,7 @@ class UsersAPI {
       profile_url: userData.profile_url,
       cityId: userData.cityId,
       universityId: userData.universityId,
-      status: userData.status === 'Active' || userData.status === true ? true : false
+      status: userData.status === 'Active' || userData.status === true
     };
   }
 
@@ -286,6 +234,28 @@ class UsersAPI {
       createdAt: userData.createdAt,
       updatedAt: userData.updatedAt
     };
+  }
+
+  // Get user events
+  static async getUserEvents(userId) {
+    try {
+      const response = await api.get(`/users/${userId}/events`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user events:', error);
+      throw error;
+    }
+  }
+
+  // Get user activity
+  static async getUserActivity(userId) {
+    try {
+      const response = await api.get(`/users/${userId}/activity`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      throw error;
+    }
   }
 }
 

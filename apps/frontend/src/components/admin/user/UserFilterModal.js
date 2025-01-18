@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Chip } from "@nextui-org/react";
 import { motion } from "framer-motion";
+import { RotateCcw } from "lucide-react";
 
 const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, universities, cities }) => {
   const [filters, setFilters] = useState(initialFilters);
@@ -21,16 +22,34 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
   const handleResetFilters = () => {
     setFilters({
       role: '',
-      university: '',
-      city: '',
+      universityId: '',
+      cityId: '',
       gender: '',
       status: '',
     });
   };
 
+  const handleResetField = (field) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      [field]: ''
+    }));
+  };
+
   const renderFilterChips = () => {
     return Object.entries(filters).map(([key, value]) => {
       if (value) {
+        let displayValue = value;
+        
+        if (key === 'universityId') {
+          const university = universities.find(u => u.id === value);
+          displayValue = university ? university.name : value;
+        }
+        if (key === 'cityId') {
+          const city = cities.find(c => c.id === value);
+          displayValue = city ? city.name : value;
+        }
+        
         return (
           <Chip 
             key={key} 
@@ -39,13 +58,44 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
             color="primary"
             className="bg-gradient-to-r from-purple-400 to-pink-600 text-white"
           >
-            {`${key}: ${value}`}
+            {`${key.replace('Id', '')}: ${displayValue}`}
           </Chip>
         );
       }
       return null;
     }).filter(Boolean);
   };
+
+  const SelectWithReset = ({ label, placeholder, value, onChange, options, field }) => (
+    <div className="relative flex items-center gap-2">
+      <Select
+        label={label}
+        placeholder={placeholder}
+        selectedKeys={value ? [value] : []}
+        onChange={onChange}
+        className="flex-1"
+        classNames={{
+          trigger: ["bg-transparent", "text-white"],
+          label: "text-white",
+          popover: "bg-gray-900",
+          innerWrapper: "bg-transparent",
+        }}
+      >
+        {options}
+      </Select>
+      {value && (
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => handleResetField(field)}
+          className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+        >
+          <RotateCcw size={16} />
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <Modal 
@@ -96,63 +146,69 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <Select
+            <SelectWithReset
               label="Role"
               placeholder="Select role"
-              selectedKeys={filters.role ? [filters.role] : []}
+              value={filters.role}
               onChange={(e) => handleFilterChange('role', e.target.value)}
-              className="max-w-xs"
-            >
-              <SelectItem key="Admin" value="Admin">Admin</SelectItem>
-              <SelectItem key="Student" value="Student">Student</SelectItem>
-            </Select>
-            <Select
+              field="role"
+              options={[
+                <SelectItem key="USER" value="USER">User</SelectItem>,
+                <SelectItem key="ADMIN" value="ADMIN">Admin</SelectItem>
+              ]}
+            />
+            
+            <SelectWithReset
               label="University"
               placeholder="Select university"
-              selectedKeys={filters.university ? [filters.university] : []}
-              onChange={(e) => handleFilterChange('university', e.target.value)}
-              className="max-w-xs"
-            >
-              {universities.map((university) => (
-                <SelectItem key={university.id} value={university.name}>
+              value={filters.universityId}
+              onChange={(e) => handleFilterChange('universityId', e.target.value)}
+              field="universityId"
+              options={universities.map((university) => (
+                <SelectItem key={university.id} value={university.id}>
                   {university.name}
                 </SelectItem>
               ))}
-            </Select>
-            <Select
+            />
+
+            <SelectWithReset
               label="City"
               placeholder="Select city"
-              selectedKeys={filters.city ? [filters.city] : []}
-              onChange={(e) => handleFilterChange('city', e.target.value)}
-              className="max-w-xs"
-            >
-              {cities.map((city) => (
-                <SelectItem key={city.id} value={city.name}>
+              value={filters.cityId}
+              onChange={(e) => handleFilterChange('cityId', e.target.value)}
+              field="cityId"
+              options={cities.map((city) => (
+                <SelectItem key={city.id} value={city.id}>
                   {city.name}
                 </SelectItem>
               ))}
-            </Select>
-            <Select
+            />
+
+            <SelectWithReset
               label="Gender"
               placeholder="Select gender"
-              selectedKeys={filters.gender ? [filters.gender] : []}
+              value={filters.gender}
               onChange={(e) => handleFilterChange('gender', e.target.value)}
-              className="max-w-xs"
-            >
-              <SelectItem key="Male" value="Male">Male</SelectItem>
-              <SelectItem key="Female" value="Female">Female</SelectItem>
-            </Select>
-            <Select
+              field="gender"
+              options={[
+                <SelectItem key="male" value="male">Male</SelectItem>,
+                <SelectItem key="female" value="female">Female</SelectItem>
+              ]}
+            />
+
+            <SelectWithReset
               label="Status"
               placeholder="Select status"
-              selectedKeys={filters.status ? [filters.status] : []}
+              value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="max-w-xs"
-            >
-              <SelectItem key="Active" value="Active">Active</SelectItem>
-              <SelectItem key="Suspended" value="Suspended">Suspended</SelectItem>
-            </Select>
+              field="status"
+              options={[
+                <SelectItem key="Active" value="Active">Active</SelectItem>,
+                <SelectItem key="Suspended" value="Suspended">Suspended</SelectItem>
+              ]}
+            />
           </motion.div>
+          
           <motion.div 
             className="flex flex-wrap gap-2 mt-4"
             initial={{ opacity: 0, y: 20 }}
@@ -162,19 +218,15 @@ const UserFilterModal = ({ isOpen, onClose, onApplyFilters, initialFilters, univ
             {renderFilterChips()}
           </motion.div>
         </ModalBody>
+        
         <ModalFooter>
           <Button 
             color="danger" 
             variant="flat" 
             onPress={handleResetFilters}
-            className="bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-80 transition-opacity"
-            style={{
-              color: 'white !important',
-              fontWeight: '600',
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-            }}
+            className="bg-gradient-to-r from-red-300 to-pink-300 text-white"
           >
-            Reset
+            Reset All
           </Button>
           <Button 
             color="primary" 

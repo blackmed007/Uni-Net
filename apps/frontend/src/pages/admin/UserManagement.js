@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Input, Button, useDisclosure, Pagination } from "@nextui-org/react";
 import { Search, Filter, UserPlus } from "lucide-react";
 import UserListTable from '../../components/admin/user/UserListTable';
@@ -12,14 +12,15 @@ import LocationAPI from '../../services/location.api';
 
 const UserManagement = () => {
   // State management
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [displayedUsers, setDisplayedUsers] = useState([]);
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     role: '',
-    university: '',
-    city: '',
+    universityId: '',
+    cityId: '',
     gender: '',
     status: '',
   });
@@ -27,92 +28,31 @@ const UserManagement = () => {
   const [actionType, setActionType] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Modal controls
-  const { 
-    isOpen: isFilterOpen, 
-    onOpen: onFilterOpen, 
-    onClose: onFilterClose 
-  } = useDisclosure();
-  
-  const { 
-    isOpen: isUserDetailOpen, 
-    onOpen: onUserDetailOpen, 
-    onClose: onUserDetailClose 
-  } = useDisclosure();
-  
-  const { 
-    isOpen: isEditOpen, 
-    onOpen: onEditOpen, 
-    onClose: onEditClose 
-  } = useDisclosure();
-  
-  const { 
-    isOpen: isConfirmOpen, 
-    onOpen: onConfirmOpen, 
-    onClose: onConfirmClose 
-  } = useDisclosure();
-  
-  const { 
-    isOpen: isCreateOpen, 
-    onOpen: onCreateOpen, 
-    onClose: onCreateClose 
-  } = useDisclosure();
+  const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
+  const { isOpen: isUserDetailOpen, onOpen: onUserDetailOpen, onClose: onUserDetailClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
+  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
 
-  // Fetch data from APIs
+  // Fetch initial data
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch users with params
-      const usersResponse = await UsersAPI.getUsers({
-        page: currentPage,
-        perPage: itemsPerPage,
-        search: searchTerm,
-        sortBy: sortConfig.key,
-        sortDirection: sortConfig.direction,
-        ...filters
-      });
+      const [usersResponse, citiesResponse, universitiesResponse] = await Promise.all([
+        UsersAPI.getUsers(),
+        LocationAPI.fetchCities(),
+        LocationAPI.fetchUniversities()
+      ]);
 
-      // Safely handle the response data
-      if (usersResponse) {
-        let usersData = [];
-        if (Array.isArray(usersResponse)) {
-          usersData = usersResponse;
-        } else if (usersResponse.data && Array.isArray(usersResponse.data)) {
-          usersData = usersResponse.data;
-        }
-        
-        // Transform and set users data
-        setUsers(usersData);
-        
-        // Set total pages if pagination info is available
-        if (usersResponse.meta?.total) {
-          setTotalPages(Math.ceil(usersResponse.meta.total / itemsPerPage));
-        } else if (Array.isArray(usersResponse)) {
-          setTotalPages(Math.ceil(usersResponse.length / itemsPerPage));
-        }
-      }
-
-      // Fetch cities if needed
-      if (cities.length === 0) {
-        const citiesResponse = await LocationAPI.fetchCities();
-        if (citiesResponse && Array.isArray(citiesResponse)) {
-          setCities(citiesResponse);
-        }
-      }
-      
-      // Fetch universities if needed
-      if (universities.length === 0) {
-        const universitiesResponse = await LocationAPI.fetchUniversities();
-        if (universitiesResponse && Array.isArray(universitiesResponse)) {
-          setUniversities(universitiesResponse);
-        }
-      }
+      setAllUsers(usersResponse || []);
+      setCities(citiesResponse || []);
+      setUniversities(universitiesResponse || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to fetch data. Please try again.');
@@ -121,10 +61,102 @@ const UserManagement = () => {
     }
   };
 
-  // Effect hooks
   useEffect(() => {
     fetchData();
-  }, [currentPage, searchTerm, sortConfig, filters]);
+  }, []);
+
+  // Filter and search logic
+  const filterAndSearchUsers = useMemo(() => {
+    return allUsers.filter(user => {
+      // Search functionality
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const searchFields = [
+          user.firstName,
+          user.lastName,
+          user.email,
+          user.role,
+          user.gender,
+          user.university?.name,
+          user.city?.name
+        ].filter(Boolean);
+
+        const matchesSearch = searchFields.some(field => 
+          field.toString().toLowerCase().includes(searchLower)
+        );
+
+        if (!matchesSearch) return false;
+      }
+
+      // Filter functionality
+      // Role filter - case insensitive comparison
+      if (filters.role && user.role?.toLowerCase() !== filters.role.toLowerCase()) {
+        return false;
+      }
+
+      // University filter
+      if (filters.universityId && user.universityId !== filters.universityId) {
+        return false;
+      }
+
+      // City filter
+      if (filters.cityId && user.cityId !== filters.cityId) {
+        return false;
+      }
+
+      // Gender filter - case insensitive comparison
+      if (filters.gender && user.gender?.toLowerCase() !== filters.gender.toLowerCase()) {
+        return false;
+      }
+
+      // Status filter
+      if (filters.status && user.status !== filters.status) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [allUsers, searchTerm, filters]);
+
+  // Sorting logic
+  const sortedUsers = useMemo(() => {
+    if (!sortConfig.key) return filterAndSearchUsers;
+
+    return [...filterAndSearchUsers].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle nested properties for university and city
+      if (sortConfig.key === 'university') {
+        aValue = a.university?.name;
+        bValue = b.university?.name;
+      } else if (sortConfig.key === 'city') {
+        aValue = a.city?.name;
+        bValue = b.city?.name;
+      }
+
+      // Handle null/undefined values
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+      if (aValue === bValue) return 0;
+
+      // Case insensitive comparison for string values
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      const compareResult = aValue < bValue ? -1 : 1;
+      return sortConfig.direction === 'ascending' ? compareResult : -compareResult;
+    });
+  }, [filterAndSearchUsers, sortConfig]);
+
+  // Pagination logic
+  useEffect(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    setDisplayedUsers(sortedUsers.slice(start, end));
+  }, [sortedUsers, currentPage, itemsPerPage]);
 
   // Event handlers
   const handleSearch = (e) => {
@@ -135,15 +167,15 @@ const UserManagement = () => {
   const handleFilter = (newFilters) => {
     setFilters(newFilters);
     setCurrentPage(1);
-    onFilterClose();
   };
 
   const handleSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'ascending' 
+        ? 'descending' 
+        : 'ascending'
+    }));
   };
 
   const handleUserAction = (action, user) => {
@@ -184,7 +216,6 @@ const UserManagement = () => {
           throw new Error('Unknown action type');
       }
       
-      // Refresh data after successful action
       await fetchData();
       onConfirmClose();
     } catch (error) {
@@ -223,6 +254,8 @@ const UserManagement = () => {
     }
   };
 
+  const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold text-white">User Management</h1>
@@ -258,7 +291,7 @@ const UserManagement = () => {
       </div>
 
       <UserListTable
-        users={users}
+        users={displayedUsers}
         onUserAction={handleUserAction}
         onSort={handleSort}
         sortConfig={sortConfig}
