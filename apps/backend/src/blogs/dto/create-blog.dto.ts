@@ -49,4 +49,12 @@ export class CreateBlogDto {
     description: 'This is a required property',
   })
   status: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    type: String,
+    description: 'This is a required property',
+  })
+  excerpt: string;
 }

@@ -10,6 +10,7 @@ import {
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
+import { Blog } from '@prisma/client';
 
 @Controller('blogs')
 export class BlogsController {
@@ -38,5 +39,9 @@ export class BlogsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.blogsService.remove(id);
+  }
+  @Get(':id/view')
+  async viewBlog(@Param('id') id: string): Promise<Blog> {
+    return this.blogsService.incrementViews(id);
   }
 }
