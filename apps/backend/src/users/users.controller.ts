@@ -116,6 +116,13 @@ export class UsersController {
     return this.usersService.getUserBookmarks(userId);
   }
 
+  @Get('events')
+  @UseGuards(JwtGuard)
+  async getUserEvents(@Request() req: ExpressRequest) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserJoinedEvents(userId);
+  }
+
   @Delete('bookmarks/:blogId')
   @UseGuards(JwtGuard)
   async removeBookmark(
