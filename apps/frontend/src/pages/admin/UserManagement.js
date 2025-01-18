@@ -7,8 +7,11 @@ import UserFilterModal from '../../components/admin/user/UserFilterModal';
 import EditUserModal from '../../components/admin/user/EditUserModal';
 import UserConfirmActionModal from '../../components/admin/user/UserConfirmActionModal';
 import CreateUserModal from '../../components/admin/user/CreateUserModal';
+import UsersAPI from '../../services/users.api';
+import LocationAPI from '../../services/location.api';
 
 const UserManagement = () => {
+  // State management
   const [users, setUsers] = useState([]);
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
@@ -24,68 +27,106 @@ const UserManagement = () => {
   const [actionType, setActionType] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Modal controls
   const { 
     isOpen: isFilterOpen, 
     onOpen: onFilterOpen, 
     onClose: onFilterClose 
   } = useDisclosure();
+  
   const { 
     isOpen: isUserDetailOpen, 
     onOpen: onUserDetailOpen, 
     onClose: onUserDetailClose 
   } = useDisclosure();
+  
   const { 
     isOpen: isEditOpen, 
     onOpen: onEditOpen, 
     onClose: onEditClose 
   } = useDisclosure();
+  
   const { 
     isOpen: isConfirmOpen, 
     onOpen: onConfirmOpen, 
     onClose: onConfirmClose 
   } = useDisclosure();
+  
   const { 
     isOpen: isCreateOpen, 
     onOpen: onCreateOpen, 
     onClose: onCreateClose 
   } = useDisclosure();
 
+  // Fetch data from APIs
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch users with params
+      const usersResponse = await UsersAPI.getUsers({
+        page: currentPage,
+        perPage: itemsPerPage,
+        search: searchTerm,
+        sortBy: sortConfig.key,
+        sortDirection: sortConfig.direction,
+        ...filters
+      });
+
+      // Safely handle the response data
+      if (usersResponse) {
+        let usersData = [];
+        if (Array.isArray(usersResponse)) {
+          usersData = usersResponse;
+        } else if (usersResponse.data && Array.isArray(usersResponse.data)) {
+          usersData = usersResponse.data;
+        }
+        
+        // Transform and set users data
+        setUsers(usersData);
+        
+        // Set total pages if pagination info is available
+        if (usersResponse.meta?.total) {
+          setTotalPages(Math.ceil(usersResponse.meta.total / itemsPerPage));
+        } else if (Array.isArray(usersResponse)) {
+          setTotalPages(Math.ceil(usersResponse.length / itemsPerPage));
+        }
+      }
+
+      // Fetch cities if needed
+      if (cities.length === 0) {
+        const citiesResponse = await LocationAPI.fetchCities();
+        if (citiesResponse && Array.isArray(citiesResponse)) {
+          setCities(citiesResponse);
+        }
+      }
+      
+      // Fetch universities if needed
+      if (universities.length === 0) {
+        const universitiesResponse = await LocationAPI.fetchUniversities();
+        if (universitiesResponse && Array.isArray(universitiesResponse)) {
+          setUniversities(universitiesResponse);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Effect hooks
   useEffect(() => {
-    // Load initial data
-    const loadInitialData = () => {
-      const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
-      const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
-      
-      // Ensure all users have required fields
-      const processedUsers = storedUsers.map(user => ({
-        ...user,
-        id: user.id || String(Date.now()),
-        registrationDate: user.registrationDate || new Date().toISOString(),
-        status: user.status || 'Active'
-      }));
-      
-      setUsers(processedUsers);
-      setUniversities(storedUniversities);
-      setCities(storedCities);
-    };
+    fetchData();
+  }, [currentPage, searchTerm, sortConfig, filters]);
 
-    loadInitialData();
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      const updatedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      setUsers(updatedUsers);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
+  // Event handlers
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
@@ -126,130 +167,72 @@ const UserManagement = () => {
     }
   };
 
-  const handleConfirmAction = () => {
-    switch (actionType) {
-      case 'suspend':
-        updateUserStatus(selectedUser.id, 'Suspended');
-        break;
-      case 'activate':
-        updateUserStatus(selectedUser.id, 'Active');
-        break;
-      case 'delete':
-        deleteUser(selectedUser.id);
-        break;
-      default:
-        console.log('Unknown action:', actionType);
-    }
-    onConfirmClose();
-  };
-
-  const updateUserStatus = (userId, newStatus) => {
-    const updatedUsers = users.map(user => 
-      user.id === userId ? { ...user, status: newStatus } : user
-    );
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    window.dispatchEvent(new Event('storage'));
-  };
-
-  const deleteUser = (userId) => {
-    const updatedUsers = users.filter(user => user.id !== userId);
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    window.dispatchEvent(new Event('storage'));
-  };
-
-  const handleEditUser = (updatedUser) => {
-    const updatedUsers = users.map(user => 
-      user.id === updatedUser.id ? updatedUser : user
-    );
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    window.dispatchEvent(new Event('storage'));
-    onEditClose();
-  };
-
-  const handleCreateUser = (newUser) => {
-    const lastId = users.length > 0 ? Math.max(...users.map(u => parseInt(u.id))) : 0;
-    const newId = String(lastId + 1).padStart(3, '0');
-    
-    const userWithDefaults = {
-      ...newUser,
-      id: newId,
-      registrationDate: new Date().toISOString(),
-      status: 'Active'
-    };
-
-    const updatedUsers = [...users, userWithDefaults];
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    window.dispatchEvent(new Event('storage'));
-    onCreateClose();
-  };
-
-  // Filter and sort users
-  const getFilteredAndSortedUsers = () => {
-    let filtered = users.filter(user => {
-      const searchFields = [
-        user.id,
-        user.firstName,
-        user.lastName,
-        user.email,
-        user.role,
-        user.university,
-        user.city,
-        user.gender,
-        user.status
-      ];
+  const handleConfirmAction = async () => {
+    try {
+      setIsLoading(true);
+      switch (actionType) {
+        case 'suspend':
+          await UsersAPI.suspendUser(selectedUser.id);
+          break;
+        case 'activate':
+          await UsersAPI.activateUser(selectedUser.id);
+          break;
+        case 'delete':
+          await UsersAPI.deleteUser(selectedUser.id);
+          break;
+        default:
+          throw new Error('Unknown action type');
+      }
       
-      const matchesSearch = searchFields.some(field => 
-        field && field.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
-      const matchesFilters = (
-        (!filters.role || user.role === filters.role) &&
-        (!filters.university || user.university === filters.university) &&
-        (!filters.city || user.city === filters.city) &&
-        (!filters.gender || user.gender === filters.gender) &&
-        (!filters.status || user.status === filters.status)
-      );
-
-      return matchesSearch && matchesFilters;
-    });
-
-    if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let aValue = a[sortConfig.key];
-        let bValue = b[sortConfig.key];
-
-        if (sortConfig.key === 'name') {
-          aValue = `${a.firstName} ${a.lastName}`;
-          bValue = `${b.firstName} ${b.lastName}`;
-        }
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-      });
+      // Refresh data after successful action
+      await fetchData();
+      onConfirmClose();
+    } catch (error) {
+      console.error('Error performing action:', error);
+      setError('Failed to perform action. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    return filtered;
   };
 
-  const filteredAndSortedUsers = getFilteredAndSortedUsers();
-  const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
-  const currentUsers = filteredAndSortedUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleEditUser = async (updatedUser) => {
+    try {
+      setIsLoading(true);
+      await UsersAPI.updateUser(updatedUser.id, updatedUser);
+      await fetchData();
+      onEditClose();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError('Failed to update user. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateUser = async (userData) => {
+    try {
+      setIsLoading(true);
+      await UsersAPI.createUser(userData);
+      await fetchData();
+      onCreateClose();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      setError('Failed to create user. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold text-white">User Management</h1>
+      
+      {error && (
+        <div className="bg-red-500 text-white p-4 rounded-lg">
+          {error}
+        </div>
+      )}
+      
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
           placeholder="Search users..."
@@ -258,28 +241,39 @@ const UserManagement = () => {
           startContent={<Search className="text-gray-400" size={20} />}
           className="w-full sm:w-1/2 bg-gray-800 text-white rounded-full"
         />
-        <Button color="primary" onPress={onFilterOpen} startContent={<Filter size={20} />}>
+        <Button 
+          color="primary" 
+          onPress={onFilterOpen} 
+          startContent={<Filter size={20} />}
+        >
           Filters
         </Button>
-        <Button color="success" onPress={onCreateOpen} startContent={<UserPlus size={20} />}>
+        <Button 
+          color="success" 
+          onPress={onCreateOpen} 
+          startContent={<UserPlus size={20} />}
+        >
           Create User
         </Button>
       </div>
 
       <UserListTable
-        users={currentUsers}
+        users={users}
         onUserAction={handleUserAction}
         onSort={handleSort}
         sortConfig={sortConfig}
+        isLoading={isLoading}
       />
 
-      <div className="flex justify-center mt-4">
-        <Pagination
-          total={totalPages}
-          page={currentPage}
-          onChange={setCurrentPage}
-        />
-      </div>
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-4">
+          <Pagination
+            total={totalPages}
+            page={currentPage}
+            onChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       <UserDetailModal
         isOpen={isUserDetailOpen}

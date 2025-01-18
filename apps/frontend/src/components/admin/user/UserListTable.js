@@ -1,17 +1,29 @@
 import React from 'react';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, User, Chip, Tooltip, Button } from "@nextui-org/react";
+import { 
+  Table, 
+  TableHeader, 
+  TableColumn, 
+  TableBody, 
+  TableRow, 
+  TableCell, 
+  User, 
+  Chip, 
+  Tooltip, 
+  Button,
+  Spinner 
+} from "@nextui-org/react";
 import { Eye, Edit2, UserX, UserCheck, Trash2 } from "lucide-react";
 
-const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
+const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) => {
   const columns = [
-    { name: '#ID', uid: 'id', sortable: true },
-    { name: 'NAME', uid: 'name', sortable: true },
-    { name: 'ROLE', uid: 'role', sortable: true },
-    { name: 'STATUS', uid: 'status', sortable: true },
-    { name: 'REGISTRATION DATE', uid: 'registrationDate', sortable: true },
-    { name: 'GENDER', uid: 'gender', sortable: true },
-    { name: 'UNIVERSITY', uid: 'university', sortable: true },
-    { name: 'CITY', uid: 'city', sortable: true },
+    { name: '#ID', uid: 'id', sortable: false },
+    { name: 'NAME', uid: 'name', sortable: false },
+    { name: 'ROLE', uid: 'role', sortable: false },
+    { name: 'STATUS', uid: 'status', sortable: false },
+    { name: 'REGISTRATION DATE', uid: 'createdAt', sortable: false },
+    { name: 'GENDER', uid: 'gender', sortable: false },
+    { name: 'UNIVERSITY', uid: 'university', sortable: false },
+    { name: 'CITY', uid: 'city', sortable: false },
     { name: 'ACTIONS', uid: 'actions' },
   ];
 
@@ -20,28 +32,41 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
 
     switch (columnKey) {
       case 'id':
-        return <span className="text-xs font-medium text-gray-400">#{user.id}</span>;
+        return (
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-gray-400">#{user.id}</span>
+          </div>
+        );
+
       case 'name':
         return (
           <User
             avatarProps={{ 
               radius: "lg", 
-              src: user.profilePicture || `https://i.pravatar.cc/150?u=${user.id}` 
+              size: "sm",
+              src: user.profile_url || `https://i.pravatar.cc/150?u=${user.id}`,
+              className: "bg-gray-700"
             }}
             description={user.email}
             name={`${user.firstName} ${user.lastName}`}
+            classNames={{
+              name: "text-white",
+              description: "text-gray-400"
+            }}
           />
         );
+
       case 'role':
         return (
           <Chip
-            color={user.role === 'Admin' ? 'primary' : 'secondary'}
+            color={user.role?.toLowerCase() === 'admin' ? 'primary' : 'secondary'}
             size="sm"
             variant="flat"
           >
-            {user.role}
+            {user.role || 'User'}
           </Chip>
         );
+
       case 'status':
         return (
           <Chip
@@ -49,64 +74,143 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
             size="sm"
             variant="flat"
           >
-            {user.status}
+            {user.status || 'Unknown'}
           </Chip>
         );
-      case 'registrationDate':
-        return new Date(user.registrationDate).toLocaleDateString();
+
+      case 'createdAt':
+        return (
+          <div className="flex flex-col">
+            <span className="text-xs">
+              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+            </span>
+          </div>
+        );
+
+      case 'gender':
+        return (
+          <span className="text-xs capitalize">
+            {user.gender || 'N/A'}
+          </span>
+        );
+
+      case 'university':
+        return (
+          <span className="text-xs">
+            {typeof user.university === 'object' ? user.university?.name : user.university || 'N/A'}
+          </span>
+        );
+
+      case 'city':
+        return (
+          <span className="text-xs">
+            {typeof user.city === 'object' ? user.city?.name : user.city || 'N/A'}
+          </span>
+        );
+
       case 'actions':
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-center">
             <Tooltip content="View Details">
-              <Button isIconOnly size="sm" variant="light" onPress={() => onUserAction('view', user)}>
-                <Eye size={20} />
+              <Button 
+                isIconOnly 
+                size="sm" 
+                variant="light" 
+                onPress={() => onUserAction('view', user)}
+              >
+                <Eye size={18} />
               </Button>
             </Tooltip>
             <Tooltip content="Edit User">
-              <Button isIconOnly size="sm" variant="light" onPress={() => onUserAction('edit', user)}>
-                <Edit2 size={20} />
+              <Button 
+                isIconOnly 
+                size="sm" 
+                variant="light" 
+                onPress={() => onUserAction('edit', user)}
+              >
+                <Edit2 size={18} />
               </Button>
             </Tooltip>
             {user.status === 'Active' ? (
               <Tooltip content="Suspend User">
-                <Button isIconOnly size="sm" variant="light" color="warning" onPress={() => onUserAction('suspend', user)}>
-                  <UserX size={20} />
+                <Button 
+                  isIconOnly 
+                  size="sm" 
+                  variant="light" 
+                  color="warning" 
+                  onPress={() => onUserAction('suspend', user)}
+                >
+                  <UserX size={18} />
                 </Button>
               </Tooltip>
             ) : (
               <Tooltip content="Activate User">
-                <Button isIconOnly size="sm" variant="light" color="success" onPress={() => onUserAction('activate', user)}>
-                  <UserCheck size={20} />
+                <Button 
+                  isIconOnly 
+                  size="sm" 
+                  variant="light" 
+                  color="success" 
+                  onPress={() => onUserAction('activate', user)}
+                >
+                  <UserCheck size={18} />
                 </Button>
               </Tooltip>
             )}
             <Tooltip content="Delete User">
-              <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => onUserAction('delete', user)}>
-                <Trash2 size={20} />
+              <Button 
+                isIconOnly 
+                size="sm" 
+                variant="light" 
+                color="danger" 
+                onPress={() => onUserAction('delete', user)}
+              >
+                <Trash2 size={18} />
               </Button>
             </Tooltip>
           </div>
         );
+
       default:
-        return cellValue;
+        return cellValue || 'N/A';
     }
   };
+
+  const LoadingContent = () => (
+    <div className="flex justify-center items-center h-64">
+      <Spinner size="lg" color="primary">
+        <div className="text-white mt-4">Loading users...</div>
+      </Spinner>
+    </div>
+  );
+
+  const EmptyContent = () => (
+    <div className="flex justify-center items-center h-64 text-gray-400">
+      No users found.
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingContent />;
+  }
+
+  if (!users?.length) {
+    return <EmptyContent />;
+  }
 
   // Prepare table items with keys
   const tableItems = users.map(user => ({
     id: user.id,
-    name: `${user.firstName} ${user.lastName}`,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
     role: user.role,
     status: user.status,
-    registrationDate: user.registrationDate,
+    createdAt: user.createdAt,
     gender: user.gender,
     university: user.university,
     city: user.city,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    profilePicture: user.profilePicture,
-    key: user.id // Explicit key for each item
+    profile_url: user.profile_url,
+    key: user.id
   }));
 
   return (
@@ -114,6 +218,13 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
       aria-label="User list table"
       selectionMode="none"
       className="mt-4"
+      bottomContent={
+        isLoading && (
+          <div className="flex justify-center w-full">
+            <Spinner size="sm" color="white" />
+          </div>
+        )
+      }
     >
       <TableHeader columns={columns}>
         {(column) => (
@@ -122,17 +233,23 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig }) => {
             align={column.uid === 'actions' ? 'center' : 'start'}
             onClick={() => column.sortable && onSort(column.uid)}
             className={column.sortable ? 'cursor-pointer hover:bg-gray-800' : ''}
+            allowsSorting={column.sortable}
           >
-            {column.name}
-            {sortConfig.key === column.uid && (
-              <span className="ml-2">
-                {sortConfig.direction === 'ascending' ? '↑' : '↓'}
-              </span>
-            )}
+            <div className="flex items-center gap-4">
+              {column.name}
+              {sortConfig.key === column.uid && (
+                <span className="text-gray-500">
+                  {sortConfig.direction === 'ascending' ? '↑' : '↓'}
+                </span>
+              )}
+            </div>
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody items={tableItems}>
+      <TableBody 
+        items={tableItems}
+        emptyContent="No users found"
+      >
         {(item) => (
           <TableRow key={item.id}>
             {(columnKey) => (
