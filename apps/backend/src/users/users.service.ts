@@ -15,7 +15,7 @@ import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
 } from '@prisma/client/runtime/library';
-import { Bookmark, Event } from '@prisma/client';
+import { Bookmark, Event, UserActivity } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -312,6 +312,16 @@ export class UsersService {
           userId,
           blogId,
         },
+      },
+    });
+  }
+  async getUserActivities(userId: string): Promise<UserActivity[]> {
+    return this.prisma.userActivity.findMany({
+      where: {
+        userId: userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
