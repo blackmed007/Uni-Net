@@ -236,26 +236,14 @@ class UsersAPI {
     };
   }
 
-  // Get user events
+  // Placeholder method for getUserEvents (to be implemented later)
   static async getUserEvents(userId) {
-    try {
-      const response = await api.get(`/users/${userId}/events`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user events:', error);
-      throw error;
-    }
+    return [];
   }
 
-  // Get user activity
+  // Placeholder method for getUserActivity (to be implemented later)
   static async getUserActivity(userId) {
-    try {
-      const response = await api.get(`/users/${userId}/activity`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user activity:', error);
-      throw error;
-    }
+    return [];
   }
 }
 

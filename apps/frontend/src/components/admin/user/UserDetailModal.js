@@ -47,17 +47,8 @@ const UserDetailModal = ({
       setError(null);
       
       try {
-        const [details, events, activity] = await Promise.all([
-          UsersAPI.getUser(user.id),
-          UsersAPI.getUserEvents(user.id),
-          UsersAPI.getUserActivity(user.id)
-        ]);
-
-        setUserDetails({
-          ...details,
-          events,
-          activity
-        });
+        const details = await UsersAPI.getUser(user.id);
+        setUserDetails(details);
       } catch (error) {
         console.error('Error fetching user details:', error);
         setError('Failed to load user details. Please try again.');
@@ -122,42 +113,14 @@ const UserDetailModal = ({
         );
       case "activity":
         return (
-          <div className="space-y-4">
-            <div className="text-sm text-gray-400 mb-4">Recent activities</div>
-            {userDetails?.activity && userDetails.activity.length > 0 ? (
-              userDetails.activity.map((item, index) => (
-                <ActivityItem 
-                  key={index}
-                  action={item.action}
-                  timestamp={item.timestamp}
-                />
-              ))
-            ) : (
-              <div className="text-center text-gray-500 py-4">
-                No activity records found
-              </div>
-            )}
+          <div className="flex items-center justify-center py-12 text-gray-500">
+            Activity data will be available soon.
           </div>
         );
       case "events":
         return (
-          <div className="space-y-4">
-            <div className="text-sm text-gray-400 mb-4">Joined events</div>
-            {userDetails?.events && userDetails.events.length > 0 ? (
-              userDetails.events.map((event, index) => (
-                <EventItem 
-                  key={index}
-                  name={event.name}
-                  date={new Date(event.datetime).toLocaleDateString()}
-                  location={event.location}
-                  status={new Date(event.datetime) > new Date() ? 'Upcoming' : 'Completed'}
-                />
-              ))
-            ) : (
-              <div className="text-center text-gray-500 py-4">
-                No events joined yet
-              </div>
-            )}
+          <div className="flex items-center justify-center py-12 text-gray-500">
+            Events data will be available soon.
           </div>
         );
       default:
@@ -178,7 +141,7 @@ const UserDetailModal = ({
       <ModalContent>
         {(onClose) => (
           <ModalBody className="p-0">
-            <div className="bg-gradient-to-br from-gray-900 to-gray-950 p-8">
+            <div className="bg-gradient-to-br from-gray-1000 to-black p-8">
               <div className="flex justify-between items-start mb-8">
                 <div className="flex items-center space-x-6">
                   <Avatar
@@ -238,7 +201,7 @@ const UserDetailModal = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-gray-900 p-6 rounded-lg shadow-xl"
+                  className="bg-from-gray-1000 to-black p-6 rounded-lg shadow-xl"
                 >
                   {renderContent()}
                 </motion.div>
@@ -267,35 +230,6 @@ const InfoItem = ({ icon: Icon, label, value }) => (
       <p className="text-xs text-gray-400">{label}</p>
       <p className="text-sm font-medium text-white">{value || 'N/A'}</p>
     </div>
-  </div>
-);
-
-const ActivityItem = ({ action, timestamp }) => (
-  <div className="flex justify-between items-center py-3 px-4 bg-gray-800 rounded-lg">
-    <span className="text-sm text-white">{action}</span>
-    <span className="text-xs text-gray-400">
-      {new Date(timestamp).toLocaleString()}
-    </span>
-  </div>
-);
-
-const EventItem = ({ name, date, location, status }) => (
-  <div className="flex justify-between items-center py-3 px-4 bg-gray-800 rounded-lg">
-    <div>
-      <span className="text-sm font-medium text-white">{name}</span>
-      <div className="flex items-center mt-1">
-        <Calendar size={12} className="text-gray-400 mr-2" />
-        <span className="text-xs text-gray-400">{date}</span>
-        <MapPin size={12} className="text-gray-400 ml-4 mr-2" />
-        <span className="text-xs text-gray-400">{location}</span>
-      </div>
-    </div>
-    <Chip 
-      size="sm" 
-      color={status === 'Upcoming' ? 'warning' : 'success'}
-    >
-      {status}
-    </Chip>
   </div>
 );
 

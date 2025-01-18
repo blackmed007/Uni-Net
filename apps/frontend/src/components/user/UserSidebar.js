@@ -259,7 +259,7 @@ const UserSidebar = () => {
         isOpen={isModalOpen}
         onClose={onClose}
         classNames={{
-          base: "bg-gray-900 text-white",
+          base: "bg-black text-white",
           header: "border-b border-gray-800",
           body: "py-6",
           footer: "border-t border-gray-800"
