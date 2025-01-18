@@ -57,4 +57,12 @@ export class CreateBlogDto {
     description: 'This is a required property',
   })
   excerpt: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    type: String,
+    description: 'This is a required property',
+  })
+  blog_image: string;
 }
