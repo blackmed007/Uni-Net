@@ -15,7 +15,7 @@ import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
 } from '@prisma/client/runtime/library';
-import { Bookmark } from '@prisma/client';
+import { Bookmark, Event } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -36,7 +36,7 @@ export class UsersService {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      return this.prisma.user.update({
+      const onboardedUser = this.prisma.user.update({
         where: { id: userId },
         data: {
           ...onboardUserDto,
@@ -59,6 +59,15 @@ export class UsersService {
           updatedAt: true,
         },
       });
+
+      await this.prisma.userActivity.create({
+        data: {
+          userId,
+          activity: 'Created a profile',
+        },
+      });
+
+      return onboardedUser;
     } catch (error) {
       this.logger.error(`${error} - Error while creating event`);
 
@@ -202,12 +211,21 @@ export class UsersService {
       throw new ForbiddenException('User or Event not found');
     }
 
-    return this.prisma.usersOnEvents.create({
+    const joinedEvent = this.prisma.usersOnEvents.create({
       data: {
         userId,
         eventId,
       },
     });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId,
+        activity: 'Joined event',
+      },
+    });
+
+    return joinedEvent;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -221,6 +239,13 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
+    });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId: id,
+        activity: 'Updated profile',
+      },
     });
 
     return updatedUser;
@@ -243,12 +268,21 @@ export class UsersService {
   }
 
   async addBookmark(userId: string, blogId: string): Promise<Bookmark> {
-    return this.prisma.bookmark.create({
+    const bookmark = this.prisma.bookmark.create({
       data: {
         user: { connect: { id: userId } },
         blog: { connect: { id: blogId } },
       },
     });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId,
+        activity: 'Added bookmark',
+      },
+    });
+
+    return bookmark;
   }
 
   async getUserBookmarks(userId: string): Promise<Bookmark[]> {
@@ -256,6 +290,19 @@ export class UsersService {
       where: { userId },
       include: { blog: true },
     });
+  }
+
+  async getUserJoinedEvents(userId: string): Promise<Event[]> {
+    const userEvents = await this.prisma.usersOnEvents.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        event: true,
+      },
+    });
+
+    return userEvents.map((userEvent) => userEvent.event);
   }
 
   async removeBookmark(userId: string, blogId: string): Promise<Bookmark> {
