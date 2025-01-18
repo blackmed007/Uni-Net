@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
+import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/react";
 import { Bell, Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileAPI from '../../services/profile.api';
@@ -12,31 +12,55 @@ const CustomNavbar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isIconToggled, setIsIconToggled] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [profileData, setProfileData] = useState({
     fullName: '',
     email: '',
-    profileImage: '',
+    profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', // Default fallback
   });
 
   useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        
+        if (userData) {
+          // Prioritize profile_url from localStorage
+          const profileUrl = userData.profile_url || 
+            (userData.profile && userData.profile.url) || 
+            'https://i.pravatar.cc/150?u=a042581f4e29026704d';
+
+          setProfileData({
+            fullName: `${userData.first_name} ${userData.last_name}`,
+            email: userData.email,
+            profileImage: profileUrl
+          });
+        } else {
+          // Fallback to API if no localStorage data
+          const data = await ProfileAPI.getCurrentProfile();
+          setProfileData({
+            fullName: `${data.first_name} ${data.last_name}`,
+            email: data.email,
+            profileImage: data.profile_url || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
     fetchProfileData();
   }, []);
 
-  const fetchProfileData = async () => {
-    try {
-      const data = await ProfileAPI.getCurrentProfile();
-      setProfileData({
-        fullName: `${data.first_name} ${data.last_name}`,
-        email: data.email,
-        profileImage: data.profile_url || "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-      });
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
-
   const handleSettingsClick = () => {
     navigate('/admin/settings');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('activeTab');
+    localStorage.removeItem('userData');
+    navigate('/login');
+    onClose();
   };
 
   useEffect(() => {
@@ -204,7 +228,7 @@ const CustomNavbar = () => {
                         Notifications
                       </DropdownItem>
                     )}
-                    <DropdownItem key="logout" color="danger">
+                    <DropdownItem key="logout" color="danger" onPress={onOpen}>
                       Log Out
                     </DropdownItem>
                   </DropdownMenu>
@@ -214,6 +238,35 @@ const CustomNavbar = () => {
           </Navbar>
         </motion.div>
       )}
+
+      {/* Logout Modal */}
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        classNames={{
+          base: "bg-gray-900 text-white",
+          header: "border-b border-gray-800",
+          body: "py-6",
+          footer: "border-t border-gray-800"
+        }}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-semibold">Confirm Logout</h3>
+          </ModalHeader>
+          <ModalBody>
+            <p>Are you sure you want to log out?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="gray" variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="danger" onPress={handleLogout}>
+              Log Out
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </AnimatePresence>
   );
 };

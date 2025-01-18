@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Input, Textarea, Button, Card, CardBody } from "@nextui-org/react";
 import { Send, HelpCircle } from "lucide-react";
-import { motion } from "framer-motion";
 
 const ContactAdminForm = ({ user }) => {
   const [formData, setFormData] = useState({
@@ -15,8 +14,10 @@ const ContactAdminForm = ({ user }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Here you would typically send the message to the backend
-    console.log('Message sent:', formData);
+    // Send message to hamid.263c@gmail.com
+    const mailtoLink = `mailto:hamid.263c@gmail.com?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(formData.message)}`;
+    window.location.href = mailtoLink;
+    
     // Reset form after submission
     setFormData({ subject: '', message: '' });
   };
@@ -24,14 +25,11 @@ const ContactAdminForm = ({ user }) => {
   return (
     <Card className="bg-gray-950 border border-gray-800 shadow-xl">
       <CardBody>
-        <motion.form 
+        <form 
           onSubmit={handleSubmit} 
           className="space-y-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
         >
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <div>
             <Input
               label="Subject"
               name="subject"
@@ -44,9 +42,9 @@ const ContactAdminForm = ({ user }) => {
                 label: "text-gray-300",
               }}
             />
-          </motion.div>
+          </div>
           
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <div>
             <Textarea
               label="Message"
               name="message"
@@ -59,22 +57,19 @@ const ContactAdminForm = ({ user }) => {
                 label: "text-gray-300",
               }}
             />
-          </motion.div>
+          </div>
           
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
+          <div>
             <Button 
               type="submit" 
               color="primary"
-              className="w-full bg-gradient-to-r from-purple-400 to-pink-600 text-white hover:opacity-80 transition-all duration-300"
+              className="w-full bg-gradient-to-r from-purple-900 to-purple-700 text-white hover:opacity-90"
               startContent={<Send size={18} />}
             >
               Send Message
             </Button>
-          </motion.div>
-        </motion.form>
+          </div>
+        </form>
       </CardBody>
     </Card>
   );

@@ -99,14 +99,7 @@ const UserSettingsPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
       >
-        <Button
-          color="primary"
-          variant="shadow"
-          startContent={<Save size={18} />}
-          className="bg-gradient-to-r from-purple-400 to-pink-600 text-white hover:opacity-80 transition-all duration-300"
-        >
-          Save All Changes
-        </Button>
+       
       </motion.div>
     </div>
   );

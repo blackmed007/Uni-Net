@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Input, Button, Avatar, Select, SelectItem } from "@nextui-org/react";
 import { User, Mail, Building, MapPin, Upload } from "lucide-react";
 import { motion } from "framer-motion";
+import UsersAPI from '../../../services/users.api';
+import LocationAPI from '../../../services/location.api';
 
 const UserProfileForm = ({ user, onSave }) => {
   const [formData, setFormData] = useState({
@@ -10,29 +12,77 @@ const UserProfileForm = ({ user, onSave }) => {
     email: '',
     university: '',
     city: '',
-    profileImage: ''
+    profileImage: '',
+    universityId: null,
+    cityId: null
   });
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setFormData({
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      email: user.email || '',
-      university: user.university || '',
-      city: user.city || '',
-      profileImage: user.profileImage || ''
-    });
+    const fetchInitialData = async () => {
+      try {
+        // Fetch universities and cities
+        const universitiesData = await LocationAPI.fetchUniversities();
+        const citiesData = await LocationAPI.fetchCities();
+        setUniversities(universitiesData);
+        setCities(citiesData);
 
-    const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
-    const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
-    setUniversities(storedUniversities);
-    setCities(storedCities);
+        // If user prop is provided, fetch full user details
+        if (user && user.id) {
+          const userData = await UsersAPI.getUser(user.id);
+          
+          // Find matching university and city
+          const matchedUniversity = universitiesData.find(
+            uni => uni.id === userData.universityId || 
+                   uni.name === userData.university
+          );
+          
+          const matchedCity = citiesData.find(
+            city => city.id === userData.cityId || 
+                    city.name === userData.city
+          );
+
+          setFormData({
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            email: userData.email || '',
+            university: matchedUniversity ? matchedUniversity.name : '',
+            city: matchedCity ? matchedCity.name : '',
+            profileImage: userData.profile_url || '',
+            universityId: matchedUniversity ? matchedUniversity.id : null,
+            cityId: matchedCity ? matchedCity.id : null
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInitialData();
   }, [user]);
 
   const handleChange = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+    if (key === 'university') {
+      const selectedUniversity = universities.find(uni => uni.name === value);
+      setFormData(prev => ({
+        ...prev,
+        university: value,
+        universityId: selectedUniversity ? selectedUniversity.id : null
+      }));
+    } else if (key === 'city') {
+      const selectedCity = cities.find(city => city.name === value);
+      setFormData(prev => ({
+        ...prev,
+        city: value,
+        cityId: selectedCity ? selectedCity.id : null
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [key]: value }));
+    }
   };
 
   const handleImageUpload = (e) => {
@@ -46,22 +96,35 @@ const UserProfileForm = ({ user, onSave }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const updatedUser = { ...user, ...formData };
-    onSave(updatedUser);
     
-    // Update local storage
-    localStorage.setItem('userData', JSON.stringify(updatedUser));
+    try {
+      // Prepare user data for update
+      const updatedUserData = {
+        ...user,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        cityId: formData.cityId,
+        universityId: formData.universityId,
+        profile_url: formData.profileImage instanceof File ? formData.profileImage : undefined
+      };
 
-    // Update users in local storage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-    // Dispatch storage event to notify other components
-    window.dispatchEvent(new Event('storage'));
+      // Update user via API
+      const updatedUser = await UsersAPI.updateUser(user.id, updatedUserData);
+      
+      // Call onSave prop with updated user data
+      onSave(updatedUser);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      // Optionally, show error notification
+    }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>; // You might want to replace this with a proper loader
+  }
 
   return (
     <motion.form 
@@ -81,20 +144,15 @@ const UserProfileForm = ({ user, onSave }) => {
             className="w-24 h-24 ring-2 ring-purple-400 ring-offset-2 ring-offset-gray-950"
           />
         </motion.div>
-        <motion.div
-          whileHover={{ backgroundColor: "rgba(168, 85, 247, 0.1)" }}
-          transition={{ duration: 0.3 }}
+        <Button
+          color="secondary"
+          variant="bordered"
+          onPress={() => document.getElementById('profile-image-upload').click()}
+          startContent={<Upload size={20} />}
+          className="transition-all duration-300 bg-gradient-to-r from-purple-900 to-purple-700 text-white hover:opacity-90"
         >
-          <Button
-            color="secondary"
-            variant="ghost"
-            onPress={() => document.getElementById('profile-image-upload').click()}
-            startContent={<Upload size={20} />}
-            className="transition-all duration-300 bg-gradient-to-r from-purple-400 to-pink-600 text-white"
-          >
-            Upload Image
-          </Button>
-        </motion.div>
+          Upload Image
+        </Button>
         <input
           id="profile-image-upload"
           type="file"
@@ -142,8 +200,8 @@ const UserProfileForm = ({ user, onSave }) => {
       <Select
         label="University"
         placeholder="Select your university"
-        value={formData.university}
-        onChange={(e) => handleChange('university', e.target.value)}
+        selectedKeys={formData.university ? [formData.university] : []}
+        onSelectionChange={(keys) => handleChange('university', Array.from(keys)[0])}
         startContent={<Building className="text-purple-400" size={16} />}
         classNames={{
           trigger: "bg-gray-900 text-white",
@@ -151,7 +209,7 @@ const UserProfileForm = ({ user, onSave }) => {
         }}
       >
         {universities.map((university) => (
-          <SelectItem key={university.id} value={university.name}>
+          <SelectItem key={university.name} value={university.name}>
             {university.name}
           </SelectItem>
         ))}
@@ -160,8 +218,8 @@ const UserProfileForm = ({ user, onSave }) => {
       <Select
         label="City"
         placeholder="Select your city"
-        value={formData.city}
-        onChange={(e) => handleChange('city', e.target.value)}
+        selectedKeys={formData.city ? [formData.city] : []}
+        onSelectionChange={(keys) => handleChange('city', Array.from(keys)[0])}
         startContent={<MapPin className="text-purple-400" size={16} />}
         classNames={{
           trigger: "bg-gray-900 text-white",
@@ -169,25 +227,19 @@ const UserProfileForm = ({ user, onSave }) => {
         }}
       >
         {cities.map((city) => (
-          <SelectItem key={city.id} value={city.name}>
+          <SelectItem key={city.name} value={city.name}>
             {city.name}
           </SelectItem>
         ))}
       </Select>
 
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      <Button
+        type="submit"
+        color="primary"
+        className="w-full bg-gradient-to-r from-purple-900 to-purple-700 text-white hover:opacity-90"
       >
-        <Button
-          type="submit"
-          color="primary"
-          className="w-full bg-gradient-to-r from-purple-400 to-pink-600 text-white hover:opacity-80 transition-all duration-300"
-        >
-          Save Profile
-        </Button>
-      </motion.div>
+        Save Profile
+      </Button>
     </motion.form>
   );
 };

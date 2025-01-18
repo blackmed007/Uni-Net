@@ -4,16 +4,57 @@ import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdow
 import { Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import RealTimeNotifications from './RealTimeNotifications';
+import ProfileAPI from '../../services/profile.api';
 
 const UserNavbar = ({ user }) => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(user);
+  const [currentUser, setCurrentUser] = useState({
+    id: '',
+    name: '',
+    email: '',
+    profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+  });
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isIconToggled, setIsIconToggled] = useState(false);
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        
+        if (userData) {
+          // Prioritize profile_url from localStorage
+          const profileUrl = userData.profile_url || 
+            (userData.profile && userData.profile.url) || 
+            'https://i.pravatar.cc/150?u=a042581f4e29026704d';
+
+          setCurrentUser({
+            id: userData.id,
+            name: `${userData.first_name} ${userData.last_name}`,
+            email: userData.email,
+            profileImage: profileUrl
+          });
+        } else {
+          // Fallback to API if no localStorage data
+          const data = await ProfileAPI.getCurrentProfile();
+          setCurrentUser({
+            id: data.id,
+            name: `${data.first_name} ${data.last_name}`,
+            email: data.email,
+            profileImage: data.profile_url || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -53,7 +94,12 @@ const UserNavbar = ({ user }) => {
     const handleStorageChange = () => {
       const updatedUserData = JSON.parse(localStorage.getItem('userData'));
       if (updatedUserData) {
-        setCurrentUser(updatedUserData);
+        setCurrentUser({
+          id: updatedUserData.id,
+          name: `${updatedUserData.first_name} ${updatedUserData.last_name}`,
+          email: updatedUserData.email,
+          profileImage: updatedUserData.profile_url || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
       }
     };
 
@@ -117,7 +163,7 @@ const UserNavbar = ({ user }) => {
                       <input
                         type="text"
                         placeholder="Search..."
-                        className="bg-gray-800 bg-opacity-50 text-gray-100 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 w-full md:w-64"
+                        className="bg-black-800 bg-opacity-50 text-gray-100 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 w-full md:w-64"
                       />
                       <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                     </motion.div>
@@ -177,7 +223,8 @@ const UserNavbar = ({ user }) => {
                   <DropdownMenu 
                     aria-label="Profile Actions" 
                     variant="flat"
-                    className="bg-gray-800 text-gray-100"
+                    className="bg-black text-gray-100"
+
                   >
                     <DropdownItem key="profile" className="h-14 gap-2">
                       <p className="font-semibold">Signed in as</p>
@@ -203,7 +250,7 @@ const UserNavbar = ({ user }) => {
             isOpen={isLogoutModalOpen}
             onClose={() => setIsLogoutModalOpen(false)}
             classNames={{
-              base: "bg-gray-900 text-white",
+              base: "bg-black text-white",
               header: "border-b border-gray-800",
               body: "py-6",
               footer: "border-t border-gray-800"

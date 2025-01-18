@@ -85,7 +85,7 @@ model Blog {
 
   bookmarks Bookmark[]
 
-  bookmarks Bookmark[]
+  
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @map("updatedAt")
