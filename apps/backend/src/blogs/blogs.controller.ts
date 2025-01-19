@@ -15,6 +15,7 @@ import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImagesService } from 'src/images/images.service';
+import { UploadBlogImageDto } from './dto/upload-blog-images.dto';
 
 @Controller('blogs')
 export class BlogsController {
@@ -23,16 +24,37 @@ export class BlogsController {
     private readonly imagessService: ImagesService,
   ) {}
 
-  @Post()
+  @Post('upload-blog-image')
   @UseInterceptors(FileInterceptor('blog_image'))
-  async create(
+  async uploadBlogImage(
     @UploadedFile() file: Express.Multer.File,
-    @Body() createBlogDto: CreateBlogDto,
+    @Body() uploadBlogImageDto: UploadBlogImageDto,
   ) {
     if (file) {
-      const eventImageUrl = await this.imagessService.uploadImage(file, 'blog');
-      createBlogDto.blog_image = eventImageUrl;
+      const blogImageUrl = await this.imagessService.uploadImage(file, 'blog');
+      uploadBlogImageDto.blog_image = blogImageUrl;
     }
+    return uploadBlogImageDto;
+  }
+
+  @Post('upload-author-image')
+  @UseInterceptors(FileInterceptor('author_image'))
+  async uploadAuthorImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() uploadBlogImageDto: UploadBlogImageDto,
+  ) {
+    if (file) {
+      const authorImageUrl = await this.imagessService.uploadImage(
+        file,
+        'author',
+      );
+      uploadBlogImageDto.author_profile_url = authorImageUrl;
+    }
+    return uploadBlogImageDto;
+  }
+
+  @Post()
+  async create(@Body() createBlogDto: CreateBlogDto) {
     return this.blogsService.create(createBlogDto);
   }
 
