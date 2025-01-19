@@ -1,24 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardBody, CardFooter, Button, Chip } from "@nextui-org/react";
+import { Card, CardHeader, CardBody, CardFooter, Button, Chip, Spinner } from "@nextui-org/react";
 import { ArrowRight } from "lucide-react";
+import BlogsAPI from '../services/blogs.api';
+import { toast } from 'react-hot-toast';
 
 const Blog = () => {
   const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedPosts = localStorage.getItem('blogPosts');
-    if (storedPosts) {
-      const allPosts = JSON.parse(storedPosts);
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      setIsLoading(true);
+      const allPosts = await BlogsAPI.getBlogs();
+      // Filter published posts
       const publishedPosts = allPosts.filter(post => post.status === 'Published');
       setPosts(publishedPosts);
+    } catch (error) {
+      console.error('Error fetching blog posts:', error);
+      toast.error('Failed to load blog posts');
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Spinner size="lg" color="white" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -37,7 +58,13 @@ const Blog = () => {
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <Chip color="primary" variant="flat" className="bg-blue-600 text-white">{post.category}</Chip>
+                  <Chip 
+                    color="primary" 
+                    variant="flat" 
+                    className="bg-blue-600 text-white"
+                  >
+                    {post.category}
+                  </Chip>
                 </div>
               </div>
               <CardHeader className="flex flex-col items-start p-6">

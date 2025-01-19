@@ -1,55 +1,94 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea, Spinner } from "@nextui-org/react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Upload, X, Image } from "lucide-react";
 import { motion } from "framer-motion";
+import BlogsAPI from '../../../services/blogs.api';
+import { toast } from 'react-hot-toast';
 
 const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [editedPost, setEditedPost] = useState(post || {});
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedAuthorImage, setUploadedAuthorImage] = useState(null);
 
   useEffect(() => {
-    setEditedPost(post || {});
-    setUploadedImage(null);
-    setUploadedAuthorImage(null);
+    if (post) {
+      setEditedPost(post);
+      setUploadedImage(null);
+      setUploadedAuthorImage(null);
+    }
   }, [post]);
 
   const handleChange = (key, value) => {
     setEditedPost(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleImageUpload = (e, type) => {
+  const handleImageUpload = async (e, type) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (type === 'post') {
-          setEditedPost(prev => ({ ...prev, image: reader.result }));
-          setUploadedImage(reader.result);
-        } else if (type === 'author') {
-          setEditedPost(prev => ({ ...prev, authorImage: reader.result }));
-          setUploadedAuthorImage(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+
+      // Upload the image to the server
+      const imageUrl = await BlogsAPI.uploadImage(file, type);
+
+      if (type === 'post') {
+        setEditedPost(prev => ({ ...prev, image: imageUrl }));
+        setUploadedImage(URL.createObjectURL(file));
+      } else if (type === 'author') {
+        setEditedPost(prev => ({ ...prev, authorImage: imageUrl }));
+        setUploadedAuthorImage(URL.createObjectURL(file));
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleSave = () => {
-    if (Object.values(editedPost).some(value => value === '')) {
-      alert('All fields are required');
-      return;
+  const validateForm = () => {
+    const requiredFields = ['title', 'author', 'category', 'content', 'excerpt'];
+    const missingFields = requiredFields.filter(field => !editedPost[field]?.trim());
+
+    if (missingFields.length > 0) {
+      toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      return false;
     }
-    onSave(editedPost);
+
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    try {
+      setIsSubmitting(true);
+      await onSave(editedPost);
+      handleClose();
+    } catch (error) {
+      console.error('Error updating blog post:', error);
+      toast.error('Failed to update blog post');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setEditedPost(post || {});
+    setUploadedImage(null);
+    setUploadedAuthorImage(null);
     onClose();
   };
 
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={onClose}
+      onClose={handleClose}
       size="5xl"
       scrollBehavior="inside"
       classNames={{
@@ -83,6 +122,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
               value={editedPost.title || ''}
               onChange={(e) => handleChange('title', e.target.value)}
               isRequired
+              isDisabled={isSubmitting}
             />
             <div className="flex gap-4">
               <Input
@@ -92,6 +132,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                 onChange={(e) => handleChange('author', e.target.value)}
                 className="flex-1"
                 isRequired
+                isDisabled={isSubmitting}
               />
               <Input
                 label="Category"
@@ -100,6 +141,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                 onChange={(e) => handleChange('category', e.target.value)}
                 className="flex-1"
                 isRequired
+                isDisabled={isSubmitting}
               />
             </div>
 
@@ -115,6 +157,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                       accept="image/*"
                       onChange={(e) => handleImageUpload(e, 'author')}
                       className="hidden"
+                      disabled={isSubmitting || isUploading}
                     />
                     <Upload className="text-gray-400 mr-2" size={16} />
                     <span className="text-sm text-gray-400">Choose file</span>
@@ -128,6 +171,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                     onChange={(e) => handleChange('authorImage', e.target.value)}
                     startContent={<Image className="text-gray-400" size={16} />}
                     className="h-[38px]"
+                    isDisabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -143,6 +187,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                     color="danger"
                     variant="flat"
                     size="sm"
+                    isDisabled={isSubmitting}
                     onPress={() => {
                       setUploadedAuthorImage(null);
                       handleChange('authorImage', '');
@@ -161,6 +206,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
               value={editedPost.excerpt || ''}
               onChange={(e) => handleChange('excerpt', e.target.value)}
               isRequired
+              isDisabled={isSubmitting}
             />
             <div className="border rounded-lg overflow-hidden">
               <ReactQuill
@@ -168,6 +214,15 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                 value={editedPost.content || ''}
                 onChange={(content) => handleChange('content', content)}
                 style={{ height: '200px' }}
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, false] }],
+                    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+                    [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
+                    ['link', 'image'],
+                    ['clean']
+                  ],
+                }}
               />
             </div>
             <div className="flex justify-between items-center gap-4">
@@ -178,6 +233,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                 onChange={(e) => handleChange('status', e.target.value)}
                 className="max-w-xs"
                 isRequired
+                isDisabled={isSubmitting}
               >
                 <SelectItem key="Draft" value="Draft">Draft</SelectItem>
                 <SelectItem key="Published" value="Published">Published</SelectItem>
@@ -187,6 +243,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                 variant="flat"
                 onPress={() => document.getElementById('edit-dropzone-file').click()}
                 startContent={<Upload size={20} />}
+                isDisabled={isSubmitting || isUploading}
               >
                 Upload Post Image
               </Button>
@@ -197,6 +254,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
               className="hidden"
               onChange={(e) => handleImageUpload(e, 'post')}
               accept="image/*"
+              disabled={isSubmitting || isUploading}
             />
             {(uploadedImage || editedPost.image) && (
               <div className="relative">
@@ -210,6 +268,7 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
                   color="danger"
                   variant="flat"
                   size="sm"
+                  isDisabled={isSubmitting}
                   onPress={() => {
                     setUploadedImage(null);
                     handleChange('image', null);
@@ -226,8 +285,9 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
           <Button 
             color="danger" 
             variant="flat" 
-            onPress={onClose}
+            onPress={handleClose}
             className="bg-gradient-to-r from-red-500 to-pink-500 text-white"
+            isDisabled={isSubmitting}
           >
             Cancel
           </Button>
@@ -235,8 +295,10 @@ const EditBlogPostModal = ({ isOpen, onClose, post, onSave }) => {
             color="primary" 
             onPress={handleSave}
             className="bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+            isDisabled={isSubmitting}
+            startContent={isSubmitting ? <Spinner size="sm" color="white" /> : null}
           >
-            Save Changes
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </ModalFooter>
       </ModalContent>

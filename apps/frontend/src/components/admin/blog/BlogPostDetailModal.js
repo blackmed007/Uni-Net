@@ -1,10 +1,21 @@
-import React from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Card, CardBody } from "@nextui-org/react";
+import React, { useState } from 'react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Card, CardBody, Spinner } from "@nextui-org/react";
 import { Calendar, User, Tag, FileText, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 
 const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
   if (!post) return null;
+
+  const handleImageLoad = () => {
+    setIsImageLoading(false);
+  };
+
+  const handleImageError = (e) => {
+    e.target.src = 'https://via.placeholder.com/800x400?text=No+Image+Available';
+    setIsImageLoading(false);
+  };
 
   return (
     <Modal 
@@ -38,7 +49,21 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
             transition={{ duration: 0.5 }}
           >
             {post.image && (
-              <img src={post.image} alt={post.title} className="w-full h-48 object-cover rounded-lg mb-4" />
+              <div className="relative w-full h-48 mb-4">
+                {isImageLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <Spinner color="white" />
+                  </div>
+                )}
+                <img 
+                  src={post.image} 
+                  alt={post.title} 
+                  className="w-full h-full object-cover rounded-lg"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  style={{ display: isImageLoading ? 'none' : 'block' }}
+                />
+              </div>
             )}
             <Card className="bg-gray-800 border border-gray-700 mb-6">
               <CardBody>
@@ -49,6 +74,9 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
                         src={post.authorImage || 'https://via.placeholder.com/64'}
                         alt={post.author}
                         className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/64?text=Author';
+                        }}
                       />
                     </div>
                     <div>
@@ -74,7 +102,16 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
                     <Eye className="text-pink-400" size={20} />
                     <div>
                       <p className="text-sm text-gray-400">Views</p>
-                      <p className="font-medium text-white">{post.views}</p>
+                      <p className="font-medium text-white">
+                        {post.views} view{post.views !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="text-blue-400" size={20} />
+                    <div>
+                      <p className="text-sm text-gray-400">Created</p>
+                      <p className="font-medium text-white">{formatDate(post.date)}</p>
                     </div>
                   </div>
                 </div>

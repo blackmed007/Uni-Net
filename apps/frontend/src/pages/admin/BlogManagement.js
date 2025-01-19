@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, useDisclosure } from "@nextui-org/react";
+import { Input, Button, useDisclosure, Spinner } from "@nextui-org/react";
 import { Search, Filter, Plus, Eye } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import BlogPostListTable from '../../components/admin/blog/BlogPostListTable';
@@ -8,9 +8,13 @@ import BlogFilterModal from '../../components/admin/blog/BlogFilterModal';
 import CreateBlogPostModal from '../../components/admin/blog/CreateBlogPostModal';
 import EditBlogPostModal from '../../components/admin/blog/EditBlogPostModal';
 import BlogConfirmActionModal from '../../components/admin/blog/BlogConfirmActionModal';
+import BlogsAPI from '../../services/blogs.api';
+import { toast } from 'react-hot-toast';
 
 const BlogManagement = () => {
+  // State management
   const [blogPosts, setBlogPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     author: '',
@@ -22,32 +26,31 @@ const BlogManagement = () => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [actionType, setActionType] = useState('');
 
+  // Modal controls
   const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
   const { isOpen: isPostDetailOpen, onOpen: onPostDetailOpen, onClose: onPostDetailClose } = useDisclosure();
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
+  
   const navigate = useNavigate();
 
+  // Fetch blog posts on component mount
   useEffect(() => {
-    const storedPosts = localStorage.getItem('blogPosts');
-    if (storedPosts) {
-      setBlogPosts(JSON.parse(storedPosts));
-    }
+    fetchBlogPosts();
   }, []);
 
-  const saveBlogPosts = (updatedPosts) => {
-    // Ensure all posts have the necessary fields
-    const validatedPosts = updatedPosts.map(post => ({
-      ...post,
-      authorImage: post.authorImage || '', // Ensure authorImage exists
-      image: post.image || null,
-      views: post.views || 0,
-      date: post.date || new Date().toISOString()
-    }));
-
-    setBlogPosts(validatedPosts);
-    localStorage.setItem('blogPosts', JSON.stringify(validatedPosts));
+  const fetchBlogPosts = async () => {
+    try {
+      setIsLoading(true);
+      const posts = await BlogsAPI.getBlogs();
+      setBlogPosts(posts);
+    } catch (error) {
+      toast.error('Failed to fetch blog posts');
+      console.error('Error fetching blog posts:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSearch = (e) => {
@@ -77,42 +80,42 @@ const BlogManagement = () => {
     }
   };
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (actionType === 'delete') {
-      const updatedPosts = blogPosts.filter(post => post.id !== selectedPost.id);
-      saveBlogPosts(updatedPosts);
+      try {
+        await BlogsAPI.deleteBlog(selectedPost.id);
+        toast.success('Blog post deleted successfully');
+        await fetchBlogPosts(); // Refresh the list
+      } catch (error) {
+        toast.error('Failed to delete blog post');
+        console.error('Error deleting blog post:', error);
+      }
     }
     onConfirmClose();
   };
 
-  const handleEditPost = (updatedPost) => {
-    const updatedPosts = blogPosts.map(post => 
-      post.id === updatedPost.id ? {
-        ...updatedPost,
-        authorImage: updatedPost.authorImage || post.authorImage || '', // Preserve or set authorImage
-        image: updatedPost.image || post.image || null,
-        date: post.date, // Preserve original date
-        views: post.views || 0 // Preserve view count
-      } : post
-    );
-    saveBlogPosts(updatedPosts);
-    onEditClose();
+  const handleEditPost = async (updatedPost) => {
+    try {
+      await BlogsAPI.updateBlog(updatedPost.id, updatedPost);
+      toast.success('Blog post updated successfully');
+      await fetchBlogPosts(); // Refresh the list
+      onEditClose();
+    } catch (error) {
+      toast.error('Failed to update blog post');
+      console.error('Error updating blog post:', error);
+    }
   };
 
-  const handleCreatePost = (newPost) => {
-    const lastId = blogPosts.length > 0 ? Math.max(...blogPosts.map(post => parseInt(post.id))) : -1;
-    const newId = ((lastId + 1) % 1000).toString().padStart(3, '0');
-    const postWithId = { 
-      ...newPost, 
-      id: newId,
-      authorImage: newPost.authorImage || '', // Ensure authorImage is set
-      image: newPost.image || null,
-      views: 0,
-      date: new Date().toISOString()
-    };
-    const updatedPosts = [...blogPosts, postWithId];
-    saveBlogPosts(updatedPosts);
-    onCreateClose();
+  const handleCreatePost = async (newPost) => {
+    try {
+      await BlogsAPI.createBlog(newPost);
+      toast.success('Blog post created successfully');
+      await fetchBlogPosts(); // Refresh the list
+      onCreateClose();
+    } catch (error) {
+      toast.error('Failed to create blog post');
+      console.error('Error creating blog post:', error);
+    }
   };
 
   const handleViewBlog = () => {
@@ -123,6 +126,14 @@ const BlogManagement = () => {
     const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

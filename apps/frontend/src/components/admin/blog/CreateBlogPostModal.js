@@ -4,8 +4,11 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Upload, X, Image } from "lucide-react";
 import { motion } from "framer-motion";
+import BlogsAPI from '../../../services/blogs.api';
 
 const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
   const [newPost, setNewPost] = useState({
     title: '',
     author: '',
@@ -14,47 +17,137 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
     content: '',
     excerpt: '',
     status: 'Draft',
-    image: null,
-    views: 0,
-    date: new Date().toISOString(),
+    image: null
   });
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedAuthorImage, setUploadedAuthorImage] = useState(null);
 
   const handleChange = (key, value) => {
     setNewPost(prev => ({ ...prev, [key]: value }));
+    // Clear error for this field if it exists
+    if (errors[key]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[key];
+        return newErrors;
+      });
+    }
   };
 
-  const handleImageUpload = (e, type) => {
+  const handleImageUpload = async (e, type) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setErrors(prev => ({
+        ...prev,
+        [type === 'post' ? 'image' : 'authorImage']: 'Please upload a valid image file (JPEG, PNG, or GIF)'
+      }));
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({
+        ...prev,
+        [type === 'post' ? 'image' : 'authorImage']: 'Image size should be less than 5MB'
+      }));
+      return;
+    }
+
+    try {
+      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === 'post') {
-          setNewPost(prev => ({ ...prev, image: reader.result }));
           setUploadedImage(reader.result);
-        } else if (type === 'author') {
-          setNewPost(prev => ({ ...prev, authorImage: reader.result }));
+          setNewPost(prev => ({ ...prev, image: file }));
+        } else {
           setUploadedAuthorImage(reader.result);
+          setNewPost(prev => ({ ...prev, authorImage: file }));
         }
       };
       reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error handling image upload:', error);
+      setErrors(prev => ({
+        ...prev,
+        [type === 'post' ? 'image' : 'authorImage']: 'Error uploading image'
+      }));
     }
   };
 
-  const handleSave = () => {
-    if (Object.values(newPost).some(value => value === '')) {
-      alert('All fields are required');
-      return;
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!newPost.title?.trim()) newErrors.title = 'Title is required';
+    if (!newPost.author?.trim()) newErrors.author = 'Author name is required';
+    if (!newPost.category?.trim()) newErrors.category = 'Category is required';
+    if (!newPost.content?.trim()) newErrors.content = 'Content is required';
+    if (!newPost.excerpt?.trim()) newErrors.excerpt = 'Excerpt is required';
+    if (!newPost.status) newErrors.status = 'Status is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      const blogData = {
+        ...newPost,
+        title: newPost.title.trim(),
+        author: newPost.author.trim(),
+        category: newPost.category.trim(),
+        excerpt: newPost.excerpt.trim(),
+        content: newPost.content.trim(),
+        status: newPost.status
+      };
+
+      const createdBlog = await BlogsAPI.createBlog(blogData);
+      onSave(createdBlog);
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error('Error creating blog post:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: error.message || 'Error creating blog post'
+      }));
+    } finally {
+      setIsSubmitting(false);
     }
-    onSave(newPost);
+  };
+
+  const resetForm = () => {
+    setNewPost({
+      title: '',
+      author: '',
+      authorImage: '',
+      category: '',
+      content: '',
+      excerpt: '',
+      status: 'Draft',
+      image: null
+    });
+    setUploadedImage(null);
+    setUploadedAuthorImage(null);
+    setErrors({});
+  };
+
+  const handleClose = () => {
+    resetForm();
     onClose();
   };
 
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={onClose}
+      onClose={handleClose}
       size="5xl"
       scrollBehavior="inside"
       classNames={{
@@ -76,6 +169,12 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
           </motion.h2>
         </ModalHeader>
         <ModalBody>
+          {errors.submit && (
+            <div className="bg-red-500 bg-opacity-10 border border-red-500 text-red-500 p-3 rounded-lg mb-4">
+              {errors.submit}
+            </div>
+          )}
+
           <motion.div 
             className="space-y-6"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -87,8 +186,11 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
               placeholder="Enter post title"
               value={newPost.title}
               onChange={(e) => handleChange('title', e.target.value)}
+              isInvalid={!!errors.title}
+              errorMessage={errors.title}
               isRequired
             />
+
             <div className="flex gap-4">
               <Input
                 label="Author"
@@ -96,6 +198,8 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
                 value={newPost.author}
                 onChange={(e) => handleChange('author', e.target.value)}
                 className="flex-1"
+                isInvalid={!!errors.author}
+                errorMessage={errors.author}
                 isRequired
               />
               <Input
@@ -104,44 +208,38 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
                 value={newPost.category}
                 onChange={(e) => handleChange('category', e.target.value)}
                 className="flex-1"
+                isInvalid={!!errors.category}
+                errorMessage={errors.category}
                 isRequired
               />
             </div>
 
-            {/* Author Image Section */}
+            {/* Author Image Upload Section */}
             <div>
               <p className="text-small font-bold mb-2">Author Image</p>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Upload Author Image</p>
-                  <label className="flex items-center justify-center w-full h-[38px] px-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, 'author')}
-                      className="hidden"
-                    />
-                    <Upload className="text-gray-400 mr-2" size={16} />
-                    <span className="text-sm text-gray-400">Choose file</span>
-                  </label>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Author Image URL</p>
-                  <Input
-                    placeholder="Enter author image URL"
-                    value={newPost.authorImage}
-                    onChange={(e) => handleChange('authorImage', e.target.value)}
-                    startContent={<Image className="text-gray-400" size={16} />}
-                    className="h-[38px]"
+              <div className="flex gap-4">
+                <label className="flex-1 flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, 'author')}
+                    className="hidden"
                   />
-                </div>
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                    <p className="text-sm text-gray-500">Upload author image</p>
+                  </div>
+                </label>
               </div>
-              {(uploadedAuthorImage || newPost.authorImage) && (
-                <div className="relative mt-4 w-20 h-20">
-                  <img 
-                    src={uploadedAuthorImage || newPost.authorImage} 
-                    alt="Author" 
-                    className="w-full h-full rounded-full object-cover"
+              {errors.authorImage && (
+                <p className="text-red-500 text-sm mt-1">{errors.authorImage}</p>
+              )}
+              {uploadedAuthorImage && (
+                <div className="relative mt-4 inline-block">
+                  <img
+                    src={uploadedAuthorImage}
+                    alt="Author preview"
+                    className="w-20 h-20 rounded-full object-cover"
                   />
                   <Button
                     isIconOnly
@@ -165,16 +263,23 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
               placeholder="Enter post excerpt"
               value={newPost.excerpt}
               onChange={(e) => handleChange('excerpt', e.target.value)}
+              isInvalid={!!errors.excerpt}
+              errorMessage={errors.excerpt}
               isRequired
             />
-            <div className="border rounded-lg overflow-hidden">
+
+            <div className="h-64 border rounded-lg overflow-hidden">
               <ReactQuill
                 theme="snow"
                 value={newPost.content}
                 onChange={(content) => handleChange('content', content)}
-                style={{ height: '200px' }}
+                className="h-full"
               />
+              {errors.content && (
+                <p className="text-red-500 text-sm mt-1">{errors.content}</p>
+              )}
             </div>
+
             <div className="flex justify-between items-center gap-4">
               <Select
                 label="Status"
@@ -187,27 +292,34 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
                 <SelectItem key="Draft" value="Draft">Draft</SelectItem>
                 <SelectItem key="Published" value="Published">Published</SelectItem>
               </Select>
+
               <Button
                 color="primary"
                 variant="flat"
-                onPress={() => document.getElementById('dropzone-file').click()}
+                onPress={() => document.getElementById('post-image-upload').click()}
                 startContent={<Upload size={20} />}
               >
                 Upload Post Image
               </Button>
             </div>
+
             <input
-              id="dropzone-file"
+              id="post-image-upload"
               type="file"
               className="hidden"
               onChange={(e) => handleImageUpload(e, 'post')}
               accept="image/*"
             />
-            {(uploadedImage || newPost.image) && (
+
+            {errors.image && (
+              <p className="text-red-500 text-sm">{errors.image}</p>
+            )}
+
+            {uploadedImage && (
               <div className="relative">
-                <img 
-                  src={uploadedImage || newPost.image} 
-                  alt="Preview" 
+                <img
+                  src={uploadedImage}
+                  alt="Preview"
                   className="max-w-full h-auto rounded-lg"
                 />
                 <Button
@@ -227,12 +339,14 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
             )}
           </motion.div>
         </ModalBody>
+
         <ModalFooter>
           <Button 
             color="danger" 
             variant="flat" 
-            onPress={onClose}
+            onPress={handleClose}
             className="bg-gradient-to-r from-red-500 to-pink-500 text-white"
+            isDisabled={isSubmitting}
           >
             Cancel
           </Button>
@@ -240,6 +354,8 @@ const CreateBlogPostModal = ({ isOpen, onClose, onSave }) => {
             color="primary" 
             onPress={handleSave}
             className="bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+            isLoading={isSubmitting}
+            isDisabled={isSubmitting}
           >
             Create Post
           </Button>
