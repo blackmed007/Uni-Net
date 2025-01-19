@@ -58,22 +58,32 @@ api.interceptors.response.use(
 );
 
 class BlogsAPI {
-  // Handle image upload
+  // Upload image and get URL
   static async uploadImage(file, prefix) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('prefix', prefix);
-
-      const response = await api.post('/uploads', formData, {
+      
+      const response = await api.post(`/images/upload/${prefix}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-
+      
       return response.data.url;
     } catch (error) {
       console.error('Error uploading image:', error);
+      throw error;
+    }
+  }
+
+  // Increment blog views
+  static async incrementViews(blogId) {
+    try {
+      const response = await api.get(`/blogs/${blogId}/view`);
+      return this.parseBlogData(response.data);
+    } catch (error) {
+      console.error('Error incrementing views:', error);
       throw error;
     }
   }
@@ -105,29 +115,31 @@ class BlogsAPI {
   // Create new blog
   static async createBlog(blogData) {
     try {
-      // Validate blog data first
-      this.validateBlogData(blogData);
+      // First upload the images if they exist
+      let blogImageUrl = null;
+      let authorImageUrl = null;
 
-      let thumbnailUrl = null;
-      let authorProfileUrl = null;
-
-      // Handle image uploads first
-      if (blogData.image instanceof File) {
-        thumbnailUrl = await this.uploadImage(blogData.image, 'blog-thumbnail');
+      if (blogData.blog_image instanceof File) {
+        blogImageUrl = await this.uploadImage(blogData.blog_image, 'blog');
       }
 
-      if (blogData.authorImage instanceof File) {
-        authorProfileUrl = await this.uploadImage(blogData.authorImage, 'author-profile');
+      if (blogData.author_profile_url instanceof File) {
+        authorImageUrl = await this.uploadImage(blogData.author_profile_url, 'author');
       }
 
-      // Prepare the data for the API
-      const formattedData = this.formatBlogData({
-        ...blogData,
-        event_thumbnail: thumbnailUrl || blogData.image,
-        author_profile_url: authorProfileUrl || blogData.authorImage
-      });
+      // Create blog post data
+      const postData = {
+        title: blogData.title,
+        content: blogData.content,
+        author: blogData.author,
+        category: blogData.category,
+        status: blogData.status,
+        excerpt: blogData.excerpt,
+        blog_image: blogImageUrl || blogData.blog_image,
+        author_profile_url: authorImageUrl || blogData.author_profile_url
+      };
 
-      const response = await api.post('/blogs', formattedData);
+      const response = await api.post('/blogs', postData);
       return this.parseBlogData(response.data);
     } catch (error) {
       console.error('Error creating blog:', error);
@@ -138,29 +150,31 @@ class BlogsAPI {
   // Update blog
   static async updateBlog(blogId, blogData) {
     try {
-      // Validate blog data first
-      this.validateBlogData(blogData);
+      // First upload any new images if they exist
+      let blogImageUrl = null;
+      let authorImageUrl = null;
 
-      let thumbnailUrl = null;
-      let authorProfileUrl = null;
-
-      // Handle image uploads first
-      if (blogData.image instanceof File) {
-        thumbnailUrl = await this.uploadImage(blogData.image, 'blog-thumbnail');
+      if (blogData.blog_image instanceof File) {
+        blogImageUrl = await this.uploadImage(blogData.blog_image, 'blog');
       }
 
-      if (blogData.authorImage instanceof File) {
-        authorProfileUrl = await this.uploadImage(blogData.authorImage, 'author-profile');
+      if (blogData.author_profile_url instanceof File) {
+        authorImageUrl = await this.uploadImage(blogData.author_profile_url, 'author');
       }
 
-      // Prepare the data for the API
-      const formattedData = this.formatBlogData({
-        ...blogData,
-        event_thumbnail: thumbnailUrl || blogData.image,
-        author_profile_url: authorProfileUrl || blogData.authorImage
-      });
+      // Create update data
+      const updateData = {
+        ...(blogData.title && { title: blogData.title }),
+        ...(blogData.content && { content: blogData.content }),
+        ...(blogData.author && { author: blogData.author }),
+        ...(blogData.category && { category: blogData.category }),
+        ...(blogData.status && { status: blogData.status }),
+        ...(blogData.excerpt && { excerpt: blogData.excerpt }),
+        ...(blogImageUrl && { blog_image: blogImageUrl }),
+        ...(authorImageUrl && { author_profile_url: authorImageUrl })
+      };
 
-      const response = await api.patch(`/blogs/${blogId}`, formattedData);
+      const response = await api.patch(`/blogs/${blogId}`, updateData);
       return this.parseBlogData(response.data);
     } catch (error) {
       console.error('Error updating blog:', error);
@@ -171,35 +185,12 @@ class BlogsAPI {
   // Delete blog
   static async deleteBlog(blogId) {
     try {
-      const response = await api.delete(`/blogs/${blogId}`);
-      return response.data;
+      await api.delete(`/blogs/${blogId}`);
+      return true;
     } catch (error) {
       console.error('Error deleting blog:', error);
       throw error;
     }
-  }
-
-  // Format blog data for API
-  static formatBlogData(blogData) {
-    // Remove any undefined or null values
-    const formattedData = {
-      title: blogData.title?.trim(),
-      content: blogData.content,
-      author: blogData.author?.trim(),
-      category: blogData.category?.trim(),
-      author_profile_url: blogData.author_profile_url,
-      status: blogData.status,
-      excerpt: blogData.excerpt?.trim(),
-      event_thumbnail: blogData.event_thumbnail
-    };
-
-    // Remove any undefined values
-    return Object.entries(formattedData).reduce((acc, [key, value]) => {
-      if (value !== undefined && value !== null) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {});
   }
 
   // Parse blog data from API
@@ -212,10 +203,11 @@ class BlogsAPI {
       content: blogData.content || '',
       author: blogData.author || '',
       category: blogData.category || '',
-      authorImage: blogData.author_profile_url || '',
       status: blogData.status || 'Draft',
       excerpt: blogData.excerpt || '',
-      image: blogData.event_thumbnail || null,
+      blog_image: blogData.blog_image || null,
+      author_profile_url: blogData.author_profile_url || null,
+      views: blogData.views || 0,
       createdAt: blogData.createdAt || new Date().toISOString(),
       updatedAt: blogData.updatedAt || new Date().toISOString()
     };
@@ -232,13 +224,10 @@ class BlogsAPI {
       throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
     }
 
-    // Validate image formats
-    if (blogData.image && !(blogData.image instanceof File) && typeof blogData.image !== 'string') {
-      throw new Error('Invalid image format');
-    }
-
-    if (blogData.authorImage && !(blogData.authorImage instanceof File) && typeof blogData.authorImage !== 'string') {
-      throw new Error('Invalid author image format');
+    // Validate status
+    const validStatuses = ['Draft', 'Published'];
+    if (!validStatuses.includes(blogData.status)) {
+      throw new Error('Invalid status. Must be either "Draft" or "Published"');
     }
 
     return true;
