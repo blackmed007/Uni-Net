@@ -21,7 +21,7 @@ import { Request as ExpressRequest } from 'express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JoinEventDto } from './dto/join-event.dto';
 import { ImagesService } from 'src/images/images.service';
-import { Bookmark } from '@prisma/client';
+import { Bookmark, UserActivity } from '@prisma/client';
 
 @Controller('users')
 export class UsersController {
@@ -114,6 +114,22 @@ export class UsersController {
   async getUserBookmarks(@Request() req: ExpressRequest): Promise<Bookmark[]> {
     const userId = (req.user as { id: string }).id;
     return this.usersService.getUserBookmarks(userId);
+  }
+
+  @Get('activity')
+  @UseGuards(JwtGuard)
+  async getUserActivity(
+    @Request() req: ExpressRequest,
+  ): Promise<UserActivity[]> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserActivities(userId);
+  }
+
+  @Get('events')
+  @UseGuards(JwtGuard)
+  async getUserEvents(@Request() req: ExpressRequest) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserJoinedEvents(userId);
   }
 
   @Delete('bookmarks/:blogId')
