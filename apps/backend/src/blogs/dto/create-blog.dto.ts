@@ -48,7 +48,7 @@ export class CreateBlogDto {
     type: String,
     description: 'This is a required property',
   })
-  status: string;
+  status: 'Published' | 'Draft';
 
   @IsString()
   @IsNotEmpty()
