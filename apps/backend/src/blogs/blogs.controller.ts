@@ -31,7 +31,10 @@ export class BlogsController {
     @Body() uploadBlogImageDto: UploadBlogImageDto,
   ) {
     if (file) {
-      const blogImageUrl = await this.imagessService.uploadImage(file, 'blog');
+      const blogImageUrl = await this.imagessService.uploadImage(
+        file,
+        'blog_image',
+      );
       uploadBlogImageDto.blog_image = blogImageUrl;
     }
     return uploadBlogImageDto;
@@ -46,7 +49,7 @@ export class BlogsController {
     if (file) {
       const authorImageUrl = await this.imagessService.uploadImage(
         file,
-        'author',
+        'blog_author_image',
       );
       uploadBlogImageDto.author_profile_url = authorImageUrl;
     }
