@@ -7,15 +7,18 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import * as argon from 'argon2';
 import { OnboardUserDto } from './dto/onboard-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JoinEventDto } from './dto/join-event.dto';
 import {
+  PrismaClientInitializationError,
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
 } from '@prisma/client/runtime/library';
 import { Bookmark, Event, UserActivity } from '@prisma/client';
+import { SignupDto } from 'src/auth/dto/signup.dto';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +27,37 @@ export class UsersService {
   private readonly logger = new Logger(UsersService.name, {
     timestamp: true,
   });
+
+  async create(authDto: SignupDto) {
+    const hashedPassword = await argon.hash(authDto.password);
+
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          first_name: authDto.first_name,
+          last_name: authDto.last_name,
+          email: authDto.email,
+          password: hashedPassword,
+          role: authDto.role,
+        },
+      });
+      return user;
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ForbiddenException(
+            'A user with this email address already exists',
+          );
+        }
+      } else if (error instanceof PrismaClientInitializationError) {
+        throw new InternalServerErrorException(
+          'Server error - please try again later',
+        );
+      }
+
+      throw error;
+    }
+  }
 
   async onboard(userId: string, onboardUserDto: OnboardUserDto) {
     try {
@@ -239,6 +273,51 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        status: true,
+        profile_url: true,
+        gender: true,
+        cityId: true,
+        universityId: true,
+        createdAt: true,
+      },
+    });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId: id,
+        activity: 'Updated profile',
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async updateAdmin(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        status: true,
+        profile_url: true,
+        gender: true,
+        createdAt: true,
+      },
     });
 
     await this.prisma.userActivity.create({
