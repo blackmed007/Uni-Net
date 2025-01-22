@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ForbiddenException,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -22,6 +23,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JoinEventDto } from './dto/join-event.dto';
 import { ImagesService } from 'src/images/images.service';
 import { Bookmark, UserActivity } from '@prisma/client';
+import { SignupDto } from 'src/auth/dto/signup.dto';
 
 @Controller('users')
 export class UsersController {
@@ -29,6 +31,23 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly imagessService: ImagesService,
   ) {}
+
+  @Post('create')
+  @UseGuards(JwtGuard)
+  async create(
+    @Request() req: ExpressRequest,
+    @Body(new ValidationPipe()) createDto: SignupDto,
+  ) {
+    const role = (req.user as { role: string }).role;
+
+    if (role === 'admin' && req.body.userId) {
+      return this.usersService.create(createDto);
+    }
+
+    throw new ForbiddenException(
+      'You do not have permission to join this event',
+    );
+  }
 
   @Post('onboard')
   @UseGuards(JwtGuard)
@@ -93,6 +112,11 @@ export class UsersController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Patch('admin/:id')
+  updateAdmin(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.updateAdmin(id, updateUserDto);
   }
 
   @Delete(':id')
