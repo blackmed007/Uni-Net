@@ -13,8 +13,9 @@ export class ImagesService {
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath);
     }
+    const sanitizedFileName = file.originalname.replace(/ /g, '_');
 
-    const imageName = `${Date.now()}-${prefix}-${file.originalname}`;
+    const imageName = `${Date.now()}-${prefix}-${sanitizedFileName}`;
     const filePath = path.join(uploadPath, imageName);
 
     console.log('loging the path');
