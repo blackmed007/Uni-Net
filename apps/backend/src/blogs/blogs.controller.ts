@@ -8,6 +8,7 @@ import {
   Param,
   Delete,
   UploadedFile,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
@@ -15,7 +16,6 @@ import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImagesService } from 'src/images/images.service';
-import { UploadBlogImageDto } from './dto/upload-blog-images.dto';
 
 @Controller('blogs')
 export class BlogsController {
@@ -26,34 +26,32 @@ export class BlogsController {
 
   @Post('upload-blog-image')
   @UseInterceptors(FileInterceptor('blog_image'))
-  async uploadBlogImage(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() uploadBlogImageDto: UploadBlogImageDto,
-  ) {
+  async uploadBlogImage(@UploadedFile() file: Express.Multer.File) {
     if (file) {
       const blogImageUrl = await this.imagessService.uploadImage(
         file,
         'blog_image',
       );
-      uploadBlogImageDto.blog_image = blogImageUrl;
+      return { url: blogImageUrl };
     }
-    return uploadBlogImageDto;
+    throw new InternalServerErrorException(
+      'Error while trying to upload blog image',
+    );
   }
 
   @Post('upload-author-image')
   @UseInterceptors(FileInterceptor('author_image'))
-  async uploadAuthorImage(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() uploadBlogImageDto: UploadBlogImageDto,
-  ) {
+  async uploadAuthorImage(@UploadedFile() file: Express.Multer.File) {
     if (file) {
       const authorImageUrl = await this.imagessService.uploadImage(
         file,
         'blog_author_image',
       );
-      uploadBlogImageDto.author_profile_url = authorImageUrl;
+      return { url: authorImageUrl };
     }
-    return uploadBlogImageDto;
+    throw new InternalServerErrorException(
+      'Error while trying to upload blog author image',
+    );
   }
 
   @Post()
