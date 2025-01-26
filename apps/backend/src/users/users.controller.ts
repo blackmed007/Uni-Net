@@ -40,7 +40,7 @@ export class UsersController {
   ) {
     const role = (req.user as { role: string }).role;
 
-    if (role === 'admin' && req.body.userId) {
+    if (role === 'admin') {
       return this.usersService.create(createDto);
     }
 
