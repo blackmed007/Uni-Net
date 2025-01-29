@@ -190,6 +190,7 @@ export class UsersService {
         status: true,
         profile_url: true,
         gender: true,
+        role: true,
         cityId: true,
         universityId: true,
         createdAt: true,
