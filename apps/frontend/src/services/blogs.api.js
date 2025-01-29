@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = 'http://localhost:5003/api/v1';
+const API_URL = "http://localhost:5003/api/v1";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -11,21 +11,21 @@ const api = axios.create({
 // Add token to requests if it exists
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('access_token');
+    const token = sessionStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     // Don't override Content-Type for FormData
     if (!(config.data instanceof FormData)) {
-      config.headers['Content-Type'] = 'application/json';
+      config.headers["Content-Type"] = "application/json";
     }
 
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for error handling
@@ -35,26 +35,26 @@ api.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          sessionStorage.removeItem('access_token');
-          window.location.href = '/login';
+          sessionStorage.removeItem("access_token");
+          window.location.href = "/login";
           break;
         case 403:
-          console.error('Access forbidden:', error.response.data);
+          console.error("Access forbidden:", error.response.data);
           break;
         case 404:
-          console.error('Resource not found:', error.response.data);
+          console.error("Resource not found:", error.response.data);
           break;
         case 422:
-          console.error('Validation error:', error.response.data);
+          console.error("Validation error:", error.response.data);
           break;
         default:
-          console.error('API error:', error.response.data);
+          console.error("API error:", error.response.data);
       }
     } else if (error.request) {
-      console.error('Network error:', error.request);
+      console.error("Network error:", error.request);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 class BlogsAPI {
@@ -62,17 +62,21 @@ class BlogsAPI {
   static async uploadImage(file, prefix) {
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await api.post(`/images/upload/${prefix}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      formData.append(`${prefix}_image`, file);
+
+      const response = await api.post(
+        `/blogs/upload-${prefix}-image`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
-      
+      );
+
       return response.data.url;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error("Error uploading image:", error);
       throw error;
     }
   }
@@ -83,7 +87,7 @@ class BlogsAPI {
       const response = await api.get(`/blogs/${blogId}/view`);
       return this.parseBlogData(response.data);
     } catch (error) {
-      console.error('Error incrementing views:', error);
+      console.error("Error incrementing views:", error);
       throw error;
     }
   }
@@ -91,12 +95,12 @@ class BlogsAPI {
   // Fetch all blogs
   static async getBlogs() {
     try {
-      const response = await api.get('/blogs');
-      return Array.isArray(response.data) 
-        ? response.data.map(blog => this.parseBlogData(blog))
+      const response = await api.get("/blogs");
+      return Array.isArray(response.data)
+        ? response.data.map((blog) => this.parseBlogData(blog))
         : [];
     } catch (error) {
-      console.error('Error fetching blogs:', error);
+      console.error("Error fetching blogs:", error);
       throw error;
     }
   }
@@ -107,7 +111,7 @@ class BlogsAPI {
       const response = await api.get(`/blogs/${blogId}`);
       return this.parseBlogData(response.data);
     } catch (error) {
-      console.error('Error fetching blog:', error);
+      console.error("Error fetching blog:", error);
       throw error;
     }
   }
@@ -120,11 +124,14 @@ class BlogsAPI {
       let authorImageUrl = null;
 
       if (blogData.blog_image instanceof File) {
-        blogImageUrl = await this.uploadImage(blogData.blog_image, 'blog');
+        blogImageUrl = await this.uploadImage(blogData.blog_image, "blog");
       }
 
       if (blogData.author_profile_url instanceof File) {
-        authorImageUrl = await this.uploadImage(blogData.author_profile_url, 'author');
+        authorImageUrl = await this.uploadImage(
+          blogData.author_profile_url,
+          "author",
+        );
       }
 
       // Create blog post data
@@ -136,13 +143,13 @@ class BlogsAPI {
         status: blogData.status,
         excerpt: blogData.excerpt,
         blog_image: blogImageUrl || blogData.blog_image,
-        author_profile_url: authorImageUrl || blogData.author_profile_url
+        author_profile_url: authorImageUrl || blogData.author_profile_url,
       };
 
-      const response = await api.post('/blogs', postData);
+      const response = await api.post("/blogs", postData);
       return this.parseBlogData(response.data);
     } catch (error) {
-      console.error('Error creating blog:', error);
+      console.error("Error creating blog:", error);
       throw error;
     }
   }
@@ -155,11 +162,14 @@ class BlogsAPI {
       let authorImageUrl = null;
 
       if (blogData.blog_image instanceof File) {
-        blogImageUrl = await this.uploadImage(blogData.blog_image, 'blog');
+        blogImageUrl = await this.uploadImage(blogData.blog_image, "blog");
       }
 
       if (blogData.author_profile_url instanceof File) {
-        authorImageUrl = await this.uploadImage(blogData.author_profile_url, 'author');
+        authorImageUrl = await this.uploadImage(
+          blogData.author_profile_url,
+          "author",
+        );
       }
 
       // Create update data
@@ -171,13 +181,13 @@ class BlogsAPI {
         ...(blogData.status && { status: blogData.status }),
         ...(blogData.excerpt && { excerpt: blogData.excerpt }),
         ...(blogImageUrl && { blog_image: blogImageUrl }),
-        ...(authorImageUrl && { author_profile_url: authorImageUrl })
+        ...(authorImageUrl && { author_profile_url: authorImageUrl }),
       };
 
       const response = await api.patch(`/blogs/${blogId}`, updateData);
       return this.parseBlogData(response.data);
     } catch (error) {
-      console.error('Error updating blog:', error);
+      console.error("Error updating blog:", error);
       throw error;
     }
   }
@@ -188,7 +198,7 @@ class BlogsAPI {
       await api.delete(`/blogs/${blogId}`);
       return true;
     } catch (error) {
-      console.error('Error deleting blog:', error);
+      console.error("Error deleting blog:", error);
       throw error;
     }
   }
@@ -196,36 +206,45 @@ class BlogsAPI {
   // Parse blog data from API
   static parseBlogData(blogData) {
     if (!blogData) return null;
-    
+
     return {
       id: blogData.id,
-      title: blogData.title || '',
-      content: blogData.content || '',
-      author: blogData.author || '',
-      category: blogData.category || '',
-      status: blogData.status || 'Draft',
-      excerpt: blogData.excerpt || '',
+      title: blogData.title || "",
+      content: blogData.content || "",
+      author: blogData.author || "",
+      category: blogData.category || "",
+      status: blogData.status || "Draft",
+      excerpt: blogData.excerpt || "",
       blog_image: blogData.blog_image || null,
       author_profile_url: blogData.author_profile_url || null,
       views: blogData.views || 0,
       createdAt: blogData.createdAt || new Date().toISOString(),
-      updatedAt: blogData.updatedAt || new Date().toISOString()
+      updatedAt: blogData.updatedAt || new Date().toISOString(),
     };
   }
 
   // Validate blog data
   static validateBlogData(blogData) {
-    const requiredFields = ['title', 'content', 'author', 'category', 'status', 'excerpt'];
-    const missingFields = requiredFields.filter(field => 
-      !blogData[field] || (typeof blogData[field] === 'string' && !blogData[field].trim())
+    const requiredFields = [
+      "title",
+      "content",
+      "author",
+      "category",
+      "status",
+      "excerpt",
+    ];
+    const missingFields = requiredFields.filter(
+      (field) =>
+        !blogData[field] ||
+        (typeof blogData[field] === "string" && !blogData[field].trim()),
     );
 
     if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
     }
 
     // Validate status
-    const validStatuses = ['Draft', 'Published'];
+    const validStatuses = ["Draft", "Published"];
     if (!validStatuses.includes(blogData.status)) {
       throw new Error('Invalid status. Must be either "Draft" or "Published"');
     }
@@ -235,3 +254,4 @@ class BlogsAPI {
 }
 
 export default BlogsAPI;
+
