@@ -175,10 +175,10 @@ class AuthAPI {
 
       if (response.data.access_token) {
         this.setToken(response.data.access_token);
-        
+
         // After successful authentication, fetch user data
         const userResponse = await api.get("/users/me");
-        localStorage.setItem('userData', JSON.stringify(userResponse.data));
+        localStorage.setItem("userData", JSON.stringify(userResponse.data));
       }
 
       return response.data;
@@ -205,10 +205,10 @@ class AuthAPI {
 
       if (response.data.access_token) {
         this.setToken(response.data.access_token);
-        
+
         // After successful signup, fetch user data
         const userResponse = await api.get("/users/me");
-        localStorage.setItem('userData', JSON.stringify(userResponse.data));
+        localStorage.setItem("userData", JSON.stringify(userResponse.data));
       }
 
       return response.data;
@@ -241,10 +241,10 @@ class AuthAPI {
           "Content-Type": "multipart/form-data",
         },
       });
-      
+
       // Update user data in localStorage after successful onboarding
-      localStorage.setItem('userData', JSON.stringify(response.data));
-      
+      localStorage.setItem("userData", JSON.stringify(response.data));
+
       return response.data;
     } catch (error) {
       throw error;
@@ -252,7 +252,7 @@ class AuthAPI {
   }
 
   static isAuthenticated() {
-    return !!this.getToken() && !!localStorage.getItem('userData');
+    return !!this.getToken() && !!localStorage.getItem("userData");
   }
 
   static logout() {
@@ -263,3 +263,4 @@ class AuthAPI {
 }
 
 export default AuthAPI;
+
