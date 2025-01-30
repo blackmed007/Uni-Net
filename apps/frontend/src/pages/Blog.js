@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardBody, CardFooter, Button, Chip, Spinner } from "@nextui-org/react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Button,
+  Chip,
+  Spinner,
+} from "@nextui-org/react";
 import { ArrowRight } from "lucide-react";
-import BlogsAPI from '../services/blogs.api';
-import { toast } from 'react-hot-toast';
+import BlogsAPI from "../services/blogs.api";
+import { toast } from "react-hot-toast";
 
 const Blog = () => {
   const [posts, setPosts] = useState([]);
@@ -18,18 +26,20 @@ const Blog = () => {
       setIsLoading(true);
       const allPosts = await BlogsAPI.getBlogs();
       // Filter published posts
-      const publishedPosts = allPosts.filter(post => post.status === 'Published');
+      const publishedPosts = allPosts.filter(
+        (post) => post.status === "Published",
+      );
       setPosts(publishedPosts);
     } catch (error) {
-      console.error('Error fetching blog posts:', error);
-      toast.error('Failed to load blog posts');
+      console.error("Error fetching blog posts:", error);
+      toast.error("Failed to load blog posts");
     } finally {
       setIsLoading(false);
     }
   };
 
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
@@ -48,19 +58,22 @@ const Blog = () => {
           UniConnect Blog
         </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map(post => (
-            <Card key={post.id} className="bg-gradient-to-b from-gray-900 to-black border border-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+          {posts.map((post) => (
+            <Card
+              key={post.id}
+              className="bg-gradient-to-b from-gray-900 to-black border border-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
+            >
               <div className="relative h-64 bg-gray-800">
-                <img 
-                  src={post.image || 'https://via.placeholder.com/400x300'}
-                  alt={post.title} 
+                <img
+                  src={post.blog_image || "https://via.placeholder.com/400x300"}
+                  alt={post.title}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <Chip 
-                    color="primary" 
-                    variant="flat" 
+                  <Chip
+                    color="primary"
+                    variant="flat"
                     className="bg-blue-600 text-white"
                   >
                     {post.category}
@@ -73,15 +86,22 @@ const Blog = () => {
                 </h2>
                 <div className="flex items-center space-x-4">
                   <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                    <img 
-                      src={post.authorImage || 'https://via.placeholder.com/40'} 
+                    <img
+                      src={
+                        post.author_profile_url ||
+                        "https://via.placeholder.com/40"
+                      }
                       alt={post.author}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-medium text-white">{post.author}</span>
-                    <span className="text-sm text-gray-400">{formatDate(post.date)}</span>
+                    <span className="font-medium text-white">
+                      {post.author}
+                    </span>
+                    <span className="text-sm text-gray-400">
+                      {formatDate(post.date)}
+                    </span>
                   </div>
                 </div>
               </CardHeader>
@@ -90,11 +110,11 @@ const Blog = () => {
               </CardBody>
               <CardFooter className="flex justify-between items-center p-6">
                 <span className="text-sm text-gray-400">
-                  {post.views} view{post.views !== 1 ? 's' : ''}
+                  {post.views} view{post.views !== 1 ? "s" : ""}
                 </span>
                 <Link to={`/blog/${post.id}`}>
-                  <Button 
-                    color="primary" 
+                  <Button
+                    color="primary"
                     endContent={<ArrowRight size={16} />}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
                   >
@@ -114,3 +134,4 @@ const Blog = () => {
 };
 
 export default Blog;
+
