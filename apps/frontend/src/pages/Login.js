@@ -1,13 +1,13 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input, Button, Link } from "@nextui-org/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff } from 'lucide-react';
-import AuthAPI from '../services/auth.api';
+import { Eye, EyeOff } from "lucide-react";
+import AuthAPI from "../services/auth.api";
 
 const AnimatedErrorMessage = ({ message }) => {
   return (
-    <motion.div 
+    <motion.div
       className="bg-red-500 text-white px-4 py-3 rounded-md mb-6 text-center overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -15,7 +15,7 @@ const AnimatedErrorMessage = ({ message }) => {
       transition={{ duration: 0.3 }}
     >
       <motion.span className="block font-semibold">
-        {message.split('').map((char, index) => (
+        {message.split("").map((char, index) => (
           <motion.span
             key={index}
             initial={{ opacity: 0, y: 10 }}
@@ -31,8 +31,8 @@ const AnimatedErrorMessage = ({ message }) => {
 };
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -45,14 +45,25 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrors({});
-    
+
     try {
       setIsLoading(true);
-      
+
       await AuthAPI.signin({ email, password });
-      
-      // After successful login, navigate to appropriate page
-      navigate('/user/dashboard');
+
+      const token = sessionStorage.getItem("access_token");
+      const userData = JSON.parse(localStorage.getItem("userData"));
+
+      if (!token || !userData) {
+        navigate("/login");
+      }
+
+      if (userData.role.toString().toLowerCase() === "admin") {
+        navigate("/admin/dashboard");
+      } else if (userData.role.toString().toLowerCase() === "user") {
+        // After successful login, navigate to appropriate page
+        navigate("/user/dashboard");
+      }
     } catch (error) {
       try {
         // Check if error message is JSON string containing validation errors
@@ -68,33 +79,35 @@ const Login = () => {
   };
 
   const handleKeyPress = (e, nextInputRef) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       nextInputRef.current.focus();
     }
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="flex min-h-screen bg-black text-white items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
       style={{
-        backgroundImage: 'url(assets/login-signup/background.avif)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundImage: "url(assets/login-signup/background.avif)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
       <div className="absolute inset-0 bg-black opacity-70"></div>
-      
-      <motion.div 
+
+      <motion.div
         className="relative w-full max-w-md p-8 bg-black bg-opacity-20 backdrop-blur-sm rounded-lg shadow-lg"
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
       >
-        <h2 className="text-3xl font-bold mb-6 text-white text-center">Login to UniLife</h2>
+        <h2 className="text-3xl font-bold mb-6 text-white text-center">
+          Login to UniLife
+        </h2>
         <AnimatePresence>
           {errors.form && <AnimatedErrorMessage message={errors.form} />}
         </AnimatePresence>
@@ -111,9 +124,18 @@ const Login = () => {
               isInvalid={!!errors.email}
               errorMessage={errors.email}
               classNames={{
-                input: ["bg-transparent", "text-white", "placeholder:text-gray-400"],
+                input: [
+                  "bg-transparent",
+                  "text-white",
+                  "placeholder:text-gray-400",
+                ],
                 label: "text-white",
-                inputWrapper: ["border-white", "hover:border-purple-400", "focus:border-purple-400", "focus-within:border-purple-400"]
+                inputWrapper: [
+                  "border-white",
+                  "hover:border-purple-400",
+                  "focus:border-purple-400",
+                  "focus-within:border-purple-400",
+                ],
               }}
               autoFocus
             />
@@ -129,15 +151,24 @@ const Login = () => {
               isInvalid={!!errors.password}
               errorMessage={errors.password}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   handleLogin(e);
                 }
               }}
               classNames={{
-                input: ["bg-transparent", "text-white", "placeholder:text-gray-400"],
+                input: [
+                  "bg-transparent",
+                  "text-white",
+                  "placeholder:text-gray-400",
+                ],
                 label: "text-white",
-                inputWrapper: ["border-white", "hover:border-purple-400", "focus:border-purple-400", "focus-within:border-purple-400"]
+                inputWrapper: [
+                  "border-white",
+                  "hover:border-purple-400",
+                  "focus:border-purple-400",
+                  "focus-within:border-purple-400",
+                ],
               }}
               endContent={
                 <button type="button" onClick={toggleVisibility}>
@@ -151,7 +182,7 @@ const Login = () => {
             />
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button 
+            <Button
               type="submit"
               className="w-full bg-purple-700 text-white hover:bg-purple-600"
               isLoading={isLoading}
@@ -162,8 +193,13 @@ const Login = () => {
           </motion.div>
         </form>
         <div className="mt-6 text-center text-sm text-gray-400">
-          Don't have an account yet?{' '}
-          <Link href="/signup" className="text-purple-400 hover:text-purple-300">Sign up for free</Link>
+          Don't have an account yet?{" "}
+          <Link
+            href="/signup"
+            className="text-purple-400 hover:text-purple-300"
+          >
+            Sign up for free
+          </Link>
         </div>
       </motion.div>
     </motion.div>
