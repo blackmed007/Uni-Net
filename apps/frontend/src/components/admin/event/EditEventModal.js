@@ -98,12 +98,6 @@ const EditEventModal = ({ isOpen, onClose, event, onSave }) => {
             transition={{ duration: 0.5 }}
           >
             <Input
-              label="Event ID"
-              value={editedEvent.id || ''}
-              isReadOnly
-              startContent={<Calendar className="text-default-400" size={16} />}
-            />
-            <Input
               label="Event Name"
               value={editedEvent.name || ''}
               onChange={(e) => handleChange('name', e.target.value)}
