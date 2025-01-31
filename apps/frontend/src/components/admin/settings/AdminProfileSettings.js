@@ -94,15 +94,16 @@ const AdminProfileSettings = () => {
             src={settings.profileImage || "https://i.pravatar.cc/150?u=a042581f4e29026704d"}
             className="w-24 h-24"
           />
-          <Button
-            color="primary"
-            variant="flat"
-            onPress={() => document.getElementById('profile-image-upload').click()}
-            startContent={<Upload size={20} />}
-            isDisabled={isLoading}
-          >
-            Upload Image
-          </Button>
+       <Button
+  color="primary"
+  variant="flat"
+  onPress={() => document.getElementById('profile-image-upload').click()}
+  startContent={<Upload size={20} />}
+  isDisabled={isLoading}
+  className="bg-gray-800 text-gray-200 hover:bg-gray-700"  // Dark gray background with light gray text
+>
+  Upload Image
+</Button>
           <input
             id="profile-image-upload"
             type="file"

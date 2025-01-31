@@ -119,25 +119,25 @@ const BlogPostListTable = ({
           </Tooltip>
         );
 
-      case "category":
-        return (
-          <Tooltip 
-            content={<p className="whitespace-pre-line">{formatTooltipText(cellValue)}</p>}
-            isDisabled={cellValue.length <= 50}
-            showArrow
-          >
-            <Chip 
-              color="primary" 
-              size="sm" 
-              variant="flat"
-              classNames={{
-                content: "line-clamp-2 max-w-[150px]"
-              }}
-            >
-              {truncateText(cellValue, 15)}
-            </Chip>
-          </Tooltip>
-        );
+        case "category":
+  return (
+    <Tooltip 
+      content={<p className="whitespace-pre-line">{formatTooltipText(cellValue)}</p>}
+      isDisabled={cellValue.length <= 50}
+      showArrow
+    >
+      <Chip 
+        color="primary" 
+        size="sm" 
+        variant="flat"
+        classNames={{
+          content: "line-clamp-2 max-w-[150px] text-neutral-50"  // Very light, soft white
+        }}
+      >
+        {truncateText(cellValue, 15)}
+      </Chip>
+    </Tooltip>
+  );
 
       case "createdAt":
         return <span className="text-small whitespace-nowrap">{formatBlogDate(cellValue)}</span>;

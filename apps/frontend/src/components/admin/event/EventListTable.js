@@ -118,18 +118,18 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             <span>{truncateText(cellValue, 20)}</span>
           </Tooltip>
         );
-      case 'type':
-        const typeColor = getEventTypeColor(event.type);
-        return (
-          <Chip
-            className="capitalize"
-            color={typeColor}
-            size="sm"
-            variant="flat"
-          >
-            {cellValue || 'N/A'}
-          </Chip>
-        );
+        case 'type':
+  const typeColor = getEventTypeColor(event.type);
+  return (
+    <Chip
+      className="capitalize text-neutral-50"  // Very light, soft white
+      color={typeColor}
+      size="sm"
+      variant="flat"
+    >
+      {cellValue || 'N/A'}
+    </Chip>
+  );
       case 'date':
         return <span className="whitespace-nowrap">{formatDate(cellValue)}</span>;
       case 'status':
