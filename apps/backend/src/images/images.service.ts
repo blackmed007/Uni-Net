@@ -23,6 +23,6 @@ export class ImagesService {
 
     fs.writeFileSync(filePath, file.buffer);
 
-    return `http://localhost:5003/api/v1/uploads/${imageName}`;
+    return `http://localhost:5004/api/v1/uploads/${imageName}`;
   }
 }
