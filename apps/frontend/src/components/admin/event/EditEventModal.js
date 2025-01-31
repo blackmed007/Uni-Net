@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
-import { Calendar, Clock, MapPin, Users, User, Image, Upload, Link } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, User, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 
 const EditEventModal = ({ isOpen, onClose, event, onSave }) => {
@@ -135,13 +135,6 @@ const EditEventModal = ({ isOpen, onClose, event, onSave }) => {
               startContent={<MapPin className="text-default-400" size={16} />}
               isRequired
             />
-            <Input
-              label="Location URL for Maps"
-              value={editedEvent.locationUrl || ''}
-              onChange={(e) => handleChange('locationUrl', e.target.value)}
-              startContent={<Link className="text-default-400" size={16} />}
-              placeholder="Enter maps URL"
-            />
             <Select
               label="Event Type"
               selectedKeys={editedEvent.type ? [editedEvent.type] : []}
@@ -226,31 +219,16 @@ const EditEventModal = ({ isOpen, onClose, event, onSave }) => {
             </div>
             <div>
               <p className="text-small font-bold mb-2">Event Image</p>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Upload Image</p>
-                  <label className="flex items-center justify-center w-full h-[38px] px-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <Upload className="text-gray-400 mr-2" size={16} />
-                    <span className="text-sm text-gray-400">Choose file</span>
-                  </label>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Image URL</p>
-                  <Input
-                    placeholder="Enter image URL"
-                    value={editedEvent.image || ''}
-                    onChange={(e) => handleChange('image', e.target.value)}
-                    startContent={<Image className="text-gray-400" size={16} />}
-                    className="h-[38px]"
-                  />
-                </div>
-              </div>
+              <label className="flex items-center justify-center w-full h-[38px] px-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <Upload className="text-gray-400 mr-2" size={16} />
+                <span className="text-sm text-gray-400">Choose file</span>
+              </label>
               {(uploadedImage || editedEvent.image) && (
                 <img 
                   src={uploadedImage || editedEvent.image} 

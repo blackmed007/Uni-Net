@@ -3,6 +3,22 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, 
 import { Eye, Edit2, XCircle, Trash2, Users, BarChart2, Play, Calendar, Briefcase, MapPin } from "lucide-react";
 
 const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
+  const formatTooltipText = (text, maxLength = 90, lineLength = 30) => {
+    if (!text) return '';
+    const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    return truncatedText.replace(new RegExp(`(.{1,${lineLength}})`, 'g'), '$1\n');
+  };
+
+  const formatEventId = (id) => {
+    if (!id) return '';
+    return id.toString().padStart(3, '0');
+  };
+
   const getEventStatusColor = (status) => {
     switch (status) {
       case 'Upcoming': return 'primary';
@@ -54,17 +70,53 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
     const cellValue = event[columnKey];
     switch (columnKey) {
       case 'id':
-        return <span className="text-xs font-medium text-gray-400">#{cellValue}</span>;
+        return (
+          <span className="text-xs font-medium text-gray-400">
+            #{formatEventId(cellValue)}
+          </span>
+        );
       case 'name':
         const EventTypeIcon = getEventTypeIcon(event.type);
         return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small capitalize flex items-center">
-              <EventTypeIcon className="mr-2" size={16} />
-              {cellValue || 'N/A'}
-            </p>
-            <p className="text-bold text-tiny capitalize text-default-400">{event.type || 'N/A'}</p>
-          </div>
+          <Tooltip
+            content={
+              <div className="max-w-[400px] p-2">
+                <p className="font-medium text-small whitespace-pre-line">
+                  {formatTooltipText(cellValue)}
+                </p>
+                {event.description && (
+                  <p className="text-tiny text-default-400 mt-2 whitespace-pre-line">
+                    {formatTooltipText(event.description)}
+                  </p>
+                )}
+              </div>
+            }
+            className="bg-default-100"
+            showArrow
+            placement="top"
+          >
+            <div className="flex flex-col">
+              <p className="text-bold text-small capitalize flex items-center">
+                <EventTypeIcon className="mr-2" size={16} />
+                {truncateText(cellValue, 20)}
+              </p>
+              {event.description && (
+                <p className="text-bold text-tiny capitalize text-default-400">
+                  {truncateText(event.description, 25)}
+                </p>
+              )}
+            </div>
+          </Tooltip>
+        );
+      case 'organizer':
+        return (
+          <Tooltip 
+            content={<p className="whitespace-pre-line">{formatTooltipText(cellValue)}</p>}
+            isDisabled={cellValue.length <= 20}
+            showArrow
+          >
+            <span>{truncateText(cellValue, 20)}</span>
+          </Tooltip>
         );
       case 'type':
         const typeColor = getEventTypeColor(event.type);

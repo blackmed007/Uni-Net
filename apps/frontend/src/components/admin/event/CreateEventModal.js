@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
-import { Calendar, Clock, MapPin, Users, User, Image, Upload, Link } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, User, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 
 const CreateEventModal = ({ isOpen, onClose, onSave }) => {
@@ -9,7 +9,6 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
     date: '',
     time: '',
     location: '',
-    locationUrl: '',
     type: '',
     status: 'Upcoming',
     organizer: '',
@@ -17,7 +16,6 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
     description: '',
     agenda: [],
     speakers: [],
-    image: ''
   });
   const [uploadedImage, setUploadedImage] = useState(null);
 
@@ -52,14 +50,13 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
       participants: [],
       bookmarkedBy: [],
       totalViews: 0,
-      image: uploadedImage || newEvent.image,
+      image: uploadedImage,
     });
     setNewEvent({
       name: '',
       date: '',
       time: '',
       location: '',
-      locationUrl: '',
       type: '',
       status: 'Upcoming',
       organizer: '',
@@ -67,7 +64,6 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
       description: '',
       agenda: [],
       speakers: [],
-      image: '',
     });
     setUploadedImage(null);
     onClose();
@@ -166,13 +162,6 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
               startContent={<MapPin className="text-default-400" size={16} />}
               isRequired
             />
-            <Input
-              label="Location URL for Maps"
-              value={newEvent.locationUrl}
-              onChange={(e) => handleChange('locationUrl', e.target.value)}
-              startContent={<Link className="text-default-400" size={16} />}
-              placeholder="Enter maps URL"
-            />
             <Select
               label="Event Type"
               value={newEvent.type}
@@ -257,34 +246,19 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
             </div>
             <div>
               <p className="text-small font-bold mb-2">Event Image</p>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Upload Image</p>
-                  <label className="flex items-center justify-center w-full h-[38px] px-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <Upload className="text-gray-400 mr-2" size={16} />
-                    <span className="text-sm text-gray-400">Choose file</span>
-                  </label>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Image URL</p>
-                  <Input
-                    placeholder="Enter image URL"
-                    value={newEvent.image}
-                    onChange={(e) => handleChange('image', e.target.value)}
-                    startContent={<Image className="text-gray-400" size={16} />}
-                    className="h-[38px]"
-                  />
-                </div>
-              </div>
-              {(uploadedImage || newEvent.image) && (
+              <label className="flex items-center justify-center w-full h-[38px] px-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <Upload className="text-gray-400 mr-2" size={16} />
+                <span className="text-sm text-gray-400">Choose file</span>
+              </label>
+              {uploadedImage && (
                 <img 
-                  src={uploadedImage || newEvent.image} 
+                  src={uploadedImage} 
                   alt="Event" 
                   className="mt-4 max-w-full h-auto rounded-lg"
                 />
