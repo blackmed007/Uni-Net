@@ -19,36 +19,8 @@ const BlogPostListTable = ({
   filters,
   onPostAction,
   formatDate,
+  isLoading
 }) => {
-  const filteredPosts = blogPosts.filter((post) => {
-    // Search filter
-    const matchesSearch =
-      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.author.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Filter conditions
-    const matchesAuthor = !filters.author || post.author === filters.author;
-    const matchesCategory =
-      !filters.category || post.category === filters.category;
-    const matchesStatus = !filters.status || post.status === filters.status;
-
-    // Date filters
-    const postDate = new Date(post.createdAt);
-    const matchesStartDate =
-      !filters.startDate || postDate >= new Date(filters.startDate);
-    const matchesEndDate =
-      !filters.endDate || postDate <= new Date(filters.endDate);
-
-    return (
-      matchesSearch &&
-      matchesAuthor &&
-      matchesCategory &&
-      matchesStatus &&
-      matchesStartDate &&
-      matchesEndDate
-    );
-  });
-
   const columns = [
     { name: "ID", uid: "id" },
     { name: "TITLE", uid: "title" },
@@ -60,48 +32,115 @@ const BlogPostListTable = ({
     { name: "ACTIONS", uid: "actions" },
   ];
 
+  const formatBlogId = (id) => {
+    return id.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+  };
+
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
+  const formatTooltipText = (text, maxLength = 90, lineLength = 30) => {
+    if (!text) return '';
+    const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    
+    // Insert line breaks every `lineLength` characters
+    return truncatedText.replace(new RegExp(`(.{1,${lineLength}})`, 'g'), '$1\n');
+  };
+
+  const formatBlogDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const renderCell = (post, columnKey) => {
     const cellValue = post[columnKey];
 
     switch (columnKey) {
       case "id":
-        return <span className="text-bold text-small">#{cellValue}</span>;
+        return <span className="text-bold text-small">#{formatBlogId(cellValue)}</span>;
 
       case "title":
         return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{cellValue}</p>
-            <p className="text-bold text-tiny capitalize text-default-400">
-              {post.excerpt?.substring(0, 50)}...
-            </p>
-          </div>
+          <Tooltip
+            content={
+              <div className="max-w-[400px] p-2">
+                <p className="font-medium text-small whitespace-pre-line">{formatTooltipText(cellValue)}</p>
+                {post.excerpt && (
+                  <p className="text-tiny text-default-400 mt-2 whitespace-pre-line">
+                    {formatTooltipText(post.excerpt)}
+                  </p>
+                )}
+              </div>
+            }
+            className="bg-default-100"
+            showArrow
+            placement="top"
+          >
+            <div className="flex flex-col max-w-[300px] overflow-hidden">
+              <p className="text-small font-medium truncate max-w-full">
+                {truncateText(cellValue, 20)}
+              </p>
+              {post.excerpt && (
+                <p className="text-tiny text-default-400 truncate max-w-full">
+                  {truncateText(post.excerpt, 10)}
+                </p>
+              )}
+            </div>
+          </Tooltip>
         );
 
       case "author":
         return (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden">
-              <img
-                src={
-                  post.author_profile_url || "https://via.placeholder.com/32"
-                }
-                alt={cellValue}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className="text-bold text-small">{cellValue}</span>
-          </div>
+          <Tooltip 
+            content={<p className="whitespace-pre-line">{formatTooltipText(cellValue)}</p>}
+            isDisabled={cellValue.length <= 50}
+            showArrow
+          >
+            <User
+              avatarProps={{
+                radius: "lg",
+                size: "sm",
+                src: post.author_profile_url || "https://via.placeholder.com/32",
+                className: "bg-gray-700"
+              }}
+              classNames={{
+                name: "text-small line-clamp-2 max-w-[200px]",
+              }}
+              name={truncateText(cellValue, 15)}
+            />
+          </Tooltip>
         );
 
       case "category":
         return (
-          <Chip color="primary" size="sm" variant="flat">
-            {cellValue}
-          </Chip>
+          <Tooltip 
+            content={<p className="whitespace-pre-line">{formatTooltipText(cellValue)}</p>}
+            isDisabled={cellValue.length <= 50}
+            showArrow
+          >
+            <Chip 
+              color="primary" 
+              size="sm" 
+              variant="flat"
+              classNames={{
+                content: "line-clamp-2 max-w-[150px]"
+              }}
+            >
+              {truncateText(cellValue, 15)}
+            </Chip>
+          </Tooltip>
         );
 
-      case "date":
-        return formatDate(cellValue);
+      case "createdAt":
+        return <span className="text-small whitespace-nowrap">{formatBlogDate(cellValue)}</span>;
 
       case "status":
         return (
@@ -117,15 +156,15 @@ const BlogPostListTable = ({
 
       case "views":
         return (
-          <span className="text-bold text-small">
+          <span className="text-small whitespace-nowrap">
             {cellValue} view{cellValue !== 1 ? "s" : ""}
           </span>
         );
 
       case "actions":
         return (
-          <div className="flex items-center gap-2 justify-end">
-            <Tooltip content="View Details">
+          <div className="relative flex items-center gap-2">
+            <Tooltip content="View Details" showArrow>
               <Button
                 isIconOnly
                 size="sm"
@@ -133,10 +172,10 @@ const BlogPostListTable = ({
                 onPress={() => onPostAction("view", post)}
                 className="text-default-400 hover:text-default-900"
               >
-                <Eye size={20} />
+                <Eye size={18} />
               </Button>
             </Tooltip>
-            <Tooltip content="Edit Post">
+            <Tooltip content="Edit Post" showArrow>
               <Button
                 isIconOnly
                 size="sm"
@@ -144,10 +183,10 @@ const BlogPostListTable = ({
                 onPress={() => onPostAction("edit", post)}
                 className="text-default-400 hover:text-default-900"
               >
-                <Edit2 size={20} />
+                <Edit2 size={18} />
               </Button>
             </Tooltip>
-            <Tooltip content="Delete Post">
+            <Tooltip content="Delete Post" showArrow>
               <Button
                 isIconOnly
                 size="sm"
@@ -156,7 +195,7 @@ const BlogPostListTable = ({
                 onPress={() => onPostAction("delete", post)}
                 className="text-danger hover:text-danger-500"
               >
-                <Trash2 size={20} />
+                <Trash2 size={18} />
               </Button>
             </Tooltip>
           </div>
@@ -170,10 +209,37 @@ const BlogPostListTable = ({
   return (
     <Table
       aria-label="Blog post list table"
+      selectionMode="none"
       classNames={{
-        wrapper: "shadow-md rounded-lg",
-        table: "min-h-[400px]",
+        wrapper: "min-h-[222px]",
+        td: "py-3", 
       }}
+      bottomContent={
+        isLoading && (
+          <div className="flex justify-center w-full py-2">
+            <svg 
+              className="animate-spin h-5 w-5 text-gray-500" 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24"
+            >
+              <circle 
+                className="opacity-25" 
+                cx="12" 
+                cy="12" 
+                r="10" 
+                stroke="currentColor" 
+                strokeWidth="4"
+              ></circle>
+              <path 
+                className="opacity-75" 
+                fill="currentColor" 
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+          </div>
+        )
+      }
     >
       <TableHeader columns={columns}>
         {(column) => (
@@ -187,12 +253,10 @@ const BlogPostListTable = ({
         )}
       </TableHeader>
       <TableBody
-        items={filteredPosts}
+        items={blogPosts}
         emptyContent={
           <div className="text-center text-default-400">
-            {searchTerm || Object.values(filters).some(Boolean)
-              ? "No posts match the current filters"
-              : "No posts available"}
+            No blog posts found
           </div>
         }
       >
@@ -209,4 +273,3 @@ const BlogPostListTable = ({
 };
 
 export default BlogPostListTable;
-

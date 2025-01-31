@@ -57,15 +57,20 @@ const BlogPost = () => {
     }
   };
 
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
   const formatDate = (dateString) => {
-    const options = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (isLoading) {
@@ -115,8 +120,8 @@ const BlogPost = () => {
                 />
               </div>
               <div>
-                <p className="font-medium text-white text-lg">{post.author}</p>
-                <p className="text-sm text-gray-300">{formatDate(post.date)}</p>
+                <p className="font-medium text-white text-lg">{truncateText(post.author, 20)}</p>
+                <p className="text-sm text-gray-300">{formatDate(post.createdAt)}</p>
               </div>
             </div>
           </div>
@@ -144,14 +149,14 @@ const BlogPost = () => {
                 variant="flat"
                 className="bg-blue-600 text-white"
               >
-                {post.category}
+                {truncateText(post.category, 15)}
               </Chip>
               <div className="text-sm text-gray-400">
                 {post.views} view{post.views !== 1 ? "s" : ""}
               </div>
             </div>
             <div className="text-sm text-gray-400">
-              Last updated: {formatDate(post.date)}
+              Last updated: {formatDate(post.createdAt)}
             </div>
           </CardFooter>
         </Card>

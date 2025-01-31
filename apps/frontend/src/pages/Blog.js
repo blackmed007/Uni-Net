@@ -38,9 +38,20 @@ const Blog = () => {
     }
   };
 
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
   const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (isLoading) {
@@ -76,13 +87,13 @@ const Blog = () => {
                     variant="flat"
                     className="bg-blue-600 text-white"
                   >
-                    {post.category}
+                    {truncateText(post.category, 12)}
                   </Chip>
                 </div>
               </div>
               <CardHeader className="flex flex-col items-start p-6">
                 <h2 className="text-2xl font-semibold mb-4 text-white hover:text-blue-400 transition-colors duration-200">
-                  {post.title}
+                  {truncateText(post.title, 20)}
                 </h2>
                 <div className="flex items-center space-x-4">
                   <div className="relative w-10 h-10 rounded-full overflow-hidden">
@@ -97,16 +108,18 @@ const Blog = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-medium text-white">
-                      {post.author}
+                      {truncateText(post.author, 20)}
                     </span>
                     <span className="text-sm text-gray-400">
-                      {formatDate(post.date)}
+                      {formatDate(post.createdAt)}
                     </span>
                   </div>
                 </div>
               </CardHeader>
               <CardBody className="p-6">
-                <p className="text-gray-300 line-clamp-3">{post.excerpt}</p>
+                <p className="text-gray-300 line-clamp-3">
+                  {truncateText(post.excerpt, 100)}
+                </p>
               </CardBody>
               <CardFooter className="flex justify-between items-center p-6">
                 <span className="text-sm text-gray-400">
@@ -134,4 +147,3 @@ const Blog = () => {
 };
 
 export default Blog;
-

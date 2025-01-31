@@ -23,8 +23,7 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
   };
 
   const handleImageError = (e) => {
-    e.target.src =
-      "https://via.placeholder.com/800x400?text=No+Image+Available";
+    e.target.src = "https://via.placeholder.com/800x400?text=No+Image+Available";
     setIsImageLoading(false);
   };
 
@@ -47,7 +46,7 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600"
+            className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600 whitespace-normal break-words"
           >
             {post.title}
           </motion.h2>
@@ -82,20 +81,16 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
                   <div className="flex items-center space-x-4 col-span-2">
                     <div className="relative w-16 h-16 flex-shrink-0">
                       <img
-                        src={
-                          post.author_profile_url ||
-                          "https://via.placeholder.com/64"
-                        }
+                        src={post.author_profile_url || "https://via.placeholder.com/64"}
                         alt={post.author}
                         className="w-full h-full rounded-full object-cover"
                         onError={(e) => {
-                          e.target.src =
-                            "https://via.placeholder.com/64?text=Author";
+                          e.target.src = "https://via.placeholder.com/64?text=Author";
                         }}
                       />
                     </div>
-                    <div>
-                      <p className="font-medium text-white">{post.author}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white break-words whitespace-normal">{post.author}</p>
                       <p className="text-sm text-gray-400">
                         {formatDate(post.createdAt)}
                       </p>
@@ -103,21 +98,21 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Tag className="text-green-400" size={20} />
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-400">Category</p>
-                      <p className="font-medium text-white">{post.category}</p>
+                      <p className="font-medium text-white break-words whitespace-normal">{post.category}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <FileText className="text-yellow-400" size={20} />
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-400">Status</p>
-                      <p className="font-medium text-white">{post.status}</p>
+                      <p className="font-medium text-white break-words whitespace-normal">{post.status}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Eye className="text-pink-400" size={20} />
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-400">Views</p>
                       <p className="font-medium text-white">
                         {post.views} view{post.views !== 1 ? "s" : ""}
@@ -126,9 +121,9 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="text-blue-400" size={20} />
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-400">Created</p>
-                      <p className="font-medium text-white">
+                      <p className="font-medium text-white whitespace-normal">
                         {formatDate(post.createdAt)}
                       </p>
                     </div>
@@ -138,12 +133,12 @@ const BlogPostDetailModal = ({ isOpen, onClose, post, formatDate }) => {
             </Card>
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2 text-white">Excerpt</h3>
-              <p className="text-gray-300">{post.excerpt}</p>
+              <p className="text-gray-300 whitespace-pre-line break-words">{post.excerpt}</p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-2 text-white">Content</h3>
               <div
-                className="prose prose-invert max-w-none text-gray-300"
+                className="prose prose-invert max-w-none text-gray-300 whitespace-pre-line break-words"
                 dangerouslySetInnerHTML={{ __html: post.content }}
               />
             </div>
