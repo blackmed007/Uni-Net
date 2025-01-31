@@ -132,7 +132,7 @@ const UserSidebar = () => {
                       animate={{ opacity: 1, width: 'auto' }}
                       exit={{ opacity: 0, width: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="ml-3"
+                      className="ml-3 whitespace-nowrap min-w-[100px]"
                     >
                       {item.name}
                     </motion.span>
@@ -161,7 +161,7 @@ const UserSidebar = () => {
                   animate={{ opacity: 1, width: 'auto' }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="ml-3"
+                  className="ml-3 whitespace-nowrap"
                 >
                   Log Out
                 </motion.span>
@@ -203,10 +203,12 @@ const UserSidebar = () => {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="flex items-center justify-center w-8 h-8">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                  location.pathname === item.path ? 'bg-blue-500' : 'bg-black'
+                }`}>
                   <item.icon size={20} />
                 </div>
-                <span className="ml-3">{item.name}</span>
+                <span className="ml-3 whitespace-nowrap">{item.name}</span>
               </motion.div>
             </Link>
           ))}
@@ -219,10 +221,10 @@ const UserSidebar = () => {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="flex items-center justify-center w-8 h-8">
+            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-red-500 bg-opacity-20">
               <LogOut size={20} />
             </div>
-            <span className="ml-3">Log Out</span>
+            <span className="ml-3 whitespace-nowrap">Log Out</span>
           </motion.button>
         </div>
       </div>
