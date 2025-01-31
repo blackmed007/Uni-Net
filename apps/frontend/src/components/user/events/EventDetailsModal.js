@@ -6,6 +6,7 @@ import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyA54yGS01UI1divw8YIahs3Js0BtYrj-6M';
 const CHARS_PER_LINE = 100;
+const LOCATION_CHARS_PER_LINE = 30;
 
 const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }) => {
   const [showScrollArrow, setShowScrollArrow] = useState(true);
@@ -48,21 +49,17 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
   const formatLocationText = (location) => {
     if (!location) return '';
     
-    const words = location.split(' ');
     const lines = [];
-    let currentLine = '';
+    let remainingText = location;
 
-    words.forEach(word => {
-      if ((currentLine + ' ' + word).trim().length <= CHARS_PER_LINE) {
-        currentLine = currentLine ? `${currentLine} ${word}` : word;
-      } else {
-        lines.push(currentLine.trim());
-        currentLine = word;
+    while (remainingText.length > 0) {
+      if (remainingText.length <= LOCATION_CHARS_PER_LINE) {
+        lines.push(remainingText);
+        break;
       }
-    });
 
-    if (currentLine.trim()) {
-      lines.push(currentLine.trim());
+      lines.push(remainingText.substring(0, LOCATION_CHARS_PER_LINE));
+      remainingText = remainingText.substring(LOCATION_CHARS_PER_LINE);
     }
 
     return lines;
@@ -308,25 +305,26 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
           >
             <h3 className="text-xl font-semibold mb-2">Event Description</h3>
             <div className="relative">
-              <div className="text-gray-300">
+              <div 
+                className={`text-gray-300 space-y-2 ${!showFullDescription ? 'line-clamp-3' : ''}`}
+              >
                 {formatTextToLines(event.description)
-                  .slice(0, showFullDescription ? undefined : 4)
                   .map((line, index) => (
-                    <p key={index} className="whitespace-pre-wrap break-words mb-2">
+                    <p key={index} className="whitespace-pre-wrap break-words">
                       {line}
                     </p>
                   ))}
               </div>
-              {formatTextToLines(event.description).length > 4 && (
-                <div className="mt-4">
+              {event.description && event.description.length > 150 && (
+                <div className="mt-2">
                   <Button
                     color="primary"
                     variant="light"
                     size="sm"
-                    endContent={<ChevronRight className={`transform transition-transform ${showFullDescription ? 'rotate-90' : ''}`} />}
+                    className="h-6 min-w-0 p-0"
                     onPress={() => setShowFullDescription(!showFullDescription)}
                   >
-                    {showFullDescription ? 'Show Less' : 'Read More'}
+                    {showFullDescription ? 'Show Less' : 'Show More'}
                   </Button>
                 </div>
               )}
