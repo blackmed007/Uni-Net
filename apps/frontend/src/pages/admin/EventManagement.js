@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Input, Button, useDisclosure, Pagination } from "@nextui-org/react";
+import { Input, Button, useDisclosure, Pagination, Spinner } from "@nextui-org/react";
 import { Search, Filter, Calendar, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import EventListTable from '../../components/admin/event/EventListTable';
@@ -8,6 +8,8 @@ import EventFilterModal from '../../components/admin/event/EventFilterModal';
 import CreateEventModal from '../../components/admin/event/CreateEventModal';
 import EditEventModal from '../../components/admin/event/EditEventModal';
 import EventConfirmActionModal from '../../components/admin/event/EventConfirmActionModal';
+import EventsAPI from '../../services/events.api';
+import { toast } from 'react-hot-toast';
 
 const EventManagement = () => {
   const [events, setEvents] = useState([]);
@@ -20,35 +22,74 @@ const EventManagement = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [actionType, setActionType] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20); // Number of events per page
+  const [itemsPerPage] = useState(20);
 
-  const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
-  const { isOpen: isEventDetailOpen, onOpen: onEventDetailOpen, onClose: onEventDetailClose } = useDisclosure();
-  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
-  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
+  const { 
+    isOpen: isFilterOpen, 
+    onOpen: onFilterOpen, 
+    onClose: onFilterClose 
+  } = useDisclosure();
+  
+  const { 
+    isOpen: isEventDetailOpen, 
+    onOpen: onEventDetailOpen, 
+    onClose: onEventDetailClose 
+  } = useDisclosure();
+  
+  const { 
+    isOpen: isCreateOpen, 
+    onOpen: onCreateOpen, 
+    onClose: onCreateClose 
+  } = useDisclosure();
+  
+  const { 
+    isOpen: isEditOpen, 
+    onOpen: onEditOpen, 
+    onClose: onEditClose 
+  } = useDisclosure();
+  
+  const { 
+    isOpen: isConfirmOpen, 
+    onOpen: onConfirmOpen, 
+    onClose: onConfirmClose 
+  } = useDisclosure();
+
+  // Fetch events from API
+  const fetchEvents = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const fetchedEvents = await EventsAPI.getEvents();
+      setEvents(fetchedEvents);
+    } catch (err) {
+      setError('Failed to fetch events');
+      toast.error('Failed to load events');
+      console.error('Error fetching events:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const storedEvents = JSON.parse(localStorage.getItem('events') || '[]');
-    const validEvents = storedEvents.filter(event => event && typeof event === 'object' && event.id);
-    setEvents(validEvents);
+    fetchEvents();
   }, []);
 
   // Memoized filtered and sorted events
   const filteredAndSortedEvents = useMemo(() => {
     let filteredEvents = events.filter(event => {
       const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = !filters.type || event.type === filters.type;
-      const matchesStatus = !filters.status || event.status === filters.status;
+      const matchesType = !filters.type || event.event_type === filters.type;
+      const matchesStatus = !filters.status || event.event_status === filters.status;
       const matchesDate = !filters.date || event.date === filters.date;
 
       return matchesSearch && matchesType && matchesStatus && matchesDate;
     });
 
-    // Apply sorting
     if (sortConfig.key) {
       filteredEvents.sort((a, b) => {
         const aValue = a[sortConfig.key];
@@ -70,27 +111,21 @@ const EventManagement = () => {
     }
   }, [filteredAndSortedEvents, itemsPerPage, currentPage]);
 
-  // Get current events for the current page
+  // Get current events for pagination
   const currentEvents = useMemo(() => {
     const indexOfLastEvent = currentPage * itemsPerPage;
     const indexOfFirstEvent = indexOfLastEvent - itemsPerPage;
     return filteredAndSortedEvents.slice(indexOfFirstEvent, indexOfLastEvent);
   }, [filteredAndSortedEvents, currentPage, itemsPerPage]);
 
-  const saveEvents = (updatedEvents) => {
-    const validEvents = updatedEvents.filter(event => event && typeof event === 'object' && event.id);
-    setEvents(validEvents);
-    localStorage.setItem('events', JSON.stringify(validEvents));
-  };
-
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
 
   const handleFilter = (newFilters) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when applying filters
+    setCurrentPage(1);
     onFilterClose();
   };
 
@@ -121,42 +156,71 @@ const EventManagement = () => {
     }
   };
 
-  const handleConfirmAction = () => {
-    let updatedEvents;
-    switch (actionType) {
-      case 'cancel':
-        updatedEvents = events.map(event => 
-          event.id === selectedEvent.id ? { ...event, status: 'Cancelled' } : event
-        );
-        break;
-      case 'ongoing':
-        updatedEvents = events.map(event => 
-          event.id === selectedEvent.id ? { ...event, status: 'Ongoing' } : event
-        );
-        break;
-      case 'delete':
-        updatedEvents = events.filter(event => event.id !== selectedEvent.id);
-        break;
-      default:
-        return;
+  const handleConfirmAction = async () => {
+    try {
+      switch (actionType) {
+        case 'cancel':
+          await EventsAPI.updateEvent(selectedEvent.id, {
+            ...selectedEvent,
+            event_status: 'Cancelled'
+          });
+          break;
+        case 'ongoing':
+          await EventsAPI.updateEvent(selectedEvent.id, {
+            ...selectedEvent,
+            event_status: 'Ongoing'
+          });
+          break;
+        case 'delete':
+          await EventsAPI.deleteEvent(selectedEvent.id);
+          break;
+        default:
+          return;
+      }
+      
+      toast.success('Event updated successfully');
+      fetchEvents(); // Refresh the events list
+      onConfirmClose();
+    } catch (error) {
+      toast.error('Failed to update event');
+      console.error('Error updating event:', error);
     }
-    saveEvents(updatedEvents);
-    onConfirmClose();
   };
 
-  const handleCreateEvent = (newEvent) => {
-    const updatedEvents = [...events, newEvent];
-    saveEvents(updatedEvents);
-    onCreateClose();
+  const handleCreateEvent = async (newEvent) => {
+    try {
+      await EventsAPI.createEvent(newEvent);
+      toast.success('Event created successfully');
+      fetchEvents();
+      onCreateClose();
+    } catch (error) {
+      toast.error('Failed to create event');
+      console.error('Error creating event:', error);
+    }
   };
 
-  const handleEditEvent = (updatedEvent) => {
-    const updatedEvents = events.map(event => 
-      event.id === updatedEvent.id ? updatedEvent : event
+  const handleEditEvent = async (updatedEvent) => {
+    try {
+      await EventsAPI.updateEvent(updatedEvent.id, updatedEvent);
+      toast.success('Event updated successfully');
+      fetchEvents();
+      onEditClose();
+    } catch (error) {
+      toast.error('Failed to update event');
+      console.error('Error updating event:', error);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <p className="text-xl text-danger mb-4">{error}</p>
+        <Button color="primary" onClick={fetchEvents}>
+          Retry
+        </Button>
+      </div>
     );
-    saveEvents(updatedEvents);
-    onEditClose();
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -167,6 +231,7 @@ const EventManagement = () => {
       >
         <h1 className="text-4xl font-bold">Event Management</h1>
       </motion.div>
+
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
           placeholder="Search events..."
@@ -175,7 +240,11 @@ const EventManagement = () => {
           startContent={<Search className="text-gray-400" size={20} />}
           className="w-full sm:w-1/2"
         />
-        <Button color="primary" onPress={onFilterOpen} startContent={<Filter size={20} />}>
+        <Button 
+          color="primary" 
+          onPress={onFilterOpen} 
+          startContent={<Filter size={20} />}
+        >
           Filters
         </Button>
         <Button 
@@ -187,7 +256,12 @@ const EventManagement = () => {
           Create Event
         </Button>
       </div>
-      {currentEvents.length === 0 ? (
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Spinner size="lg" />
+        </div>
+      ) : currentEvents.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -195,7 +269,9 @@ const EventManagement = () => {
           className="text-center py-10"
         >
           <Calendar size={64} className="mx-auto text-gray-400 mb-4" />
-          <p className="text-xl text-gray-500">No events found. Create a new event to get started.</p>
+          <p className="text-xl text-gray-500">
+            No events found. Create a new event to get started.
+          </p>
         </motion.div>
       ) : (
         <>
@@ -206,7 +282,6 @@ const EventManagement = () => {
             sortConfig={sortConfig}
           />
           
-          {/* Pagination section */}
           <div className="flex justify-center mt-4">
             <Pagination
               total={Math.ceil(filteredAndSortedEvents.length / itemsPerPage)}
@@ -222,6 +297,7 @@ const EventManagement = () => {
         </>
       )}
 
+      {/* Modals */}
       <EventDetailModal
         isOpen={isEventDetailOpen}
         onClose={onEventDetailClose}
