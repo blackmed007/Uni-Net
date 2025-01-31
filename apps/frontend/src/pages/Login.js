@@ -42,13 +42,25 @@ const Login = () => {
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 
+  const validateForm = () => {
+    const validationErrors = AuthAPI.validateSigninData({ email, password });
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrors({});
 
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       setIsLoading(true);
-
       await AuthAPI.signin({ email, password });
 
       const token = sessionStorage.getItem("access_token");
@@ -56,22 +68,20 @@ const Login = () => {
 
       if (!token || !userData) {
         navigate("/login");
+        return;
       }
 
       if (userData.role.toString().toLowerCase() === "admin") {
         navigate("/admin/dashboard");
       } else if (userData.role.toString().toLowerCase() === "user") {
-        // After successful login, navigate to appropriate page
         navigate("/user/dashboard");
       }
     } catch (error) {
       try {
-        // Check if error message is JSON string containing validation errors
         const errorData = JSON.parse(error.message);
         setErrors(errorData);
       } catch {
-        // If not JSON, set as form error
-        setErrors({ form: error.message });
+        setErrors({ form: error.message || "Invalid email or password" });
       }
     } finally {
       setIsLoading(false);
@@ -112,14 +122,19 @@ const Login = () => {
           {errors.form && <AnimatedErrorMessage message={errors.form} />}
         </AnimatePresence>
         <form onSubmit={handleLogin} className="space-y-4">
-          <motion.div whileTap={{ scale: 0.98 }}>
+          <div>
             <Input
               ref={emailRef}
               label="Email"
               placeholder="name@university.edu"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) {
+                  setErrors((prev) => ({ ...prev, email: null }));
+                }
+              }}
               onKeyPress={(e) => handleKeyPress(e, passwordRef)}
               isInvalid={!!errors.email}
               errorMessage={errors.email}
@@ -139,15 +154,20 @@ const Login = () => {
               }}
               autoFocus
             />
-          </motion.div>
-          <motion.div whileTap={{ scale: 0.98 }}>
+          </div>
+          <div>
             <Input
               ref={passwordRef}
               label="Password"
               placeholder="Enter your password"
               type={isVisible ? "text" : "password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) {
+                  setErrors((prev) => ({ ...prev, password: null }));
+                }
+              }}
               isInvalid={!!errors.password}
               errorMessage={errors.password}
               onKeyPress={(e) => {
@@ -180,7 +200,7 @@ const Login = () => {
                 </button>
               }
             />
-          </motion.div>
+          </div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               type="submit"
