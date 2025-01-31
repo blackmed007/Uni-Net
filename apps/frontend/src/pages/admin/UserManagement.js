@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Input, Button, useDisclosure, Pagination } from "@nextui-org/react";
-import { Search, Filter, UserPlus } from "lucide-react";
+import { Search, Filter, UserPlus, User2 } from "lucide-react";
+import { motion } from "framer-motion";
 import UserListTable from '../../components/admin/user/UserListTable';
 import UserDetailModal from '../../components/admin/user/UserDetailModal';
 import UserFilterModal from '../../components/admin/user/UserFilterModal';
@@ -9,6 +10,7 @@ import UserConfirmActionModal from '../../components/admin/user/UserConfirmActio
 import CreateUserModal from '../../components/admin/user/CreateUserModal';
 import UsersAPI from '../../services/users.api';
 import LocationAPI from '../../services/location.api';
+import { toast } from 'react-hot-toast';
 
 const UserManagement = () => {
   // State management
@@ -28,9 +30,8 @@ const UserManagement = () => {
   const [actionType, setActionType] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   // Modal controls
   const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
@@ -42,7 +43,6 @@ const UserManagement = () => {
   // Fetch initial data
   const fetchData = async () => {
     setIsLoading(true);
-    setError(null);
     try {
       const [usersResponse, citiesResponse, universitiesResponse] = await Promise.all([
         UsersAPI.getUsers(),
@@ -55,7 +55,7 @@ const UserManagement = () => {
       setUniversities(universitiesResponse || []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      setError('Failed to fetch data. Please try again.');
+      toast.error('Failed to fetch data');
     } finally {
       setIsLoading(false);
     }
@@ -89,27 +89,22 @@ const UserManagement = () => {
       }
 
       // Filter functionality
-      // Role filter - case insensitive comparison
       if (filters.role && user.role?.toLowerCase() !== filters.role.toLowerCase()) {
         return false;
       }
 
-      // University filter
       if (filters.universityId && user.universityId !== filters.universityId) {
         return false;
       }
 
-      // City filter
       if (filters.cityId && user.cityId !== filters.cityId) {
         return false;
       }
 
-      // Gender filter - case insensitive comparison
       if (filters.gender && user.gender?.toLowerCase() !== filters.gender.toLowerCase()) {
         return false;
       }
 
-      // Status filter
       if (filters.status && user.status !== filters.status) {
         return false;
       }
@@ -126,7 +121,6 @@ const UserManagement = () => {
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
 
-      // Handle nested properties for university and city
       if (sortConfig.key === 'university') {
         aValue = a.university?.name;
         bValue = b.university?.name;
@@ -135,12 +129,10 @@ const UserManagement = () => {
         bValue = b.city?.name;
       }
 
-      // Handle null/undefined values
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
       if (aValue === bValue) return 0;
 
-      // Case insensitive comparison for string values
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
@@ -167,6 +159,7 @@ const UserManagement = () => {
   const handleFilter = (newFilters) => {
     setFilters(newFilters);
     setCurrentPage(1);
+    onFilterClose();
   };
 
   const handleSort = (key) => {
@@ -205,12 +198,15 @@ const UserManagement = () => {
       switch (actionType) {
         case 'suspend':
           await UsersAPI.suspendUser(selectedUser.id);
+          toast.success('User suspended successfully');
           break;
         case 'activate':
           await UsersAPI.activateUser(selectedUser.id);
+          toast.success('User activated successfully');
           break;
         case 'delete':
           await UsersAPI.deleteUser(selectedUser.id);
+          toast.success('User deleted successfully');
           break;
         default:
           throw new Error('Unknown action type');
@@ -220,7 +216,7 @@ const UserManagement = () => {
       onConfirmClose();
     } catch (error) {
       console.error('Error performing action:', error);
-      setError('Failed to perform action. Please try again.');
+      toast.error('Failed to perform action');
     } finally {
       setIsLoading(false);
     }
@@ -232,9 +228,10 @@ const UserManagement = () => {
       await UsersAPI.updateUser(updatedUser.id, updatedUser);
       await fetchData();
       onEditClose();
+      toast.success('User updated successfully');
     } catch (error) {
       console.error('Error updating user:', error);
-      setError('Failed to update user. Please try again.');
+      toast.error('Failed to update user');
     } finally {
       setIsLoading(false);
     }
@@ -246,38 +243,38 @@ const UserManagement = () => {
       await UsersAPI.createUser(userData);
       await fetchData();
       onCreateClose();
+      toast.success('User created successfully');
     } catch (error) {
       console.error('Error creating user:', error);
-      setError('Failed to create user. Please try again.');
+      toast.error('Failed to create user');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
-
   return (
     <div className="space-y-6">
-      <h1 className="text-4xl font-bold text-white">User Management</h1>
-      
-      {error && (
-        <div className="bg-red-500 text-white p-4 rounded-lg">
-          {error}
-        </div>
-      )}
-      
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-4xl font-bold">User Management</h1>
+      </motion.div>
+
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
           placeholder="Search users..."
           value={searchTerm}
           onChange={handleSearch}
           startContent={<Search className="text-gray-400" size={20} />}
-          className="w-full sm:w-1/2 bg-gray-800 text-white rounded-full"
+          className="w-full sm:w-1/2"
         />
         <Button 
           color="primary" 
           onPress={onFilterOpen} 
           startContent={<Filter size={20} />}
+          isDisabled={isLoading}
         >
           Filters
         </Button>
@@ -285,27 +282,46 @@ const UserManagement = () => {
           color="success" 
           onPress={onCreateOpen} 
           startContent={<UserPlus size={20} />}
+          isDisabled={isLoading}
+          className="bg-gradient-to-r from-green-400 to-blue-500 text-white"
         >
           Create User
         </Button>
       </div>
 
-      <UserListTable
-        users={displayedUsers}
-        onUserAction={handleUserAction}
-        onSort={handleSort}
-        sortConfig={sortConfig}
-        isLoading={isLoading}
-      />
-
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-4">
-          <Pagination
-            total={totalPages}
-            page={currentPage}
-            onChange={setCurrentPage}
+      {displayedUsers.length === 0 && !isLoading ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center py-10"
+        >
+          <User2 size={64} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-xl text-gray-500">No users found. Create a new user to get started.</p>
+        </motion.div>
+      ) : (
+        <>
+          <UserListTable
+            users={displayedUsers}
+            onUserAction={handleUserAction}
+            onSort={handleSort}
+            sortConfig={sortConfig}
+            isLoading={isLoading}
           />
-        </div>
+
+          <div className="flex justify-center mt-4">
+            <Pagination
+              total={Math.ceil(sortedUsers.length / itemsPerPage)}
+              page={currentPage}
+              onChange={setCurrentPage}
+              color="primary"
+              showControls
+              showShadow
+              variant="flat"
+              isDisabled={sortedUsers.length <= itemsPerPage}
+            />
+          </div>
+        </>
       )}
 
       <UserDetailModal
