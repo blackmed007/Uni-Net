@@ -12,16 +12,9 @@ const UserDashboard = ({
   RegisteredEvents, 
   RecentActivity 
 }) => {
-  const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
 
   useEffect(() => {
-    const hasVisited = localStorage.getItem(`user_${user.id}_hasVisited`);
-    if (!hasVisited) {
-      setIsFirstVisit(true);
-      localStorage.setItem(`user_${user.id}_hasVisited`, 'true');
-    }
-
     const storedBookmarks = JSON.parse(localStorage.getItem('bookmarkedPosts') || '[]');
     const storedPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
     const bookmarked = storedPosts.filter(post => storedBookmarks.includes(post.id));
@@ -101,20 +94,6 @@ const UserDashboard = ({
 
   return (
     <div className="space-y-6 bg-black min-h-screen">
-      {isFirstVisit && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card className="bg-gradient-to-r from-purple-400 to-pink-600">
-            <CardBody>
-              <h2 className="text-2xl font-bold text-white">Welcome, {user.firstName}!</h2>
-              <p className="text-white">We're excited to have you join UniConnect. Start exploring and connecting with your peers!</p>
-            </CardBody>
-          </Card>
-        </motion.div>
-      )}
       <motion.h1 
         className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600"
         initial={{ opacity: 0, y: -20 }}
