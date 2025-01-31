@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Input, Button, useDisclosure } from "@nextui-org/react";
-import { Search, Filter, Plus } from "lucide-react";
+import React from 'react';
+import { Input, Button } from "@nextui-org/react";
+import { Search, Filter, Plus, BookOpen, Bell, Share2 } from "lucide-react";
+import { motion } from "framer-motion";
 import NotificationListTable from '../../components/admin/notification/NotificationListTable';
 import NotificationDetailModal from '../../components/admin/notification/NotificationDetailModal';
 import NotificationFilterModal from '../../components/admin/notification/NotificationFilterModal';
@@ -9,34 +10,13 @@ import EditNotificationModal from '../../components/admin/notification/EditNotif
 import NotificationConfirmActionModal from '../../components/admin/notification/NotificationConfirmActionModal';
 
 const NotificationManagement = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [filters, setFilters] = React.useState({
     type: '',
     status: '',
     startDate: '',
     endDate: '',
   });
-  const [selectedNotification, setSelectedNotification] = useState(null);
-  const [actionType, setActionType] = useState('');
-  const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
-  const { isOpen: isNotificationDetailOpen, onOpen: onNotificationDetailOpen, onClose: onNotificationDetailClose } = useDisclosure();
-  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
-  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
-
-  useEffect(() => {
-    // Fetch notifications from API or local storage
-    const storedNotifications = localStorage.getItem('notifications');
-    if (storedNotifications) {
-      setNotifications(JSON.parse(storedNotifications));
-    }
-  }, []);
-
-  const saveNotifications = (updatedNotifications) => {
-    setNotifications(updatedNotifications);
-    localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
-  };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -44,67 +24,24 @@ const NotificationManagement = () => {
 
   const handleFilter = (newFilters) => {
     setFilters(newFilters);
-    onFilterClose();
   };
 
-  const handleNotificationAction = (action, notification) => {
-    setSelectedNotification(notification);
-    setActionType(action);
-    switch (action) {
-      case 'view':
-        onNotificationDetailOpen();
-        break;
-      case 'edit':
-        onEditOpen();
-        break;
-      case 'delete':
-        onConfirmOpen();
-        break;
-      default:
-        console.log('Unknown action:', action);
-    }
-  };
-
-  const handleConfirmAction = () => {
-    if (actionType === 'delete') {
-      const updatedNotifications = notifications.filter(notification => notification.id !== selectedNotification.id);
-      saveNotifications(updatedNotifications);
-    }
-    onConfirmClose();
-  };
-
-  const handleEditNotification = (updatedNotification) => {
-    const updatedNotifications = notifications.map(notification => 
-      notification.id === updatedNotification.id ? updatedNotification : notification
-    );
-    saveNotifications(updatedNotifications);
-    onEditClose();
-  };
-
-  const handleCreateNotification = (newNotification) => {
-    const lastId = notifications.length > 0 ? parseInt(notifications[notifications.length - 1].id) : 0;
-    const newId = ((lastId + 1) % 1000).toString().padStart(3, '0');
-    const notificationWithId = { ...newNotification, id: newId };
-    const updatedNotifications = [...notifications, notificationWithId];
-    saveNotifications(updatedNotifications);
-    onCreateClose();
-  };
-
-  const formatDateTime = (dateTimeString) => {
-    const options = { 
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    };
-    return new Date(dateTimeString).toLocaleString('en-GB', options).replace(',', ' at');
-  };
+  // Table headers to show the structure
+  const columns = [
+    { name: 'ID', uid: 'id', width: '80px' },
+    { name: 'TITLE', uid: 'title', width: '25%' },
+    { name: 'TYPE', uid: 'type', width: '120px' },
+    { name: 'DATE', uid: 'date', width: '200px' },
+    { name: 'STATUS', uid: 'status', width: '120px' },
+    { name: 'RECIPIENTS', uid: 'recipients', width: '120px' },
+    { name: 'ACTIONS', uid: 'actions', width: '180px' },
+  ];
 
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold">Notification Management</h1>
+      
+      {/* Search and buttons section */}
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
           placeholder="Search notifications..."
@@ -113,54 +50,136 @@ const NotificationManagement = () => {
           startContent={<Search className="text-gray-400" size={20} />}
           className="w-full sm:w-1/2"
         />
-        <Button color="primary" onPress={onFilterOpen} startContent={<Filter size={20} />}>
+        <Button color="primary" startContent={<Filter size={20} />}>
           Filters
         </Button>
         <Button 
           color="success" 
-          onPress={onCreateOpen} 
           startContent={<Plus size={20} />}
           className="bg-gradient-to-r from-green-400 to-blue-500 text-white"
         >
           Create Notification
         </Button>
       </div>
-      <NotificationListTable
-        notifications={notifications}
-        searchTerm={searchTerm}
-        filters={filters}
-        onNotificationAction={handleNotificationAction}
-        formatDateTime={formatDateTime}
-      />
-      <NotificationDetailModal
-        isOpen={isNotificationDetailOpen}
-        onClose={onNotificationDetailClose}
-        notification={selectedNotification}
-        formatDateTime={formatDateTime}
-      />
-      <NotificationFilterModal
-        isOpen={isFilterOpen}
-        onClose={onFilterClose}
-        onApplyFilters={handleFilter}
-        initialFilters={filters}
-      />
-      <CreateNotificationModal
-        isOpen={isCreateOpen}
-        onClose={onCreateClose}
-        onSave={handleCreateNotification}
-      />
-      <EditNotificationModal
-        isOpen={isEditOpen}
-        onClose={onEditClose}
-        notification={selectedNotification}
-        onSave={handleEditNotification}
-      />
-      <NotificationConfirmActionModal
-        isOpen={isConfirmOpen}
-        onClose={onConfirmClose}
-        onConfirm={handleConfirmAction}
-        actionType={actionType}
-      />
+
+      {/* Coming soon section with table header */}
+      <div className="relative min-h-[60vh] w-full">
+        {/* Show table header */}
+        <div className="absolute top-0 w-full z-20">
+          <table className="min-w-full">
+            <thead>
+              <tr>
+                {columns.map((column) => (
+                  <th 
+                    key={column.uid}
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    style={{ width: column.width }}
+                  >
+                    {column.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        {/* Blur overlay */}
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-md" />
+        
+        {/* Coming soon content */}
+        <motion.div 
+          className="absolute inset-0 flex flex-col items-center justify-center text-white z-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="mb-8"
+          >
+            <div className="relative">
+              <motion.div
+                animate={{ 
+                  rotate: 360,
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{ 
+                  rotate: { duration: 20, repeat: Infinity, ease: "linear" },
+                  scale: { duration: 2, repeat: Infinity, repeatType: "reverse" }
+                }}
+                className="absolute -inset-4 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 blur-xl"
+              />
+              <div className="relative flex space-x-4">
+                <motion.div
+                  animate={{ y: [-10, 10, -10] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl backdrop-blur-sm border border-white/10"
+                >
+                  <Bell size={48} className="text-purple-400" />
+                </motion.div>
+                <motion.div
+                  animate={{ y: [10, -10, 10] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl backdrop-blur-sm border border-white/10"
+                >
+                  <BookOpen size={48} className="text-blue-400" />
+                </motion.div>
+                <motion.div
+                  animate={{ y: [-10, 10, -10] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="p-4 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-2xl backdrop-blur-sm border border-white/10"
+                >
+                  <Share2 size={48} className="text-pink-400" />
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.h1 
+            className="text-7xl font-bold mb-6 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 bg-clip-text text-transparent">
+              Coming Soon
+            </span>
+          </motion.h1>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="max-w-2xl mx-auto text-center space-y-6"
+          >
+            <p className="text-xl text-gray-300 leading-relaxed">
+              We're building a powerful notification system to keep everyone informed and engaged.
+              Check back soon for exciting updates!
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+              {[
+                { icon: Bell, text: "Smart Alerts", color: "text-purple-400" },
+                { icon: BookOpen, text: "Rich Content", color: "text-blue-400" },
+                { icon: Share2, text: "Easy Sharing", color: "text-pink-400" }
+              ].map((item, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 + index * 0.2 }}
+                  className="p-4 bg-white/5 rounded-xl backdrop-blur-sm border border-white/10"
+                >
+                  <item.icon className={`mx-auto mb-2 ${item.color}`} size={24} />
+                  <p className="text-sm text-gray-300">{item.text}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };

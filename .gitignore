@@ -11,3 +11,4 @@ docker-compose.yml
 apps/backend/prisma/migrations/20250130235025_init/migration.sql
 apps/backend/prisma/migrations/migration_lock.toml
 apps/backend/package.json
+docker-compose.yml
