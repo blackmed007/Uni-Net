@@ -91,6 +91,11 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
   const removeImage = () => {
     setNewUser(prev => ({ ...prev, profile_url: null }));
     setImagePreview(null);
+    // Add error when image is removed since it's required
+    setErrors(prev => ({
+      ...prev,
+      profile_url: 'Profile image is required'
+    }));
   };
 
   const validateForm = () => {
@@ -109,6 +114,8 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
     if (!newUser.gender) newErrors.gender = 'Gender is required';
     if (!newUser.universityId) newErrors.universityId = 'University is required';
     if (!newUser.cityId) newErrors.cityId = 'City is required';
+    // Add validation for required profile image
+    if (!newUser.profile_url) newErrors.profile_url = 'Profile image is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -202,38 +209,41 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
             transition={{ duration: 0.5 }}
           >
             {/* Profile Image Upload */}
-            <div className="flex justify-center">
-              {imagePreview ? (
-                <div className="relative">
-                  <Avatar
-                    src={imagePreview}
-                    className="w-24 h-24"
-                    alt="Profile preview"
-                  />
-                  <button
-                    onClick={removeImage}
-                    className="absolute -top-2 -right-2 p-1 bg-danger rounded-full text-white"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <label className="cursor-pointer">
-                  <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center border-2 border-dashed border-gray-600 hover:border-gray-500 transition-colors">
-                    <Upload size={24} className="text-gray-400" />
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex justify-center">
+                {imagePreview ? (
+                  <div className="relative">
+                    <Avatar
+                      src={imagePreview}
+                      className="w-24 h-24"
+                      alt="Profile preview"
+                    />
+                    <button
+                      onClick={removeImage}
+                      className="absolute -top-2 -right-2 p-1 bg-danger rounded-full text-white"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                </label>
+                ) : (
+                  <label className="cursor-pointer">
+                    <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center border-2 border-dashed border-gray-600 hover:border-gray-500 transition-colors">
+                      <Upload size={24} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                )}
+              </div>
+              {errors.profile_url && (
+                <p className="text-danger text-sm text-center">{errors.profile_url}</p>
               )}
+              <p className="text-sm text-gray-400">Profile image is required*</p>
             </div>
-            {errors.profile_url && (
-              <p className="text-danger text-sm text-center">{errors.profile_url}</p>
-            )}
 
             {/* User Info Fields */}
             <div className="grid grid-cols-2 gap-4">
