@@ -72,6 +72,10 @@ const EventJoinMessage = ({ message, isVisible, onClose }) => {
     e.stopPropagation();
   };
 
+  const handleCloseClick = () => {
+    onClose();
+  };
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -143,10 +147,7 @@ const EventJoinMessage = ({ message, isVisible, onClose }) => {
                       min-w-[80px]
                       px-4
                     "
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      onClose();
-                    }}
+                    onPress={handleCloseClick}
                   >
                     Close
                   </Button>

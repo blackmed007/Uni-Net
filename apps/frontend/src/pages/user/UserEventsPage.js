@@ -38,11 +38,10 @@ const UserEventsPage = () => {
     university: '',
   });
 
-  // Centralized message state
+  // Message state
   const [messageState, setMessageState] = useState({
     isVisible: false,
-    message: "",
-    timeoutId: null
+    message: '',
   });
 
   // Load initial data
@@ -89,25 +88,20 @@ const UserEventsPage = () => {
 
   // Message handlers
   const showMessage = useCallback((message) => {
-    if (messageState.timeoutId) {
-      clearTimeout(messageState.timeoutId);
-    }
-
-    setMessageState(prev => ({
-      ...prev,
+    // Reset message state first
+    setMessageState({
       isVisible: false,
       message: '',
-      timeoutId: null
-    }));
+    });
 
+    // Show new message after a small delay
     setTimeout(() => {
       setMessageState({
         isVisible: true,
         message,
-        timeoutId: null
       });
     }, 50);
-  }, [messageState]);
+  }, []);
 
   const handleCloseMessage = useCallback(() => {
     setMessageState(prev => ({
@@ -195,26 +189,16 @@ const UserEventsPage = () => {
     setEvents(updatedEvents);
     localStorage.setItem('events', JSON.stringify(updatedEvents));
 
-    // Reset message state first
-    setMessageState({
-      isVisible: false,
-      message: "",
-      timeoutId: null
-    });
-
-    // Show new message after a small delay
-    setTimeout(() => {
-      if (isCurrentlyJoined) {
-        showMessage("You have successfully left the event. We hope to see you at future events!");
-      } else {
-        const isUpcoming = eventToJoin.status === "Upcoming";
-        showMessage(
-          isUpcoming
-          ? "You're all set! We'll email you the event details and reminders. Remember to bring your student ID and arrive 10 minutes early."
-          : "You've successfully joined! The event is happening now - head over to the location. Don't forget your student ID!"
-        );
-      }
-    }, 50);
+    if (isCurrentlyJoined) {
+      showMessage("You have successfully left the event. We hope to see you at future events!");
+    } else {
+      const isUpcoming = eventToJoin.status === "Upcoming";
+      showMessage(
+        isUpcoming
+        ? "You're all set! We'll email you the event details and reminders. Remember to bring your student ID and arrive 10 minutes early."
+        : "You've successfully joined! The event is happening now - head over to the location. Don't forget your student ID!"
+      );
+    }
   }, [events, joinedEvents, user, selectedEvent, showMessage]);
 
   const handleBookmarkEvent = useCallback((eventId) => {
