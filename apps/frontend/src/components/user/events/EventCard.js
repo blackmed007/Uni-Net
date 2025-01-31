@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardBody, Button, Chip } from "@nextui-org/react";
-import { Clock, MapPin, Users, Bookmark, Check } from "lucide-react";
+import { Clock, MapPin, Users, Bookmark, Check, User } from "lucide-react";
 import { motion } from "framer-motion";
 
 const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJoined }) => {
@@ -37,6 +37,12 @@ const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJ
 
   const handleBookmark = () => {
     onBookmark(event.id);
+  };
+
+  // Text truncation helper function
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   return (
@@ -82,17 +88,21 @@ const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJ
                 {event.type}
               </Chip>
             </div>
-            <h3 className="text-xl font-bold mb-2">{event.name}</h3>
-            <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-              {event.description || 'No description available.'}
+            <h3 className="text-xl font-bold mb-2">{truncateText(event.name, 25)}</h3>
+            <p className="text-gray-300 text-sm mb-4">
+              {truncateText(event.description, 30)}
             </p>
             <div className="flex items-center text-sm text-gray-400 mb-2">
               <Clock className="mr-2 text-gray-500" size={16} />
               <span>{event.time || 'Time not specified'}</span>
             </div>
-            <div className="flex items-center text-sm text-gray-400 mb-4">
+            <div className="flex items-center text-sm text-gray-400 mb-2">
               <MapPin className="mr-2 text-gray-500" size={16} />
-              <span>{event.location || 'Location not specified'}</span>
+              <span>{truncateText(event.location, 20)}</span>
+            </div>
+            <div className="flex items-center text-sm text-gray-400 mb-4">
+              <User className="mr-2 text-gray-500" size={16} />
+              <span>{truncateText(event.organizer, 15)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-400">
