@@ -110,8 +110,14 @@ export class UsersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  @UseGuards(JwtGuard)
+  update(
+    @Param('id') id: string,
+    @Request() req: ExpressRequest,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.update(userId ?? id, updateUserDto);
   }
 
   @Patch('admin/:id')
