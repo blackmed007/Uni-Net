@@ -1,19 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import {
   IsArray,
-  IsDateString,
   IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
-
-type Speaker = {
-  name: string;
-  role: string;
-  image_url: string;
-};
 
 export class CreateEventDto {
   @IsString()
@@ -31,12 +25,11 @@ export class CreateEventDto {
   description: string;
 
   @IsNotEmpty()
-  @IsDateString()
   @ApiProperty({
     type: String,
     description: 'This is a required property',
   })
-  event_date: string | Date;
+  event_date: string;
 
   @IsNotEmpty()
   @ApiProperty({
@@ -87,14 +80,14 @@ export class CreateEventDto {
     type: Array,
     description: 'This is a required property',
   })
-  speaker: Speaker[];
+  speaker: Prisma.InputJsonValue;
 
-  @IsArray()
+  @IsOptional()
   @ApiProperty({
     type: Array,
     description: 'This is a required property',
   })
-  agenda: string[];
+  agenda: Prisma.NullTypes.JsonNull | Prisma.InputJsonValue;
 
   @IsOptional()
   @IsString()
