@@ -5,6 +5,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -24,15 +25,34 @@ export class EventService {
 
   async create(createEventDto: CreateEventDto) {
     try {
-      const { event_date, event_time, ...eventDto } = createEventDto;
+      const { event_date, event_time, speaker, ...eventDto } = createEventDto;
+
+      const formattedDate = new Date(
+        `${event_date}T${event_time}`,
+      ).toISOString();
+      console.log(speaker);
 
       const eventData = {
         ...eventDto,
-        datetime: `${event_date}T${event_time}`,
+        datetime: `${formattedDate}`,
+      };
+
+      const newData = {
+        datetime: eventData.datetime,
+        name: eventData.name,
+        description: eventData.description,
+        location: eventData.location,
+        event_type: eventData.event_type,
+        event_status: eventData.event_status,
+        organizer: eventData.organizer,
+        max_participants: eventData.max_participants,
+        speaker: speaker,
+        agenda: eventData.agenda,
+        event_thumbnail: eventData.event_image_url,
       };
 
       return await this.prisma.event.create({
-        data: { ...eventData, event_thumbnail: eventData.event_image_url },
+        data: newData,
       });
     } catch (error) {
       this.logger.error(`${error} - Error while creating event`);
@@ -46,9 +66,7 @@ export class EventService {
         }
       } else if (error instanceof PrismaClientValidationError) {
         this.logger.error(error.message);
-        throw new BadRequestException(
-          'Invalid date format. Expected ISO-8601 DateTime',
-        );
+        throw new BadRequestException('Invalid field validation');
       } else {
         throw new InternalServerErrorException(
           'Server error - please try again later',
@@ -113,7 +131,21 @@ export class EventService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} event`;
+  async remove(id: string) {
+    this.logger.log(`Removing event entry with id: ${id}`);
+    try {
+      const event = await this.prisma.event.findUnique({
+        where: { id },
+      });
+      if (!event) {
+        throw new NotFoundException(`Event with id ${id} not found`);
+      }
+      return await this.prisma.event.delete({
+        where: { id },
+      });
+    } catch (error) {
+      this.logger.error(`Error removing event entry with id: ${id}`, error);
+      throw new InternalServerErrorException('Could not remove event entry');
+    }
   }
 }
