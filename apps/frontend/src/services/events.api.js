@@ -25,7 +25,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for error handling
@@ -54,7 +54,7 @@ api.interceptors.response.use(
       console.error("Network error:", error.request);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 class EventsAPI {
@@ -62,7 +62,7 @@ class EventsAPI {
   static async uploadImage(file) {
     try {
       const formData = new FormData();
-      formData.append('event_image', file);
+      formData.append("event_image", file);
 
       const response = await api.post("/events/upload-event-image", formData, {
         headers: {
@@ -86,7 +86,7 @@ class EventsAPI {
       name: eventData.name || "",
       description: eventData.description || "",
       datetime: eventData.datetime || "",
-      date: new Date(eventData.datetime).toISOString().split('T')[0],
+      date: new Date(eventData.datetime).toISOString().split("T")[0],
       time: new Date(eventData.datetime).toTimeString().slice(0, 5),
       location: eventData.location || "",
       event_type: eventData.event_type || "",
@@ -96,7 +96,7 @@ class EventsAPI {
       agenda: Array.isArray(eventData.agenda) ? eventData.agenda : [],
       speaker: Array.isArray(eventData.speaker) ? eventData.speaker : [],
       event_image_url: eventData.event_thumbnail || null,
-      totalParticipants: eventData.participants?.length || 0
+      totalParticipants: eventData.participants?.length || 0,
     };
   }
 
@@ -105,7 +105,7 @@ class EventsAPI {
     try {
       const response = await api.get("/events");
       return Array.isArray(response.data)
-        ? response.data.map(event => this.parseEventData(event))
+        ? response.data.map((event) => this.parseEventData(event))
         : [];
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -145,9 +145,9 @@ class EventsAPI {
         event_status: eventData.event_status,
         organizer: eventData.organizer,
         max_participants: parseInt(eventData.max_participants),
-        agenda: JSON.stringify(eventData.agenda),
-        speaker: JSON.stringify(eventData.speaker),
-        event_image_url: eventImageUrl || eventData.event_image_url || ""
+        agenda: eventData.agenda,
+        speaker: eventData.speaker,
+        event_image_url: eventImageUrl || eventData.event_image_url || "",
       };
 
       const response = await api.post("/events", postData);
@@ -179,8 +179,8 @@ class EventsAPI {
         event_status: eventData.event_status,
         organizer: eventData.organizer,
         max_participants: parseInt(eventData.max_participants),
-        agenda: JSON.stringify(eventData.agenda),
-        speaker: JSON.stringify(eventData.speaker)
+        agenda: eventData.agenda,
+        speaker: eventData.speaker,
       };
 
       // Only include image URL if a new image was uploaded
@@ -218,12 +218,13 @@ class EventsAPI {
       "event_type",
       "event_status",
       "organizer",
-      "max_participants"
+      "max_participants",
     ];
 
     const missingFields = requiredFields.filter(
-      field => !eventData[field] || 
-      (typeof eventData[field] === "string" && !eventData[field].trim())
+      (field) =>
+        !eventData[field] ||
+        (typeof eventData[field] === "string" && !eventData[field].trim()),
     );
 
     if (missingFields.length > 0) {
@@ -243,7 +244,10 @@ class EventsAPI {
     }
 
     // Validate max participants
-    if (isNaN(parseInt(eventData.max_participants)) || parseInt(eventData.max_participants) < 0) {
+    if (
+      isNaN(parseInt(eventData.max_participants)) ||
+      parseInt(eventData.max_participants) < 0
+    ) {
       throw new Error("Max participants must be a positive number");
     }
 
@@ -252,3 +256,4 @@ class EventsAPI {
 }
 
 export default EventsAPI;
+
