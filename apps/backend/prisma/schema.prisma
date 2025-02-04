@@ -25,8 +25,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @map("updatedAt")
 
-  city         City?          @relation(fields: [cityId], references: [id])
-  university   University?    @relation(fields: [universityId], references: [id])
+  city         City?          @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  university   University?    @relation(fields: [universityId], references: [id], onDelete: SetNull)
   UserActivity UserActivity[]
 }
 
@@ -48,9 +48,9 @@ model Event {
 }
 
 model UsersOnEvents {
-  user     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId   String
-  event    Event    @relation(fields: [eventId], references: [id])
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId  String
   joinedAt DateTime @default(now())
 
@@ -96,8 +96,8 @@ model Bookmark {
   blogId    String
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
-  blog Blog @relation(fields: [blogId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
 
   @@id([userId, blogId])
 }
@@ -108,5 +108,5 @@ model UserActivity {
   activity  String
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
