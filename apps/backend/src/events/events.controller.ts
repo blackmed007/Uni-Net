@@ -8,6 +8,7 @@ import {
   UseInterceptors,
   Delete,
   UploadedFile,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { EventService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -23,24 +24,28 @@ export class EventController {
   ) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('event_image'))
-  async create(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() createEventDto: CreateEventDto,
-  ) {
-    if (file) {
-      const eventImageUrl = await this.imagessService.uploadImage(
-        file,
-        'event',
-      );
-      createEventDto.event_image_url = eventImageUrl;
-    }
+  async create(@Body() createEventDto: CreateEventDto) {
     return this.eventService.create(createEventDto);
   }
 
   @Get()
   findAll() {
     return this.eventService.findAll();
+  }
+
+  @Post('upload-event-image')
+  @UseInterceptors(FileInterceptor('event_image'))
+  async uploadEventImage(@UploadedFile() file: Express.Multer.File) {
+    if (file) {
+      const eventImageUrl = await this.imagessService.uploadImage(
+        file,
+        'event_image',
+      );
+      return { url: eventImageUrl };
+    }
+    throw new InternalServerErrorException(
+      'Error while trying to upload event image',
+    );
   }
 
   @Get(':id')
