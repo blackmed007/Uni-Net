@@ -40,7 +40,7 @@ model Event {
   event_status     String
   organizer        String
   max_participants Int
-  agenda           Json
+  agenda           Json?
   speaker          Json
   event_thumbnail  String
 
