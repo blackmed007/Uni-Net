@@ -111,24 +111,41 @@ export class UsersController {
 
   @Patch(':id')
   @UseGuards(JwtGuard)
-  update(
+  @UseInterceptors(FileInterceptor('profile_url'))
+  async update(
     @Param('id') id: string,
-    @Request() req: ExpressRequest,
+    // @Request() req: ExpressRequest,
+    @UploadedFile() file: Express.Multer.File,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    const userId = (req.user as { id: string }).id;
-    return this.usersService.update(userId ?? id, updateUserDto);
+    // const userId = (req.user as { id: string }).id;
+    // const role = (req.user as { role: string }).role;
+
+    // if (role === 'admin' && req.body.userId) {
+    // }
+    if (file) {
+      const profileUrl = await this.imagessService.uploadImage(file, id);
+      updateUserDto.profile_url = profileUrl;
+    }
+
+    return this.usersService.update(id, updateUserDto);
   }
 
   @Patch('admin/:id')
-  updateAdmin(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  updateAdmin(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     return this.usersService.updateAdmin(id, updateUserDto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtGuard)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
+
   @Post('bookmarks')
   @UseGuards(JwtGuard)
   async addBookmark(
