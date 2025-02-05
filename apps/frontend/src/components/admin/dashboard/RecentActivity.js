@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, Calendar, MessageCircle, BookOpen } from "lucide-react";
-import { recentActivityData } from './DummyData_Dash'; // TODO: Remove this import when connecting to backend
+import { recentActivityData } from './DummyData_Dash'; 
 
 const getActivityColor = (type) => {
   switch (type) {
@@ -34,33 +34,11 @@ const getIcon = (iconName) => {
 };
 
 const RecentActivity = () => {
-  const [activityData, setActivityData] = useState(recentActivityData); // TODO: Initialize with [] when connecting to backend
+  const [activityData, setActivityData] = useState(recentActivityData); 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // TODO: Uncomment and implement the following useEffect when connecting to backend
-  /*
-  useEffect(() => {
-    const fetchRecentActivity = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('/api/recent-activity');
-        if (!response.ok) {
-          throw new Error('Failed to fetch recent activity');
-        }
-        const result = await response.json();
-        setActivityData(result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRecentActivity();
-  }, []);
-  */
+ 
 
   if (isLoading) return <div>Loading recent activity...</div>;
   if (error) return <div>Error: {error}</div>;

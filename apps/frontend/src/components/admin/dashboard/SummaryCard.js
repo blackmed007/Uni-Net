@@ -3,34 +3,9 @@ import { Card, CardBody } from "@nextui-org/react";
 import { motion } from 'framer-motion';
 
 const SummaryCard = ({ title, value, icon: Icon, trend, color }) => {
-  // TODO: Remove these props when connecting to backend
   const [cardData, setCardData] = useState({ title, value, trend, color });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // TODO: Uncomment and implement the following useEffect when connecting to backend
-  /*
-  useEffect(() => {
-    const fetchCardData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/summary-card/${title}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch summary card data');
-        }
-        const result = await response.json();
-        setCardData(result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCardData();
-  }, [title]);
-  */
 
   const gradientClass = {
     blue: 'from-blue-500 to-blue-600',

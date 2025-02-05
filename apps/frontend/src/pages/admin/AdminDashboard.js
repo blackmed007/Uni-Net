@@ -30,46 +30,6 @@ const DashboardOverview = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // TODO: Uncomment and implement the following useEffect when connecting to backend
-  /*
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [summaryResponse, activityResponse, engagementResponse, userDistributionResponse, recentActivityResponse] = await Promise.all([
-          fetch('/api/summary-data'),
-          fetch('/api/activity-data'),
-          fetch('/api/engagement-data'),
-          fetch('/api/user-distribution'),
-          fetch('/api/recent-activity')
-        ]);
-
-        const [summaryData, activityData, engagementData, userDistributionData, recentActivityData] = await Promise.all([
-          summaryResponse.json(),
-          activityResponse.json(),
-          engagementResponse.json(),
-          userDistributionResponse.json(),
-          recentActivityResponse.json()
-        ]);
-
-        setDashboardData({
-          summaryData,
-          activityData,
-          engagementData,
-          userDistributionData,
-          recentActivityData
-        });
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
-  */
 
   if (isLoading) return <div>Loading dashboard data...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -157,7 +117,6 @@ const AdminDashboard = () => {
     auth: {}
   });
 
-  // TODO: Remove this useEffect and local storage logic when connecting to backend
   useEffect(() => {
     const savedProfile = localStorage.getItem('adminProfile');
     if (savedProfile) {
@@ -172,29 +131,6 @@ const AdminDashboard = () => {
     setIsLoading(false);
   }, []);
 
-  // TODO: Uncomment and implement the following useEffect when connecting to backend
-  /*
-  useEffect(() => {
-    const fetchAdminProfile = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('/api/admin-profile');
-        if (!response.ok) {
-          throw new Error('Failed to fetch admin profile');
-        }
-        const profileData = await response.json();
-        setAdminProfile(profileData);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAdminProfile();
-  }, []);
-  */
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -213,33 +149,6 @@ const AdminDashboard = () => {
     // TODO: Remove this localStorage logic when connecting to backend
     localStorage.setItem('adminProfile', JSON.stringify(updatedProfile));
     
-    // TODO: Uncomment and implement the following when connecting to backend
-    /*
-    const updateProfile = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('/api/update-admin-profile', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProfile),
-        });
-        if (!response.ok) {
-          throw new Error('Failed to update admin profile');
-        }
-        const result = await response.json();
-        setAdminProfile(result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    updateProfile();
-    */
   };
 
   if (isLoading) return <div>Loading admin profile...</div>;

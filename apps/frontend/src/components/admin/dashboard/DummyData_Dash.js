@@ -1,5 +1,3 @@
-// src/components/admin/dashboard/DummyData_Dash.js
-
 import { getLastSevenMonths } from '../../../utils/dateUtils';
 
 const lastSevenMonths = getLastSevenMonths();

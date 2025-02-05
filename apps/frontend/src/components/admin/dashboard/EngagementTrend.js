@@ -27,33 +27,6 @@ const EngagementTrend = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // TODO: Uncomment and implement the following useEffect when connecting to backend
-  /*
-  useEffect(() => {
-    const fetchEngagementData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const endDate = new Date();
-        const startDate = new Date(endDate);
-        startDate.setMonth(endDate.getMonth() - 6);
-        
-        const response = await fetch(`/api/engagement-data?start=${startDate.toISOString()}&end=${endDate.toISOString()}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch engagement data');
-        }
-        const result = await response.json();
-        setData(result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchEngagementData();
-  }, []);
-  */
 
   if (isLoading) return <div>Loading engagement data...</div>;
   if (error) return <div>Error: {error}</div>;
