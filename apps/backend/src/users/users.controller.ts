@@ -132,11 +132,7 @@ export class UsersController {
   }
 
   @Patch('admin/:id')
-  updateAdmin(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  updateAdmin(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.updateAdmin(id, updateUserDto);
   }
 
