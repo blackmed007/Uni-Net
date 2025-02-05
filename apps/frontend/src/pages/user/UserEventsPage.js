@@ -276,9 +276,9 @@ const UserEventsPage = () => {
             startContent={<Search className="text-gray-400" size={20} />}
             className="w-full sm:w-1/2"
           />
-          <Button color="primary" onPress={() => setIsFilterModalOpen(true)} startContent={<Filter size={20} />}>
+          {/* <Button color="primary" onPress={() => setIsFilterModalOpen(true)} startContent={<Filter size={20} />}>
             Filters
-          </Button>
+          </Button> */}
         </div>
 
         {/* Tabs */}
