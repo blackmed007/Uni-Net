@@ -202,19 +202,21 @@ const BlogManagement = () => {
           startContent={<Search className="text-gray-400" size={20} />}
           className="w-full sm:w-1/2"
         />
-        <Button 
+        {/* <Button 
           color="primary" 
           onPress={onFilterOpen} 
           startContent={<Filter size={20} />}
           isDisabled={isLoading}
         >
           Filters
-        </Button>
+        </Button> */}
         <Button 
           color="success" 
           onPress={onCreateOpen} 
           startContent={<Plus size={20} />}
           isDisabled={isLoading}
+          className="bg-gradient-to-r from-green-400 to-blue-500 text-white"
+
         >
           Create Post
         </Button>
