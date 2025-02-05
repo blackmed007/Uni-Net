@@ -168,12 +168,12 @@ const UserProfileForm = ({ user, onSave }) => {
       className="space-y-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.3 }}
     >
       <div className="flex items-center space-x-4">
         <motion.div
-          whileHover={{ boxShadow: "0 0 25px 5px rgba(168, 85, 247, 0.4)" }}
-          transition={{ duration: 0.3 }}
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
         >
           <Avatar
             src={formData.profileImage || "https://i.pravatar.cc/150?u=a042581f4e29026704d"}

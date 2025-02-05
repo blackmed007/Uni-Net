@@ -86,7 +86,7 @@ const UserSettingsPage = () => {
         <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
           UniConnect Settings
         </h1>
-        <p className="text-gray-200">
+        <p className="mb-4 text-white">
           Customize your profile and manage your account preferences
         </p>
       </motion.div>
