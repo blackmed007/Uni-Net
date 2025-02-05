@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
 import { Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import RealTimeNotifications from './RealTimeNotifications';
 import ProfileAPI from '../../services/profile.api';
 
-const UserNavbar = ({ user }) => {
+const UserNavbar = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -20,36 +21,33 @@ const UserNavbar = ({ user }) => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isIconToggled, setIsIconToggled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const userData = JSON.parse(localStorage.getItem('userData'));
+        setIsLoading(true);
+        const data = await ProfileAPI.getCurrentProfile();
         
-        if (userData) {
-          // Prioritize profile_url from localStorage
-          const profileUrl = userData.profile_url || 
-            (userData.profile && userData.profile.url) || 
-            'https://i.pravatar.cc/150?u=a042581f4e29026704d';
-
-          setCurrentUser({
-            id: userData.id,
-            name: `${userData.first_name} ${userData.last_name}`,
-            email: userData.email,
-            profileImage: profileUrl
-          });
-        } else {
-          // Fallback to API if no localStorage data
-          const data = await ProfileAPI.getCurrentProfile();
-          setCurrentUser({
-            id: data.id,
-            name: `${data.first_name} ${data.last_name}`,
-            email: data.email,
-            profileImage: data.profile_url || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
-          });
-        }
+        setCurrentUser({
+          id: data.id,
+          name: `${data.firstName} ${data.lastName}`,
+          email: data.email,
+          profileImage: data.profileImage || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
       } catch (error) {
         console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile data');
+        
+        // Fallback to a default state
+        setCurrentUser({
+          id: '',
+          name: 'User',
+          email: 'user@example.com',
+          profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -90,27 +88,7 @@ const UserNavbar = ({ user }) => {
     }
   }, [lastScrollY]);
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const updatedUserData = JSON.parse(localStorage.getItem('userData'));
-      if (updatedUserData) {
-        setCurrentUser({
-          id: updatedUserData.id,
-          name: `${updatedUserData.first_name} ${updatedUserData.last_name}`,
-          email: updatedUserData.email,
-          profileImage: updatedUserData.profile_url || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
-        });
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
   const handleLogout = () => {
-    localStorage.removeItem('userData');
     navigate('/login');
     setIsLogoutModalOpen(false);
   };
@@ -122,6 +100,21 @@ const UserNavbar = ({ user }) => {
   const handleIconToggle = () => {
     setIsIconToggled(!isIconToggled);
   };
+
+  if (isLoading) {
+    return (
+      <Navbar className="bg-black bg-opacity-50 backdrop-filter backdrop-blur-lg fixed top-0 z-50">
+        <NavbarContent justify="end">
+          <NavbarItem>
+            <div className="animate-pulse flex items-center">
+              <div className="w-10 h-10 bg-gray-700 rounded-full mr-4"></div>
+              <div className="h-4 bg-gray-700 rounded w-24"></div>
+            </div>
+          </NavbarItem>
+        </NavbarContent>
+      </Navbar>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -224,7 +217,6 @@ const UserNavbar = ({ user }) => {
                     aria-label="Profile Actions" 
                     variant="flat"
                     className="bg-black text-gray-100"
-
                   >
                     <DropdownItem key="profile" className="h-14 gap-2">
                       <p className="font-semibold">Signed in as</p>

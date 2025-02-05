@@ -4,6 +4,7 @@ import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdow
 import { Bell, Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileAPI from '../../services/profile.api';
+import { toast } from 'react-hot-toast';
 
 const CustomNavbar = () => {
   const navigate = useNavigate();
@@ -16,52 +17,38 @@ const CustomNavbar = () => {
   const [profileData, setProfileData] = useState({
     fullName: '',
     email: '',
-    profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', // Default fallback
+    profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const userData = JSON.parse(localStorage.getItem('userData'));
+        setIsLoading(true);
+        const data = await ProfileAPI.getCurrentProfile();
         
-        if (userData) {
-          // Prioritize profile_url from localStorage
-          const profileUrl = userData.profile_url || 
-            (userData.profile && userData.profile.url) || 
-            'https://i.pravatar.cc/150?u=a042581f4e29026704d';
-
-          setProfileData({
-            fullName: `${userData.first_name} ${userData.last_name}`,
-            email: userData.email,
-            profileImage: profileUrl
-          });
-        } else {
-          // Fallback to API if no localStorage data
-          const data = await ProfileAPI.getCurrentProfile();
-          setProfileData({
-            fullName: `${data.first_name} ${data.last_name}`,
-            email: data.email,
-            profileImage: data.profile_url || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
-          });
-        }
+        setProfileData({
+          fullName: `${data.firstName} ${data.lastName}`,
+          email: data.email,
+          profileImage: data.profileImage || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
       } catch (error) {
         console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile data');
+        
+        // Fallback to a default state
+        setProfileData({
+          fullName: 'Admin User',
+          email: 'admin@example.com',
+          profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchProfileData();
   }, []);
-
-  const handleSettingsClick = () => {
-    navigate('/admin/settings');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('activeTab');
-    localStorage.removeItem('userData');
-    navigate('/login');
-    onClose();
-  };
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -97,6 +84,15 @@ const CustomNavbar = () => {
     }
   }, [lastScrollY]);
 
+  const handleSettingsClick = () => {
+    navigate('/admin/settings');
+  };
+
+  const handleLogout = () => {
+    navigate('/login');
+    onClose();
+  };
+
   const toggleSearch = () => {
     setIsSearchVisible(!isSearchVisible);
   };
@@ -104,6 +100,21 @@ const CustomNavbar = () => {
   const handleIconToggle = () => {
     setIsIconToggled(!isIconToggled);
   };
+
+  if (isLoading) {
+    return (
+      <Navbar className="bg-black bg-opacity-50 backdrop-filter backdrop-blur-lg fixed top-0 z-50">
+        <NavbarContent justify="end">
+          <NavbarItem>
+            <div className="animate-pulse flex items-center">
+              <div className="w-10 h-10 bg-gray-700 rounded-full mr-4"></div>
+              <div className="h-4 bg-gray-700 rounded w-24"></div>
+            </div>
+          </NavbarItem>
+        </NavbarContent>
+      </Navbar>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -222,12 +233,6 @@ const CustomNavbar = () => {
                     <DropdownItem key="settings" onPress={handleSettingsClick}>
                       My Settings
                     </DropdownItem>
-                    {/* Show notifications in dropdown on mobile */}
-                    {isMobile && (
-                      <DropdownItem key="notifications">
-                        Notifications
-                      </DropdownItem>
-                    )}
                     <DropdownItem key="logout" color="danger" onPress={onOpen}>
                       Log Out
                     </DropdownItem>
