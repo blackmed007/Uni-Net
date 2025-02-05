@@ -107,8 +107,7 @@ class UsersAPI {
 
       try {
         // Set the new user's token for onboarding
-        const newUserToken = authResponse.data.access_token;
-        sessionStorage.setItem('access_token', newUserToken);
+        sessionStorage.setItem('access_token', authResponse.data.access_token);
 
         // Prepare onboarding data
         const formData = new FormData();
@@ -119,13 +118,30 @@ class UsersAPI {
         }
 
         // Add onboarding data
-        formData.append('gender', userData.gender?.toLowerCase() || 'male');
-        formData.append('cityId', userData.cityId);
-        formData.append('universityId', userData.universityId);
-        formData.append('status', Boolean(userData.status));
+        const onboardData = {
+          gender: userData.gender?.toLowerCase() || 'male',
+          cityId: userData.cityId,
+          universityId: userData.universityId,
+          status: true
+        };
+
+        // Append data to FormData with proper type handling
+        Object.entries(onboardData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            if (typeof value === 'boolean') {
+              formData.append(key, JSON.stringify(value));
+            } else {
+              formData.append(key, value);
+            }
+          }
+        });
 
         // Submit onboarding data
-        const onboardResponse = await api.post('/users/onboard', formData);
+        const onboardResponse = await api.post('/users/onboard', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
 
         return this.parseUserData(onboardResponse.data);
       } finally {
@@ -141,26 +157,30 @@ class UsersAPI {
   // Update user
   static async updateUser(userId, userData) {
     try {
-      // Format the user data first
       const userDataFormatted = this.formatUserData(userData);
 
-      // If there's a file upload, use FormData
       if (userData.profile_url instanceof File) {
         const formData = new FormData();
         formData.append('profile_url', userData.profile_url);
         
-        // Append other fields
         Object.entries(userDataFormatted).forEach(([key, value]) => {
           if (value !== null && value !== undefined && key !== 'profile_url') {
-            formData.append(key, value);
+            if (typeof value === 'boolean') {
+              formData.append(key, JSON.stringify(value));
+            } else {
+              formData.append(key, value);
+            }
           }
         });
-        
-        const response = await api.patch(`/users/${userId}`, formData);
+
+        const response = await api.patch(`/users/${userId}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
         return this.parseUserData(response.data);
       }
 
-      // If no file upload, send JSON directly
       const response = await api.patch(`/users/${userId}`, userDataFormatted);
       return this.parseUserData(response.data);
     } catch (error) {
@@ -206,6 +226,53 @@ class UsersAPI {
     }
   }
 
+  // Get user activity
+  static async getUserActivity(userId) {
+    try {
+      const response = await api.get(`/users/activity`);
+      if (!response.data) return [];
+      
+      return Array.isArray(response.data) 
+        ? response.data.map(activity => ({
+            id: activity.id,
+            activity: activity.activity,
+            createdAt: activity.createdAt
+          }))
+        : [];
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      throw error;
+    }
+  }
+
+  // Get user events
+  static async getUserEvents(userId) {
+    try {
+      const response = await api.get(`/users/events`);
+      if (!response.data) return [];
+      
+      return Array.isArray(response.data) 
+        ? response.data.map(event => ({
+            id: event.id,
+            name: event.name,
+            description: event.description,
+            datetime: event.datetime,
+            location: event.location,
+            event_type: event.event_type,
+            event_status: event.event_status,
+            organizer: event.organizer,
+            max_participants: event.max_participants,
+            agenda: event.agenda,
+            speaker: event.speaker,
+            event_thumbnail: event.event_thumbnail
+          }))
+        : [];
+    } catch (error) {
+      console.error('Error fetching user events:', error);
+      throw error;
+    }
+  }
+
   // Format user data for API
   static formatUserData(userData) {
     const formatted = {
@@ -214,10 +281,17 @@ class UsersAPI {
       email: userData.email,
       role: userData.role?.toLowerCase(),
       gender: userData.gender?.toLowerCase(),
-      cityId: userData.cityId,
-      universityId: userData.universityId,
+      cityId: userData.cityId || userData.cityld,
+      universityId: userData.universityId || userData.universityld,
       status: typeof userData.status === 'boolean' ? userData.status : userData.status === 'Active'
     };
+
+    // Clean undefined and null values
+    Object.keys(formatted).forEach(key => {
+      if (formatted[key] === undefined || formatted[key] === null) {
+        delete formatted[key];
+      }
+    });
 
     // Only include password if it exists
     if (userData.password) {
@@ -247,28 +321,6 @@ class UsersAPI {
       createdAt: userData.createdAt,
       updatedAt: userData.updatedAt
     };
-  }
-
-  // Get user events
-  static async getUserEvents(userId) {
-    try {
-      const response = await api.get(`/users/${userId}/events`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user events:', error);
-      throw error;
-    }
-  }
-
-  // Get user activity
-  static async getUserActivity(userId) {
-    try {
-      const response = await api.get(`/users/${userId}/activity`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user activity:', error);
-      throw error;
-    }
   }
 }
 

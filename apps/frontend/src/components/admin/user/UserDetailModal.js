@@ -7,7 +7,10 @@ import {
   Avatar, 
   Chip, 
   Tooltip,
-  Spinner 
+  Spinner,
+  Card,
+  ScrollShadow,
+  Divider
 } from "@nextui-org/react";
 import { 
   User, 
@@ -20,7 +23,12 @@ import {
   Ban, 
   UserCheck, 
   Trash2, 
-  AlertTriangle 
+  AlertTriangle,
+  Clock,
+  MapPinIcon,
+  Users,
+  CircleUser,
+  CircleUserRound
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import UsersAPI from '../../../services/users.api';
@@ -36,29 +44,80 @@ const UserDetailModal = ({
 }) => {
   const [activeTab, setActiveTab] = useState("info");
   const [userDetails, setUserDetails] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [userActivity, setUserActivity] = useState([]);
+  const [userEvents, setUserEvents] = useState([]);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [error, setError] = useState({
+    details: null,
+    activity: null,
+    events: null
+  });
 
   useEffect(() => {
-    const fetchUserDetails = async () => {
-      if (!user?.id || !isOpen) return;
+    if (!user?.id || !isOpen) return;
 
-      setIsLoading(true);
-      setError(null);
+    const fetchUserDetails = async () => {
+      setIsLoadingDetails(true);
+      setError(prev => ({ ...prev, details: null }));
       
       try {
         const details = await UsersAPI.getUser(user.id);
         setUserDetails(details);
       } catch (error) {
         console.error('Error fetching user details:', error);
-        setError('Failed to load user details. Please try again.');
+        setError(prev => ({ 
+          ...prev, 
+          details: 'Failed to load user details. Please try again.' 
+        }));
       } finally {
-        setIsLoading(false);
+        setIsLoadingDetails(false);
       }
     };
 
     fetchUserDetails();
   }, [user?.id, isOpen]);
+
+  useEffect(() => {
+    if (!user?.id || !isOpen || activeTab !== 'activity') return;
+
+    const fetchUserActivity = async () => {
+      setIsLoadingActivity(true);
+      setError(prev => ({ ...prev, activity: null }));
+      
+      try {
+        const activity = await UsersAPI.getUserActivity(user.id);
+        setUserActivity(activity || []);
+      } catch (error) {
+        console.error('Error fetching user activity:', error);
+      } finally {
+        setIsLoadingActivity(false);
+      }
+    };
+
+    fetchUserActivity();
+  }, [user?.id, isOpen, activeTab]);
+
+  useEffect(() => {
+    if (!user?.id || !isOpen || activeTab !== 'events') return;
+
+    const fetchUserEvents = async () => {
+      setIsLoadingEvents(true);
+      setError(prev => ({ ...prev, events: null }));
+      
+      try {
+        const events = await UsersAPI.getUserEvents(user.id);
+        setUserEvents(events || []);
+      } catch (error) {
+        console.error('Error fetching user events:', error);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+
+    fetchUserEvents();
+  }, [user?.id, isOpen, activeTab]);
 
   if (!user) return null;
 
@@ -76,26 +135,98 @@ const UserDetailModal = ({
     }
   };
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center items-center py-12">
-          <Spinner size="lg" />
-        </div>
-      );
+  const formatDate = (dateString) => {
+    try {
+      return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid Date';
     }
+  };
 
-    if (error) {
-      return (
-        <div className="flex items-center justify-center py-12 text-danger">
-          <AlertTriangle className="mr-2" size={20} />
-          {error}
+  const renderActivityItem = (activity) => (
+    <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-800/50 rounded-lg">
+      <div className="bg-purple-500/20 p-2 rounded-full">
+        <CircleUserRound size={16} className="text-purple-500" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm text-gray-300">{activity.activity}</p>
+        <p className="text-xs text-gray-500 mt-1">
+          {formatDate(activity.createdAt)}
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderEventItem = (event) => (
+    <Card key={event.id} className="bg-gray-800/50 p-4 mb-3">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between">
+          <h3 className="text-md font-semibold text-white">{event.name}</h3>
+          <Chip size="sm" variant="flat" color="primary">
+            {event.event_type}
+          </Chip>
         </div>
-      );
-    }
+        
+        <p className="text-sm text-gray-300 line-clamp-2">
+          {event.description}
+        </p>
+
+        <Divider className="my-2" />
+        
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center text-gray-400">
+            <Clock size={14} className="mr-2" />
+            {formatDate(event.datetime)}
+          </div>
+          <div className="flex items-center text-gray-400">
+            <MapPinIcon size={14} className="mr-2" />
+            {event.location}
+          </div>
+          <div className="flex items-center text-gray-400">
+            <Users size={14} className="mr-2" />
+            {event.max_participants} participants
+          </div>
+          <div className="flex items-center text-gray-400">
+            <Briefcase size={14} className="mr-2" />
+            {event.organizer}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const renderContent = () => {
+    const getLoadingState = () => (
+      <div className="flex justify-center items-center py-12">
+        <Spinner size="lg" />
+      </div>
+    );
+
+    const getErrorState = (errorMessage) => (
+      <div className="flex items-center justify-center py-12 text-danger">
+        <AlertTriangle className="mr-2" size={20} />
+        {errorMessage}
+      </div>
+    );
+
+    const getEmptyState = (message, icon) => (
+      <div className="flex flex-col items-center justify-center py-12 text-gray-500 space-y-4">
+        {icon}
+        <p>{message}</p>
+      </div>
+    );
 
     switch (activeTab) {
       case "info":
+        if (isLoadingDetails) return getLoadingState();
+        if (error.details) return getErrorState(error.details);
+
         return (
           <div className="grid grid-cols-2 gap-6">
             <InfoItem icon={User} label="ID" value={userDetails?.id} />
@@ -104,25 +235,44 @@ const UserDetailModal = ({
             <InfoItem 
               icon={Calendar} 
               label="Joined" 
-              value={userDetails?.createdAt ? new Date(userDetails.createdAt).toLocaleDateString() : 'N/A'} 
+              value={userDetails?.createdAt ? formatDate(userDetails.createdAt) : 'N/A'} 
             />
             <InfoItem icon={User} label="Gender" value={userDetails?.gender} />
             <InfoItem icon={MapPin} label="University" value={userDetails?.university?.name} />
             <InfoItem icon={MapPin} label="City" value={userDetails?.city?.name} />
           </div>
         );
+
       case "activity":
-        return (
-          <div className="flex items-center justify-center py-12 text-gray-500">
-            Activity data will be available soon.
-          </div>
+        if (isLoadingActivity) return getLoadingState();
+        if (error.activity) return getErrorState(error.activity);
+
+        return userActivity.length > 0 ? (
+          <ScrollShadow className="h-[400px]">
+            <div className="space-y-3">
+              {userActivity.map(renderActivityItem)}
+            </div>
+          </ScrollShadow>
+        ) : getEmptyState(
+          "No activity recorded yet.",
+          <Activity size={40} className="text-gray-500" />
         );
+
       case "events":
-        return (
-          <div className="flex items-center justify-center py-12 text-gray-500">
-            Events data will be available soon.
-          </div>
+        if (isLoadingEvents) return getLoadingState();
+        if (error.events) return getErrorState(error.events);
+
+        return userEvents.length > 0 ? (
+          <ScrollShadow className="h-[400px]">
+            <div className="space-y-4">
+              {userEvents.map(renderEventItem)}
+            </div>
+          </ScrollShadow>
+        ) : getEmptyState(
+          "No events joined yet.",
+          <Calendar size={40} className="text-gray-500" />
         );
+
       default:
         return null;
     }
@@ -137,6 +287,7 @@ const UserDetailModal = ({
         base: "bg-gray-950",
         wrapper: "overflow-hidden",
       }}
+      scrollBehavior="inside"
     >
       <ModalContent>
         {(onClose) => (
@@ -201,7 +352,7 @@ const UserDetailModal = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-from-gray-1000 to-black p-6 rounded-lg shadow-xl"
+                  className="bg-gray-900/50 p-6 rounded-lg shadow-xl"
                 >
                   {renderContent()}
                 </motion.div>
