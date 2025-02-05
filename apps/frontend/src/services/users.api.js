@@ -60,6 +60,47 @@ api.interceptors.response.use(
 );
 
 class UsersAPI {
+  // Existing methods...
+
+  // Add bookmark for a blog
+  static async addBookmark(blogId) {
+    try {
+      const response = await api.post('/users/bookmarks', { blogId });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding bookmark:', error);
+      throw error;
+    }
+  }
+
+  // Get user's bookmarks
+  static async getBookmarks() {
+    try {
+      const response = await api.get('/users/bookmarks');
+      return response.data.map(bookmark => ({
+        id: bookmark.id,
+        blogId: bookmark.blogId,
+        blog: bookmark.blog
+      }));
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error);
+      throw error;
+    }
+  }
+
+  // Remove bookmark for a blog
+  static async removeBookmark(blogId) {
+    try {
+      const response = await api.delete(`/users/bookmarks/${blogId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error removing bookmark:', error);
+      throw error;
+    }
+  }
+
+  // Existing methods remain the same...
+  
   // Fetch all users
   static async getUsers() {
     try {

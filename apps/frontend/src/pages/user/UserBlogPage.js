@@ -12,6 +12,7 @@ import { ArrowRight, Bookmark, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import BlogsAPI from "../../services/blogs.api";
+import UsersAPI from "../../services/users.api";
 import { toast } from "react-hot-toast";
 
 const UserBlogPage = () => {
@@ -36,13 +37,21 @@ const UserBlogPage = () => {
     const userData = JSON.parse(localStorage.getItem("userData"));
     setUser(userData);
 
-    const storedBookmarks = JSON.parse(
-      localStorage.getItem("bookmarkedPosts") || "[]"
-    );
-    setBookmarkedPosts(storedBookmarks);
-
+    // Fetch bookmarks from backend instead of localStorage
+    fetchBookmarks();
     fetchBlogPosts();
   }, []);
+
+  const fetchBookmarks = async () => {
+    try {
+      const bookmarks = await UsersAPI.getBookmarks();
+      const bookmarkIds = bookmarks.map(bookmark => bookmark.blogId);
+      setBookmarkedPosts(bookmarkIds);
+    } catch (err) {
+      console.error("Error fetching bookmarks:", err);
+      toast.error("Unable to fetch bookmarks");
+    }
+  };
 
   const fetchBlogPosts = async () => {
     try {
@@ -71,15 +80,24 @@ const UserBlogPage = () => {
     setSearchTerm(e.target.value);
   };
 
-  const handleBookmark = (e, postId) => {
+  const handleBookmark = async (e, postId) => {
     e.stopPropagation();
-    setBookmarkedPosts((prev) => {
-      const updatedBookmarks = prev.includes(postId)
-        ? prev.filter((id) => id !== postId)
-        : [...prev, postId];
-      localStorage.setItem("bookmarkedPosts", JSON.stringify(updatedBookmarks));
-      return updatedBookmarks;
-    });
+    try {
+      if (bookmarkedPosts.includes(postId)) {
+        // Remove bookmark
+        await UsersAPI.removeBookmark(postId);
+        setBookmarkedPosts((prev) => prev.filter((id) => id !== postId));
+        toast.success("Bookmark removed");
+      } else {
+        // Add bookmark
+        await UsersAPI.addBookmark(postId);
+        setBookmarkedPosts((prev) => [...prev, postId]);
+        toast.success("Bookmark added");
+      }
+    } catch (err) {
+      console.error("Error managing bookmark:", err);
+      toast.error("Failed to manage bookmark");
+    }
   };
 
   const handlePostClick = (postId) => {
@@ -87,11 +105,9 @@ const UserBlogPage = () => {
   };
 
   // Updated FeaturedPost component:
-  // - Using as="div" to avoid nested button issue.
-  // - Added "text-center" to the text container.
   const FeaturedPost = ({ post }) => (
     <Card
-      as="div" // Force Card to render as a div instead of a button
+      as="div"
       isPressable
       className="w-[700px] max-w-full bg-gradient-to-b from-gray-900 to-black border border-gray-800 text-white p-6 mb-8 cursor-pointer hover:from-gray-800 hover:to-gray-900 transition-all duration-300 shadow-2xl mx-auto lg:mx-0"
       onClick={() => handlePostClick(post.id)}
@@ -150,11 +166,9 @@ const UserBlogPage = () => {
   );
 
   // Updated BlogPostCard component:
-  // - Using as="div" to avoid nested button issue.
-  // - Added "text-center" to the text container.
   const BlogPostCard = ({ post }) => (
     <Card
-      as="div" // Force Card to render as a div
+      as="div"
       isPressable
       className="h-auto min-h-[24rem] lg:h-96 bg-gradient-to-b from-gray-900 to-black border border-gray-800 text-white p-3 cursor-pointer hover:from-gray-800 hover:to-gray-900 transition-all duration-300 shadow-xl flex flex-col w-full"
       onClick={() => handlePostClick(post.id)}
