@@ -24,10 +24,17 @@ export class BlogsService {
     timestamp: true,
   });
 
-  async create(createBlogDto: CreateBlogDto) {
+  async create(userId: string, createBlogDto: CreateBlogDto) {
     try {
       const blog = await this.prisma.blog.create({
         data: createBlogDto,
+      });
+
+      await this.prisma.userActivity.create({
+        data: {
+          userId,
+          activity: `New blog post updated: '${blog.title}'`,
+        },
       });
 
       return blog;
