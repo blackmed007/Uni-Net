@@ -122,6 +122,7 @@ class UsersAPI {
         formData.append('gender', userData.gender?.toLowerCase() || 'male');
         formData.append('cityId', userData.cityId);
         formData.append('universityId', userData.universityId);
+        formData.append('status', Boolean(userData.status));
 
         // Submit onboarding data
         const onboardResponse = await api.post('/users/onboard', formData);
@@ -140,20 +141,27 @@ class UsersAPI {
   // Update user
   static async updateUser(userId, userData) {
     try {
-      const formData = new FormData();
-      
+      // Format the user data first
+      const userDataFormatted = this.formatUserData(userData);
+
+      // If there's a file upload, use FormData
       if (userData.profile_url instanceof File) {
+        const formData = new FormData();
         formData.append('profile_url', userData.profile_url);
+        
+        // Append other fields
+        Object.entries(userDataFormatted).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && key !== 'profile_url') {
+            formData.append(key, value);
+          }
+        });
+        
+        const response = await api.patch(`/users/${userId}`, formData);
+        return this.parseUserData(response.data);
       }
 
-      const userDataFormatted = this.formatUserData(userData);
-      Object.entries(userDataFormatted).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && key !== 'profile_url') {
-          formData.append(key, value.toString());
-        }
-      });
-
-      const response = await api.patch(`/users/${userId}`, formData);
+      // If no file upload, send JSON directly
+      const response = await api.patch(`/users/${userId}`, userDataFormatted);
       return this.parseUserData(response.data);
     } catch (error) {
       console.error('Error updating user:', error);
@@ -200,18 +208,23 @@ class UsersAPI {
 
   // Format user data for API
   static formatUserData(userData) {
-    return {
+    const formatted = {
       first_name: userData.firstName,
       last_name: userData.lastName,
       email: userData.email,
-      password: userData.password,
       role: userData.role?.toLowerCase(),
       gender: userData.gender?.toLowerCase(),
-      profile_url: userData.profile_url,
       cityId: userData.cityId,
       universityId: userData.universityId,
-      status: userData.status === 'Active' || userData.status === true
+      status: typeof userData.status === 'boolean' ? userData.status : userData.status === 'Active'
     };
+
+    // Only include password if it exists
+    if (userData.password) {
+      formatted.password = userData.password;
+    }
+
+    return formatted;
   }
 
   // Parse user data from API
