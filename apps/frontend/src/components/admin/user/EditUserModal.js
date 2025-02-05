@@ -200,12 +200,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
                     className="w-24 h-24"
                     alt="Profile preview"
                   />
-                  <button
-                    onClick={removeImage}
-                    className="absolute -top-2 -right-2 p-1 bg-danger rounded-full text-white"
-                  >
-                    <X size={14} />
-                  </button>
+                  
                 </div>
               ) : (
                 <label className="cursor-pointer">
