@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 const EventDetailModal = ({ isOpen, onClose, event }) => {
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const [failedSpeakerImages, setFailedSpeakerImages] = useState(new Set());
 
   if (!event) return null;
 
@@ -13,8 +14,13 @@ const EventDetailModal = ({ isOpen, onClose, event }) => {
   };
 
   const handleImageError = (e) => {
-    e.target.src = "https://via.placeholder.com/800x400?text=No+Image+Available";
+    e.target.style.display = 'none';
     setIsImageLoading(false);
+  };
+
+  const handleSpeakerImageError = (speakerId) => (e) => {
+    e.target.style.display = 'none';
+    setFailedSpeakerImages(prev => new Set([...prev, speakerId]));
   };
 
   const formatEventDate = (dateString) => {
@@ -35,7 +41,6 @@ const EventDetailModal = ({ isOpen, onClose, event }) => {
     }
   };
 
-  // Safely get total participants or show placeholder
   const getTotalParticipants = () => {
     if (Array.isArray(event.participants)) {
       return event.participants.length;
@@ -43,10 +48,7 @@ const EventDetailModal = ({ isOpen, onClose, event }) => {
     return event.totalParticipants || 0;
   };
 
-  // Default image if not provided
-  const eventImage = event.event_thumbnail || 
-    event.event_image_url || 
-    "https://via.placeholder.com/800x400?text=Event+Image";
+  const eventImage = event.event_thumbnail || event.event_image_url;
 
   return (
     <Modal 
@@ -79,21 +81,23 @@ const EventDetailModal = ({ isOpen, onClose, event }) => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="relative w-full h-48 mb-4">
-              {isImageLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                  <Spinner color="white" />
-                </div>
-              )}
-              <img 
-                src={eventImage} 
-                alt={event.name || 'Event Image'} 
-                className="w-full h-full object-cover rounded-lg"
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-                style={{ display: isImageLoading ? 'none' : 'block' }}
-              />
-            </div>
+            {eventImage && (
+              <div className="relative w-full h-48 mb-4">
+                {isImageLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <Spinner color="white" />
+                  </div>
+                )}
+                <img 
+                  src={eventImage} 
+                  alt={event.name || 'Event'} 
+                  className="w-full h-full object-cover rounded-lg"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  style={{ display: isImageLoading ? 'none' : 'block' }}
+                />
+              </div>
+            )}
             <Card className="bg-gray-800 border border-gray-700 mb-6">
               <CardBody>
                 <div className="grid grid-cols-2 gap-4">
@@ -187,28 +191,36 @@ const EventDetailModal = ({ isOpen, onClose, event }) => {
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2 text-white">Speakers</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.speaker.map((speaker, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="relative w-12 h-12 flex-shrink-0">
-                        <img 
-                          src={speaker.image_url || speaker.image || 'https://via.placeholder.com/48?text=Speaker'} 
-                          alt={speaker.name || `Speaker ${index + 1}`}
-                          className="w-full h-full rounded-full object-cover"
-                          onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/48?text=Speaker";
-                          }}
-                        />
+                  {event.speaker.map((speaker, index) => {
+                    const speakerId = `speaker-${index}`;
+                    const speakerImage = speaker.image_url || speaker.image;
+                    const showImage = speakerImage && !failedSpeakerImages.has(speakerId);
+
+                    return (
+                      <div key={index} className="flex items-center space-x-3">
+                        <div className="relative w-12 h-12 flex-shrink-0 bg-gray-700 rounded-full flex items-center justify-center">
+                          {showImage ? (
+                            <img 
+                              src={speakerImage}
+                              alt={speaker.name || `Speaker ${index + 1}`}
+                              className="w-full h-full rounded-full object-cover"
+                              onError={handleSpeakerImageError(speakerId)}
+                            />
+                          ) : (
+                            <User className="text-gray-400" size={24} />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-white break-words whitespace-normal">
+                            {speaker.name || 'Unnamed Speaker'}
+                          </p>
+                          <p className="text-sm text-gray-400 break-words whitespace-normal">
+                            {speaker.role || 'Speaker Role Not Specified'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white break-words whitespace-normal">
-                          {speaker.name || 'Unnamed Speaker'}
-                        </p>
-                        <p className="text-sm text-gray-400 break-words whitespace-normal">
-                          {speaker.role || 'Speaker Role Not Specified'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

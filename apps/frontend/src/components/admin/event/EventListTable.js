@@ -22,7 +22,6 @@ import {
   Briefcase,
   MapPin,
 } from "lucide-react";
-import EventsAPI from "../../../services/events.api"; 
 
 const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
   // Helper function to truncate text
@@ -44,16 +43,56 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
     return id.toString().replace(/[^a-zA-Z0-9]/g, '').substring(0, 5);
   };
 
-  // Format datetime to match BlogPostList style
-  const formatEventDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  // Enhanced datetime formatting function to handle both formats
+  const formatEventDateTime = (event) => {
+    try {
+      // First try to use event_date and event_time if available
+      if (event.event_date && event.event_time) {
+        const date = new Date(`${event.event_date}T${event.event_time}`);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        }
+      }
+
+      // Fallback to datetime if available
+      if (event.datetime) {
+        const date = new Date(event.datetime);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        }
+      }
+
+      // If neither format works, use date and time separately
+      if (event.date && event.time) {
+        const date = new Date(`${event.date}T${event.time}`);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        }
+      }
+
+      return 'Date not available';
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Date not available';
+    }
   };
 
   // Get status color based on event status
@@ -134,7 +173,6 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             showArrow
             placement="top"
           >
-            {/* Added container with truncate and max-w to prevent overflow */}
             <div className="flex flex-col truncate max-w-full">
               <p className="text-bold text-small capitalize flex items-center truncate">
                 <EventTypeIcon className="mr-2 flex-shrink-0" size={16} />
@@ -174,18 +212,16 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
           </Chip>
         );
 
-        case 'datetime': {
-          const formattedDate = formatEventDateTime(cellValue);
-          return (
-            <Tooltip content={formattedDate} showArrow>
-              <span className="text-small whitespace-nowrap">
-                {truncateText(formattedDate, 12)}
-              </span>
-            </Tooltip>
-          );
-        }
-        
-        
+      case 'datetime': {
+        const formattedDate = formatEventDateTime(event);
+        return (
+          <Tooltip content={formattedDate} showArrow>
+            <span className="text-small whitespace-nowrap">
+              {truncateText(formattedDate, 12)}
+            </span>
+          </Tooltip>
+        );
+      }
 
       case 'event_status':
         const statusColor = getEventStatusColor(cellValue);
@@ -289,7 +325,6 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
   };
 
   return (
-    // Adding "table-fixed" to enforce fixed layout and ensure columns honor width settings.
     <Table
       aria-label="Event list table"
       className="min-w-full table-fixed"

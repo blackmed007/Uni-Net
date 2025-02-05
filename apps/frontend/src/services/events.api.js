@@ -41,25 +41,39 @@ class EventsAPI {
     }
   }
 
-  // Date and Time Formatting
-  static formatDateTimeForBackend(date, time) {
-    if (!date || !time) {
-      throw new Error('Both date and time are required');
-    }
-    return `${date}T${time}:00.000Z`;
-  }
-
   // Backend Data Formatting
-  static formatEventDataForBackend(eventData) {
+  static formatEventDataForBackend(eventData, isUpdate = false) {
     try {
-      const date = eventData.event_date || eventData.date;
-      const time = eventData.event_time || eventData.time;
-      const datetime = this.formatDateTimeForBackend(date, time);
+      // For update operations, use the data as is with datetime
+      if (isUpdate) {
+        const formattedData = {
+          name: eventData.name,
+          description: eventData.description,
+          datetime: new Date(`${eventData.date}T${eventData.time}`).toISOString(),
+          location: eventData.location,
+          event_type: eventData.event_type,
+          event_status: eventData.event_status || "Upcoming",
+          organizer: eventData.organizer,
+          max_participants: parseInt(eventData.max_participants),
+          speaker: eventData.speaker || [],
+          agenda: eventData.agenda || [],
+          event_thumbnail: eventData.event_image_url || eventData.event_thumbnail
+        };
 
+        // Remove any undefined fields
+        Object.keys(formattedData).forEach(key => 
+          formattedData[key] === undefined && delete formattedData[key]
+        );
+
+        return formattedData;
+      }
+
+      // For create operations, use event_date and event_time
       const formattedData = {
         name: eventData.name,
         description: eventData.description,
-        datetime: datetime,
+        event_date: eventData.date,
+        event_time: eventData.time,
         location: eventData.location,
         event_type: eventData.event_type,
         event_status: eventData.event_status || "Upcoming",
@@ -67,9 +81,10 @@ class EventsAPI {
         max_participants: parseInt(eventData.max_participants),
         speaker: eventData.speaker || [],
         agenda: eventData.agenda || [],
-        event_thumbnail: eventData.event_image_url || eventData.event_thumbnail,
+        event_image_url: eventData.event_image_url || eventData.event_thumbnail
       };
 
+      // Remove any undefined fields
       Object.keys(formattedData).forEach(key => 
         formattedData[key] === undefined && delete formattedData[key]
       );
@@ -92,9 +107,8 @@ class EventsAPI {
         id: eventData.id,
         name: eventData.name || '',
         description: eventData.description || '',
-        date: datetime.toISOString().split('T')[0],
-        time: datetime.toTimeString().slice(0, 5),
-        datetime: eventData.datetime,
+        date: eventData.event_date || datetime.toISOString().split('T')[0],
+        time: eventData.event_time || datetime.toTimeString().slice(0, 5),
         location: eventData.location || '',
         event_type: eventData.event_type || '',
         event_status: eventData.event_status || 'Upcoming',
@@ -125,7 +139,7 @@ class EventsAPI {
       const formattedData = this.formatEventDataForBackend({
         ...eventData,
         event_image_url: eventImageUrl
-      });
+      }, false);
 
       const response = await api.post("/events", formattedData);
       return this.parseEventDataFromBackend(response.data);
@@ -147,7 +161,7 @@ class EventsAPI {
       const formattedData = this.formatEventDataForBackend({
         ...eventData,
         event_image_url: eventImageUrl
-      });
+      }, true);
 
       const response = await api.patch(`/events/${eventId}`, formattedData);
       return this.parseEventDataFromBackend(response.data);
@@ -163,7 +177,6 @@ class EventsAPI {
       let url = "/events";
       const params = new URLSearchParams();
       
-      // Add filters to query params if they exist
       if (filters.type) params.append('type', filters.type);
       if (filters.status) params.append('status', filters.status);
       if (filters.date) params.append('date', filters.date);
