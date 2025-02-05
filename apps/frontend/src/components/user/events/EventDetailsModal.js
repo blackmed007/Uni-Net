@@ -398,45 +398,64 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
             </div>
           </motion.div>
           {event.agenda && event.agenda.length > 0 && (
-            <motion.div 
-              className="mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+  <motion.div 
+    className="mb-6"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.4 }}
+  >
+    <h3 className="text-xl font-semibold mb-2">Event Agenda</h3>
+    <ul className="list-inside space-y-2">
+      {event.agenda.map((item, index) => (
+        <li 
+          key={index} 
+          className="flex items-start text-gray-300 whitespace-pre-wrap break-words line-clamp-2"
+        >
+          <span className="mr-2 text-primary mt-1">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="currentColor" 
+              className="w-4 h-4 flex-shrink-0"
             >
-              <h3 className="text-xl font-semibold mb-2">Event Agenda</h3>
-              <ul className="list-disc list-inside text-gray-300 space-y-2">
-                {event.agenda.map((item, index) => (
-                  <li key={index} className="whitespace-pre-wrap break-words line-clamp-2">{item}</li>
-                ))}
-              </ul>
-            </motion.div>
-          )}
-          {event.speakers && event.speakers.length > 0 && (
-            <motion.div 
-              className="mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              <h3 className="text-xl font-semibold mb-2">Speakers</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {event.speakers.map((speaker, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <img 
-                      src={speaker.image || '/api/placeholder/40/40'} 
-                      alt={speaker.name} 
-                      className="w-10 h-10 rounded-full" 
-                    />
-                    <div className="overflow-hidden">
-                      <p className="font-medium text-white truncate">{speaker.name}</p>
-                      <p className="text-sm text-gray-400 truncate">{speaker.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
+              <path 
+                fillRule="evenodd" 
+                d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" 
+                clipRule="evenodd" 
+              />
+            </svg>
+          </span>
+          {item}
+        </li>
+      ))}
+    </ul>
+  </motion.div>
+)}
+          {event.speaker && event.speaker.length > 0 && (
+  <motion.div 
+    className="mb-6"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.5 }}
+  >
+    <h3 className="text-xl font-semibold mb-2">Speakers</h3>
+    <div className="grid grid-cols-2 gap-4">
+      {event.speaker.map((speaker, index) => (
+        <div key={index} className="flex items-center space-x-2">
+          <img 
+            src={speaker.image_url || speaker.image || '/api/placeholder/40/40'} 
+            alt={speaker.name} 
+            className="w-10 h-10 rounded-full object-cover" 
+          />
+          <div className="overflow-hidden">
+            <p className="font-medium text-white truncate">{speaker.name}</p>
+            <p className="text-sm text-gray-400 truncate">{speaker.role}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </motion.div>
+)}
           <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
