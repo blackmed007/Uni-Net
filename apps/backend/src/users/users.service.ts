@@ -38,7 +38,7 @@ export class UsersService {
           last_name: authDto.last_name,
           email: authDto.email,
           password: hashedPassword,
-          role: authDto.role,
+          role: authDto.role.toLowerCase(),
         },
       });
       return user;
@@ -134,6 +134,7 @@ export class UsersService {
           last_name: true,
           email: true,
           status: true,
+          role: true,
           profile_url: true,
           gender: true,
           cityId: true,
@@ -163,6 +164,7 @@ export class UsersService {
           last_name: true,
           email: true,
           status: true,
+          role: true,
           profile_url: true,
           gender: true,
           cityId: true,
@@ -280,6 +282,7 @@ export class UsersService {
         last_name: true,
         email: true,
         status: true,
+        role: true,
         profile_url: true,
         gender: true,
         cityId: true,
