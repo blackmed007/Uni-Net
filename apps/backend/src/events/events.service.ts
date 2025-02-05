@@ -77,8 +77,22 @@ export class EventService {
 
   async findAll() {
     try {
-      const events = await this.prisma.event.findMany();
-      return events;
+      const events = await this.prisma.event.findMany({
+        include: {
+          participants: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      const eventsWithParticipantCount = events.map((event) => ({
+        ...event,
+        currentParticipants: event.participants.length,
+      }));
+
+      return eventsWithParticipantCount;
     } catch (error) {
       this.logger.error(`${error} - Error while fetching events`);
       throw new InternalServerErrorException(`Error while fetching events`);
@@ -91,10 +105,27 @@ export class EventService {
         where: {
           id,
         },
+        include: {
+          participants: {
+            select: {
+              userId: true,
+            },
+          },
+        },
       });
-      return event;
+
+      if (!event) {
+        throw new NotFoundException(`Event with id ${id} not found`);
+      }
+
+      const eventWithParticipantCount = {
+        ...event,
+        currentParticipants: event.participants.length,
+      };
+
+      return eventWithParticipantCount;
     } catch (error) {
-      this.logger.error(`${error} - Error while fetching events`);
+      this.logger.error(`${error} - Error while fetching an event`);
       throw new InternalServerErrorException(`Error while fetching an event`);
     }
   }
