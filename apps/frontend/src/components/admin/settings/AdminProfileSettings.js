@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Avatar, useToast } from "@nextui-org/react";
+import { Input, Button, Avatar } from "@nextui-org/react";
 import { User, Mail, Upload } from "lucide-react";
+import { toast } from 'react-hot-toast';
 import ProfileAPI from '../../../services/profile.api';
 
 const AdminProfileSettings = () => {
@@ -21,17 +22,20 @@ const AdminProfileSettings = () => {
 
   const fetchProfileData = async () => {
     try {
+      setIsLoading(true);
       const profileData = await ProfileAPI.getCurrentProfile();
       setUserId(profileData.id);
       setSettings({
-        firstName: profileData.first_name || '',
-        lastName: profileData.last_name || '',
+        firstName: profileData.firstName || '',
+        lastName: profileData.lastName || '',
         email: profileData.email || '',
-        profileImage: profileData.profile_url || '',
+        profileImage: profileData.profileImage || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
-      // Handle error appropriately
+      toast.error('Failed to load profile data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -42,6 +46,18 @@ const AdminProfileSettings = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type and size
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Invalid file type. Please upload JPEG, PNG, or GIF.');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size should be less than 5MB.');
+        return;
+      }
+
       setSelectedFile(file);
       // Preview the image
       const reader = new FileReader();
@@ -56,30 +72,44 @@ const AdminProfileSettings = () => {
     e.preventDefault();
     if (!userId) return;
 
+    // Basic validation
+    if (!settings.firstName || !settings.lastName || !settings.email) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const profileData = {
-        first_name: settings.firstName,
-        last_name: settings.lastName,
+      const updatePayload = {
+        firstName: settings.firstName,
+        lastName: settings.lastName,
         email: settings.email,
       };
 
-      await ProfileAPI.updateFullProfile(userId, profileData, selectedFile);
+      // Update profile with or without image
+      const updatedProfile = await ProfileAPI.updateFullProfile(
+        userId, 
+        updatePayload, 
+        selectedFile
+      );
       
-      // Refresh profile data after update
-      await fetchProfileData();
+      // Update local state with returned data
+      setSettings({
+        firstName: updatedProfile.firstName || '',
+        lastName: updatedProfile.lastName || '',
+        email: updatedProfile.email || '',
+        profileImage: updatedProfile.profileImage || '',
+      });
       
-      // Clear selected file after successful upload
+      // Clear selected file
       setSelectedFile(null);
       
       // Show success message
-      // Note: Implement your preferred notification system here
-      console.log('Profile updated successfully');
+      toast.success('Profile updated successfully');
       
     } catch (error) {
       console.error('Error updating profile:', error);
-      // Show error message
-      // Note: Implement your preferred notification system here
+      toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
@@ -94,16 +124,16 @@ const AdminProfileSettings = () => {
             src={settings.profileImage || "https://i.pravatar.cc/150?u=a042581f4e29026704d"}
             className="w-24 h-24"
           />
-       <Button
-  color="primary"
-  variant="flat"
-  onPress={() => document.getElementById('profile-image-upload').click()}
-  startContent={<Upload size={20} />}
-  isDisabled={isLoading}
-  className="bg-gray-800 text-gray-200 hover:bg-gray-700"  // Dark gray background with light gray text
->
-  Upload Image
-</Button>
+          <Button
+            color="primary"
+            variant="flat"
+            onPress={() => document.getElementById('profile-image-upload').click()}
+            startContent={<Upload size={20} />}
+            isDisabled={isLoading}
+            className="bg-gray-800 text-gray-200 hover:bg-gray-700"
+          >
+            Upload Image
+          </Button>
           <input
             id="profile-image-upload"
             type="file"
@@ -120,6 +150,7 @@ const AdminProfileSettings = () => {
             startContent={<User className="text-default-400" size={16} />}
             className="flex-1"
             isDisabled={isLoading}
+            isRequired
           />
           <Input
             label="Last Name"
@@ -128,6 +159,7 @@ const AdminProfileSettings = () => {
             startContent={<User className="text-default-400" size={16} />}
             className="flex-1"
             isDisabled={isLoading}
+            isRequired
           />
         </div>
         <Input
@@ -137,11 +169,13 @@ const AdminProfileSettings = () => {
           onChange={(e) => handleChange('email', e.target.value)}
           startContent={<Mail className="text-default-400" size={16} />}
           isDisabled={isLoading}
+          isRequired
         />
         <Button 
           type="submit" 
           color="primary"
           isLoading={isLoading}
+          className="w-full"
         >
           {isLoading ? 'Saving...' : 'Save Profile Settings'}
         </Button>

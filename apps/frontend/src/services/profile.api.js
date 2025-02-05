@@ -36,7 +36,7 @@ class ProfileAPI {
   static async getCurrentProfile() {
     try {
       const response = await api.get("/users/me");
-      return response.data;
+      return this.transformUserData(response.data);
     } catch (error) {
       throw error;
     }
@@ -45,8 +45,9 @@ class ProfileAPI {
   // Update user profile
   static async updateProfile(userId, profileData) {
     try {
-      const response = await api.patch(`/users/${userId}`, profileData);
-      return response.data;
+      const transformedData = this.formatUserData(profileData);
+      const response = await api.patch(`/users/${userId}`, transformedData);
+      return this.transformUserData(response.data);
     } catch (error) {
       throw error;
     }
@@ -64,7 +65,7 @@ class ProfileAPI {
         },
       });
 
-      return response.data;
+      return this.transformUserData(response.data);
     } catch (error) {
       throw error;
     }
@@ -75,39 +76,69 @@ class ProfileAPI {
     try {
       const formData = new FormData();
 
-      // If there's a new image, upload it first
+      // Convert profileData to backend format
+      const transformedData = this.formatUserData(profileData);
+
+      // Append transformed data to formData
+      Object.keys(transformedData).forEach((key) => {
+        const value = transformedData[key];
+        if (value !== null && value !== undefined) {
+          formData.append(key, 
+            typeof value === 'boolean' ? JSON.stringify(value) : value
+          );
+        }
+      });
+
+      // If there's a new image, append it
       if (imageFile instanceof File) {
         formData.append("profile_url", imageFile);
       }
-      // Keep existing profile data in the form
-      Object.keys(profileData).forEach((key) => {
-        formData.append(key, profileData[key]);
-      });
 
-      // Update the rest of the profile data
+      // Send the update request
       const response = await api.patch(`/users/${userId}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      return response;
+
+      return this.transformUserData(response.data);
     } catch (error) {
       throw error;
     }
   }
-  // Format user data for API
+
+  // Format user data for API submission
   static formatUserData(userData) {
-    return {
-      first_name: userData.firstName,
-      last_name: userData.lastName,
+    const formattedData = {
+      first_name: userData.firstName || userData.first_name,
+      last_name: userData.lastName || userData.last_name,
       email: userData.email,
-      password: userData.password,
-      role: userData.role?.toLowerCase(),
-      gender: userData.gender?.toLowerCase(),
-      profile_url: userData.profile_url,
-      cityId: userData.cityId,
-      universityId: userData.universityId,
-      status: userData.status === "Active" || userData.status === true,
+      profile_url: userData.profile_url instanceof File 
+        ? undefined 
+        : userData.profile_url,
+    };
+
+    // Remove undefined values
+    Object.keys(formattedData).forEach(
+      key => formattedData[key] === undefined && delete formattedData[key]
+    );
+
+    return formattedData;
+  }
+
+  // Transform user data from backend to frontend format
+  static transformUserData(userData) {
+    if (!userData) return null;
+
+    return {
+      id: userData.id,
+      firstName: userData.first_name,
+      lastName: userData.last_name,
+      email: userData.email,
+      profileImage: userData.profile_url,
+      role: userData.role,
+      status: userData.status === true ? 'Active' : 'Suspended',
+      createdAt: userData.createdAt
     };
   }
 }
