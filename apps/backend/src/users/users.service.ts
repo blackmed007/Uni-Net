@@ -70,7 +70,7 @@ export class UsersService {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      const onboardedUser = this.prisma.user.update({
+      const onboardedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
           ...onboardUserDto,
@@ -97,7 +97,7 @@ export class UsersService {
       await this.prisma.userActivity.create({
         data: {
           userId,
-          activity: 'Created a profile',
+          activity: `New user registered: ${onboardedUser.first_name} ${onboardedUser.last_name}`,
         },
       });
 
@@ -294,7 +294,7 @@ export class UsersService {
     await this.prisma.userActivity.create({
       data: {
         userId: id,
-        activity: 'Updated profile',
+        activity: `User profile updated: ${updatedUser.first_name} ${updatedUser.last_name}`,
       },
     });
 
@@ -361,7 +361,7 @@ export class UsersService {
     await this.prisma.userActivity.create({
       data: {
         userId,
-        activity: 'Added bookmark',
+        activity: `Blog post bookmarked`,
       },
     });
 
