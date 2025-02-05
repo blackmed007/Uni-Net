@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip,
 import { MapPin, Calendar, Clock, Share2, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
+import PropTypes from 'prop-types';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyA54yGS01UI1divw8YIahs3Js0BtYrj-6M';
 const CHARS_PER_LINE = 100;
@@ -213,11 +214,6 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
 
   if (!event) return null;
 
-  const formatDate = (dateString) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
   const renderMap = () => {
     if (loadError) {
       return (
@@ -340,14 +336,23 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
               <Calendar className="mr-2 text-primary" size={20} />
               <div>
                 <p className="font-semibold">Date</p>
-                <p className="text-sm text-gray-300">{formatDate(event.date)}</p>
+                <p className="text-sm text-gray-300">
+                  {new Date(event.date).toLocaleDateString('en-US', {
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                  })}
+                </p>
               </div>
             </div>
             <div className="flex items-center">
               <Clock className="mr-2 text-primary" size={20} />
               <div>
                 <p className="font-semibold">Time</p>
-                <p className="text-sm text-gray-300">{event.time}</p>
+                <p className="text-sm text-gray-300">
+                  {event.time || 'Time not specified'}
+                </p>
               </div>
             </div>
             <div className="flex items-start">
@@ -418,7 +423,11 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
               <div className="grid grid-cols-2 gap-4">
                 {event.speakers.map((speaker, index) => (
                   <div key={index} className="flex items-center space-x-2">
-                    <img src={speaker.image || '/api/placeholder/40/40'} alt={speaker.name} className="w-10 h-10 rounded-full" />
+                    <img 
+                      src={speaker.image || '/api/placeholder/40/40'} 
+                      alt={speaker.name} 
+                      className="w-10 h-10 rounded-full" 
+                    />
                     <div className="overflow-hidden">
                       <p className="font-medium text-white truncate">{speaker.name}</p>
                       <p className="text-sm text-gray-400 truncate">{speaker.role}</p>
@@ -466,6 +475,29 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
       </ModalContent>
     </Modal>
   );
+};
+
+EventDetailsModal.propTypes = {
+  event: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    date: PropTypes.string.isRequired,
+    time: PropTypes.string,
+    location: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    image: PropTypes.string.isRequired,
+    participants: PropTypes.array,
+    maxParticipants: PropTypes.number.isRequired,
+    organizer: PropTypes.string,
+    agenda: PropTypes.array,
+    speakers: PropTypes.array,
+  }),
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onJoin: PropTypes.func.isRequired,
+  onShare: PropTypes.func.isRequired,
+  isJoined: PropTypes.bool,
 };
 
 export default EventDetailsModal;

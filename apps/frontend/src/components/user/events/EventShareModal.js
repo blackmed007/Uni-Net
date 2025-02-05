@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { Facebook, Twitter, Linkedin, Link, Mail, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from 'qrcode.react';
+import PropTypes from 'prop-types';
 
 const EventShareModal = ({ event, isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
@@ -116,24 +117,30 @@ const EventShareModal = ({ event, isOpen, onClose }) => {
             animate={{ opacity: 1, y: 0 }}
           >
             {['facebook', 'twitter', 'linkedin', 'email'].map((platform) => (
-              <motion.div 
-                key={platform}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Button 
-                  isIconOnly 
-                  color="primary" 
-                  variant="flat" 
-                  onClick={() => handleShare(platform)}
-                >
-                  {platform === 'facebook' && <Facebook />}
-                  {platform === 'twitter' && <Twitter />}
-                  {platform === 'linkedin' && <Linkedin />}
-                  {platform === 'email' && <Mail />}
-                </Button>
-              </motion.div>
-            ))}
+  <motion.div 
+    key={platform}
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+  >
+    <Button 
+      isIconOnly 
+      color="primary" 
+      variant="flat" 
+      className={`
+        ${platform === 'facebook' ? 'text-blue-600' : ''}
+        ${platform === 'twitter' ? 'text-blue-400' : ''}
+        ${platform === 'linkedin' ? 'text-blue-700' : ''}
+        ${platform === 'email' ? 'text-red-500' : ''}
+      `}
+      onClick={() => handleShare(platform)}
+    >
+      {platform === 'facebook' && <Facebook />}
+      {platform === 'twitter' && <Twitter />}
+      {platform === 'linkedin' && <Linkedin />}
+      {platform === 'email' && <Mail />}
+    </Button>
+  </motion.div>
+))}
           </motion.div>
           <motion.div 
             className="flex items-center space-x-2 mb-6"
@@ -174,6 +181,15 @@ const EventShareModal = ({ event, isOpen, onClose }) => {
       </ModalContent>
     </Modal>
   );
+};
+
+EventShareModal.propTypes = {
+  event: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+  }).isRequired,
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default EventShareModal;
