@@ -32,6 +32,7 @@ const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Modal controls
   const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
@@ -43,6 +44,7 @@ const UserManagement = () => {
   // Fetch initial data
   const fetchData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const [usersResponse, citiesResponse, universitiesResponse] = await Promise.all([
         UsersAPI.getUsers(),
@@ -55,6 +57,7 @@ const UserManagement = () => {
       setUniversities(universitiesResponse || []);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Failed to fetch data. Please try again later.');
       toast.error('Failed to fetch data');
     } finally {
       setIsLoading(false);
@@ -105,8 +108,10 @@ const UserManagement = () => {
         return false;
       }
 
-      if (filters.status && user.status !== filters.status) {
-        return false;
+      if (filters.status) {
+        const isActive = user.status === true || user.status === 'Active';
+        if (filters.status === 'Active' && !isActive) return false;
+        if (filters.status === 'Suspended' && isActive) return false;
       }
 
       return true;
@@ -188,25 +193,28 @@ const UserManagement = () => {
         onConfirmOpen();
         break;
       default:
-        console.log('Unknown action:', action);
+        console.error('Unknown action:', action);
     }
   };
 
   const handleConfirmAction = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      const userName = `${selectedUser.firstName} ${selectedUser.lastName}`.trim();
+      
       switch (actionType) {
         case 'suspend':
           await UsersAPI.suspendUser(selectedUser.id);
-          toast.success('User suspended successfully');
+          toast.success(`${userName} has been suspended`);
           break;
         case 'activate':
           await UsersAPI.activateUser(selectedUser.id);
-          toast.success('User activated successfully');
+          toast.success(`${userName} has been activated`);
           break;
         case 'delete':
           await UsersAPI.deleteUser(selectedUser.id);
-          toast.success('User deleted successfully');
+          toast.success(`${userName} has been deleted`);
           break;
         default:
           throw new Error('Unknown action type');
@@ -216,6 +224,7 @@ const UserManagement = () => {
       onConfirmClose();
     } catch (error) {
       console.error('Error performing action:', error);
+      setError(error.response?.data?.message || 'Failed to perform action');
       toast.error('Failed to perform action');
     } finally {
       setIsLoading(false);
@@ -225,12 +234,14 @@ const UserManagement = () => {
   const handleEditUser = async (updatedUser) => {
     try {
       setIsLoading(true);
+      setError(null);
       await UsersAPI.updateUser(updatedUser.id, updatedUser);
       await fetchData();
       onEditClose();
       toast.success('User updated successfully');
     } catch (error) {
       console.error('Error updating user:', error);
+      setError(error.response?.data?.message || 'Failed to update user');
       toast.error('Failed to update user');
     } finally {
       setIsLoading(false);
@@ -240,12 +251,14 @@ const UserManagement = () => {
   const handleCreateUser = async (userData) => {
     try {
       setIsLoading(true);
+      setError(null);
       await UsersAPI.createUser(userData);
       await fetchData();
       onCreateClose();
       toast.success('User created successfully');
     } catch (error) {
       console.error('Error creating user:', error);
+      setError(error.response?.data?.message || 'Failed to create user');
       toast.error('Failed to create user');
     } finally {
       setIsLoading(false);
@@ -261,6 +274,16 @@ const UserManagement = () => {
       >
         <h1 className="text-4xl font-bold">User Management</h1>
       </motion.div>
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-red-500 bg-opacity-10 border border-red-500 text-red-500 p-4 rounded-lg"
+        >
+          {error}
+        </motion.div>
+      )}
 
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
@@ -318,7 +341,7 @@ const UserManagement = () => {
               showControls
               showShadow
               variant="flat"
-              isDisabled={sortedUsers.length <= itemsPerPage}
+              isDisabled={sortedUsers.length <= itemsPerPage || isLoading}
             />
           </div>
         </>
@@ -335,7 +358,7 @@ const UserManagement = () => {
           setSelectedUser({ id: userId });
           onConfirmOpen();
         }}
-        onBanUser={(userId) => {
+        onSuspendUser={(userId) => {
           onUserDetailClose();
           setActionType('suspend');
           setSelectedUser({ id: userId });
@@ -365,6 +388,7 @@ const UserManagement = () => {
         onSave={handleEditUser}
         universities={universities}
         cities={cities}
+        error={error}
       />
 
       <UserConfirmActionModal
@@ -372,6 +396,7 @@ const UserManagement = () => {
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}
         actionType={actionType}
+        userName={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}`.trim() : ''}
       />
 
       <CreateUserModal
@@ -380,6 +405,7 @@ const UserManagement = () => {
         onSave={handleCreateUser}
         universities={universities}
         cities={cities}
+        error={error}
       />
     </div>
   );
