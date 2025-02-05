@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Input, Button, useDisclosure, Pagination, Spinner } from "@nextui-org/react";
 import { Search, Filter, Calendar, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from 'react-hot-toast';
+
 import EventListTable from '../../components/admin/event/EventListTable';
 import EventDetailModal from '../../components/admin/event/EventDetailModal';
 import EventFilterModal from '../../components/admin/event/EventFilterModal';
@@ -9,9 +11,9 @@ import CreateEventModal from '../../components/admin/event/CreateEventModal';
 import EditEventModal from '../../components/admin/event/EditEventModal';
 import EventConfirmActionModal from '../../components/admin/event/EventConfirmActionModal';
 import EventsAPI from '../../services/events.api';
-import { toast } from 'react-hot-toast';
 
 const EventManagement = () => {
+  // State Management
   const [events, setEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -22,13 +24,18 @@ const EventManagement = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [actionType, setActionType] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  
+  // Enhanced loading and error states
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage] = useState(10);
 
+  // Modal controls using useDisclosure
   const { 
     isOpen: isFilterOpen, 
     onOpen: onFilterOpen, 
@@ -59,65 +66,76 @@ const EventManagement = () => {
     onClose: onConfirmClose 
   } = useDisclosure();
 
-  // Fetch events from API
-  const fetchEvents = async () => {
+  // Fetch events with improved error handling
+  const fetchEvents = useCallback(async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      // Determine which loading state to use
+      if (showLoading) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+      
       setError(null);
-      const fetchedEvents = await EventsAPI.getEvents();
+      
+      // Prepare filters for API call
+      const fetchedEvents = await EventsAPI.getEvents({
+        type: filters.type,
+        status: filters.status,
+        date: filters.date,
+        search: searchTerm
+      });
+
       setEvents(fetchedEvents);
     } catch (err) {
-      setError('Failed to fetch events');
-      toast.error('Failed to load events');
+      const errorMessage = err.response?.data?.message || 
+        err.message || 
+        'Failed to fetch events. Please try again.';
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+      
       console.error('Error fetching events:', err);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [filters, searchTerm]);
 
+  // Initial and filtered fetch effect
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [fetchEvents]);
 
   // Memoized filtered and sorted events
   const filteredAndSortedEvents = useMemo(() => {
-    let filteredEvents = events.filter(event => {
-      const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = !filters.type || event.event_type === filters.type;
-      const matchesStatus = !filters.status || event.event_status === filters.status;
-      const matchesDate = !filters.date || event.date === filters.date;
-
-      return matchesSearch && matchesType && matchesStatus && matchesDate;
-    });
+    let processedEvents = [...events];
 
     if (sortConfig.key) {
-      filteredEvents.sort((a, b) => {
+      processedEvents.sort((a, b) => {
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
-        if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-        return 0;
+        
+        if (aValue == null) return 1;
+        if (bValue == null) return -1;
+        
+        return sortConfig.direction === 'ascending' 
+          ? (aValue > bValue ? 1 : -1)
+          : (aValue > bValue ? -1 : 1);
       });
     }
 
-    return filteredEvents;
-  }, [events, searchTerm, filters, sortConfig]);
+    return processedEvents;
+  }, [events, sortConfig]);
 
-  // Ensure current page is valid when filtered events change
-  useEffect(() => {
-    const totalPages = Math.ceil(filteredAndSortedEvents.length / itemsPerPage);
-    if (currentPage > totalPages) {
-      setCurrentPage(Math.max(1, totalPages));
-    }
-  }, [filteredAndSortedEvents, itemsPerPage, currentPage]);
-
-  // Get current events for pagination
-  const currentEvents = useMemo(() => {
-    const indexOfLastEvent = currentPage * itemsPerPage;
-    const indexOfFirstEvent = indexOfLastEvent - itemsPerPage;
-    return filteredAndSortedEvents.slice(indexOfFirstEvent, indexOfLastEvent);
+  // Pagination calculations
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedEvents.slice(startIndex, endIndex);
   }, [filteredAndSortedEvents, currentPage, itemsPerPage]);
 
+  // Event Handlers
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
@@ -139,6 +157,7 @@ const EventManagement = () => {
   const handleEventAction = (action, event) => {
     setSelectedEvent(event);
     setActionType(action);
+    
     switch (action) {
       case 'view':
         onEventDetailOpen();
@@ -151,88 +170,123 @@ const EventManagement = () => {
       case 'delete':
         onConfirmOpen();
         break;
-      default:
-        console.log('Unknown action:', action);
     }
   };
 
   const handleConfirmAction = async () => {
+    if (!selectedEvent) return;
+
     try {
+      setIsProcessing(true);
+      
       switch (actionType) {
         case 'cancel':
-          await EventsAPI.updateEvent(selectedEvent.id, {
-            ...selectedEvent,
-            event_status: 'Cancelled'
-          });
+          await EventsAPI.updateEventStatus(selectedEvent.id, 'Cancelled');
+          toast.success('Event cancelled successfully');
           break;
+          
         case 'ongoing':
-          await EventsAPI.updateEvent(selectedEvent.id, {
-            ...selectedEvent,
-            event_status: 'Ongoing'
-          });
+          await EventsAPI.updateEventStatus(selectedEvent.id, 'Ongoing');
+          toast.success('Event marked as ongoing');
           break;
+          
         case 'delete':
           await EventsAPI.deleteEvent(selectedEvent.id);
+          toast.success('Event deleted successfully');
           break;
-        default:
-          return;
       }
       
-      toast.success('Event updated successfully');
-      fetchEvents(); // Refresh the events list
+      await fetchEvents(false);
       onConfirmClose();
     } catch (error) {
-      toast.error('Failed to update event');
-      console.error('Error updating event:', error);
+      const errorMessage = error.response?.data?.message || 
+        'Failed to perform action. Please try again.';
+      
+      toast.error(errorMessage);
+      console.error('Event action error:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleCreateEvent = async (newEvent) => {
     try {
+      setIsProcessing(true);
       await EventsAPI.createEvent(newEvent);
+      
       toast.success('Event created successfully');
-      fetchEvents();
+      await fetchEvents(false);
       onCreateClose();
     } catch (error) {
-      toast.error('Failed to create event');
-      console.error('Error creating event:', error);
+      const errorMessage = error.response?.data?.message || 
+        'Failed to create event. Please try again.';
+      
+      toast.error(errorMessage);
+      console.error('Create event error:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleEditEvent = async (updatedEvent) => {
     try {
+      setIsProcessing(true);
       await EventsAPI.updateEvent(updatedEvent.id, updatedEvent);
+      
       toast.success('Event updated successfully');
-      fetchEvents();
+      await fetchEvents(false);
       onEditClose();
     } catch (error) {
-      toast.error('Failed to update event');
-      console.error('Error updating event:', error);
+      const errorMessage = error.response?.data?.message || 
+        'Failed to update event. Please try again.';
+      
+      toast.error(errorMessage);
+      console.error('Update event error:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
+  // Retry fetching events
+  const handleRetryFetch = () => {
+    fetchEvents();
+  };
+
+  // Error state rendering
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <p className="text-xl text-danger mb-4">{error}</p>
-        <Button color="primary" onClick={fetchEvents}>
-          Retry
-        </Button>
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50 p-4">
+        <div className="text-center">
+          <Calendar className="mx-auto mb-4 text-gray-400" size={64} />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Oops! Something Went Wrong
+          </h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button 
+            color="primary" 
+            size="lg" 
+            onClick={handleRetryFetch}
+          >
+            Retry Fetching Events
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
+      {/* Page Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-4xl font-bold">Event Management</h1>
+        <h1 className="text-4xl font-bold mb-4">Event Management</h1>
       </motion.div>
 
-      <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+      {/* Control Panel */}
+      <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
         <Input
           placeholder="Search events..."
           value={searchTerm}
@@ -257,11 +311,12 @@ const EventManagement = () => {
         </Button>
       </div>
 
+      {/* Content Area */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <Spinner size="lg" />
+          <Spinner size="lg" color="primary" />
         </div>
-      ) : currentEvents.length === 0 ? (
+      ) : paginatedEvents.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -275,8 +330,13 @@ const EventManagement = () => {
         </motion.div>
       ) : (
         <>
+          {isRefreshing && (
+            <div className="absolute top-0 right-0 m-4 z-50">
+              <Spinner size="sm" color="primary" />
+            </div>
+          )}
           <EventListTable
-            events={currentEvents}
+            events={paginatedEvents}
             onEventAction={handleEventAction}
             onSort={handleSort}
             sortConfig={sortConfig}
@@ -303,29 +363,36 @@ const EventManagement = () => {
         onClose={onEventDetailClose}
         event={selectedEvent}
       />
+      
       <EventFilterModal
         isOpen={isFilterOpen}
         onClose={onFilterClose}
         onApplyFilters={handleFilter}
         initialFilters={filters}
       />
+      
       <CreateEventModal
         isOpen={isCreateOpen}
         onClose={onCreateClose}
         onSave={handleCreateEvent}
+        isLoading={isProcessing}
       />
+      
       <EditEventModal
         isOpen={isEditOpen}
         onClose={onEditClose}
         event={selectedEvent}
         onSave={handleEditEvent}
+        isLoading={isProcessing}
       />
+      
       <EventConfirmActionModal
         isOpen={isConfirmOpen}
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}
         actionType={actionType}
         eventName={selectedEvent?.name}
+        isLoading={isProcessing}
       />
     </div>
   );

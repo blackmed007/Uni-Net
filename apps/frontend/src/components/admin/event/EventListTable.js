@@ -138,7 +138,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             <div className="flex flex-col truncate max-w-full">
               <p className="text-bold text-small capitalize flex items-center truncate">
                 <EventTypeIcon className="mr-2 flex-shrink-0" size={16} />
-                {truncateText(cellValue, 15)}
+                {truncateText(cellValue, 10)}
               </p>
               {event.description && (
                 <p className="text-bold text-tiny capitalize text-default-400 truncate">
@@ -157,7 +157,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             isDisabled={cellValue.length <= 20}
             showArrow
           >
-            <span className="truncate max-w-[150px]">{truncateText(cellValue, 10)}</span>
+            <span className="truncate max-w-[150px]">{truncateText(cellValue, 8)}</span>
           </Tooltip>
         );
 
@@ -179,7 +179,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
           return (
             <Tooltip content={formattedDate} showArrow>
               <span className="text-small whitespace-nowrap">
-                {truncateText(formattedDate, 15)}
+                {truncateText(formattedDate, 12)}
               </span>
             </Tooltip>
           );
