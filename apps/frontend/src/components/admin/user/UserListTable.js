@@ -97,18 +97,26 @@ const UserListTable = ({ users, onUserAction, onSort, sortConfig, isLoading }) =
             </User>
           );
 
-        case 'role':
-          return (
-            <Tooltip content={cellValue} showArrow isDisabled={!cellValue || cellValue.length <= 15}>
-              <Chip
-                color={user.role?.toLowerCase() === 'admin' ? 'primary' : 'secondary'}
-                size="sm"
-                variant="flat"
-              >
-                {truncateText(cellValue || 'User', 15)}
-              </Chip>
-            </Tooltip>
-          );
+          case 'role':
+  const isAdmin = user.role?.toLowerCase() === 'admin';
+  return (
+    <Tooltip content={cellValue} showArrow isDisabled={!cellValue || cellValue.length <= 15}>
+      <Chip
+        color={isAdmin ? 'primary' : 'secondary'}
+        size="sm"
+        variant="flat"
+        className={
+          isAdmin 
+            ? 'bg-blue-900 text-blue-200' // Dark blue bg with light blue text
+            : 'bg-gray-800 text-gray-300' // Dark gray bg with light gray text
+        }
+      >
+        {truncateText(cellValue || 'User', 15)}
+      </Chip>
+    </Tooltip>
+  );
+
+          
 
         case 'status':
           const status = user.status === true || user.status === 'Active' ? 'Active' : 'Suspended';

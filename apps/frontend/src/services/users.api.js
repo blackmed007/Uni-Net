@@ -198,7 +198,7 @@ class UsersAPI {
   // Update user
   static async updateUser(userId, userData) {
     try {
-      const userDataFormatted = this.formatUserData(userData);
+      const userDataFormatted = this.formatUserData(userData, false);  // Pass false to indicate this is an update
 
       if (userData.profile_url instanceof File) {
         const formData = new FormData();
@@ -315,12 +315,12 @@ class UsersAPI {
   }
 
   // Format user data for API
-  static formatUserData(userData) {
+  static formatUserData(userData, isCreate = true) {
     const formatted = {
       first_name: userData.firstName,
       last_name: userData.lastName,
       email: userData.email,
-      role: userData.role?.toLowerCase(),
+      role: isCreate ? userData.role?.toLowerCase() : userData.role,
       gender: userData.gender?.toLowerCase(),
       cityId: userData.cityId || userData.cityld,
       universityId: userData.universityId || userData.universityld,

@@ -20,7 +20,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
     lastName: '',
     email: '',
     password: '',
-    role: '',
+   role: 'user',
     universityId: '',
     cityId: '',
     gender: '',
@@ -310,19 +310,16 @@ const CreateUserModal = ({ isOpen, onClose, onSave, universities, cities }) => {
               }}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Role"
-                selectedKeys={newUser.role ? [newUser.role] : []}
-                onChange={(e) => handleChange('role', e.target.value)}
-                errorMessage={errors.role}
-                isInvalid={!!errors.role}
-                classNames={{
-                  trigger: ["bg-transparent", "text-white"],
-                  label: "text-white",
-                }}
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Role"
+              selectedKeys={['user']} // Changed to always select 'user'
+              isDisabled={true} // Added to disable the select
+              classNames={{
+                trigger: ["bg-transparent", "text-white"],
+                label: "text-white",
+              }}
               >
-                <SelectItem key="admin" value="admin">Admin</SelectItem>
                 <SelectItem key="user" value="user">User</SelectItem>
               </Select>
 
