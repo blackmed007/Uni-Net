@@ -25,7 +25,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  },
+  }
 );
 
 // Response interceptor for error handling
@@ -54,10 +54,14 @@ api.interceptors.response.use(
       console.error("Network error:", error.request);
     }
     return Promise.reject(error);
-  },
+  }
 );
 
 class EventsAPI {
+  // Constants for valid values
+  static EVENT_TYPES = ["Workshop", "Social", "Conference", "Seminar"];
+  static EVENT_STATUSES = ["Upcoming", "Ongoing", "Completed", "Cancelled"];
+
   // Upload event image and get URL
   static async uploadImage(file) {
     try {
@@ -70,6 +74,10 @@ class EventsAPI {
         },
       });
 
+      if (!response.data || !response.data.url) {
+        throw new Error("Invalid image upload response");
+      }
+
       return response.data.url;
     } catch (error) {
       console.error("Error uploading event image:", error);
@@ -77,27 +85,78 @@ class EventsAPI {
     }
   }
 
-  // Parse event data from API response
-  static parseEventData(eventData) {
+  // Format event data for backend
+  static formatEventDataForBackend(eventData) {
+    try {
+      // Ensure event status is valid
+      const eventStatus = eventData.event_status || 'Upcoming';
+      if (!this.EVENT_STATUSES.includes(eventStatus)) {
+        throw new Error(`Invalid event status: ${eventStatus}. Must be one of: ${this.EVENT_STATUSES.join(', ')}`);
+      }
+
+      // Ensure event type is valid
+      const eventType = eventData.event_type;
+      if (!this.EVENT_TYPES.includes(eventType)) {
+        throw new Error(`Invalid event type: ${eventType}. Must be one of: ${this.EVENT_TYPES.join(', ')}`);
+      }
+
+      // Format date and time if both are provided
+      let formattedDate = eventData.event_date || eventData.date;
+      let formattedTime = eventData.event_time || eventData.time;
+
+      return {
+        name: eventData.name,
+        description: eventData.description,
+        event_date: formattedDate,
+        event_time: formattedTime,
+        location: eventData.location,
+        event_type: eventType,
+        event_status: eventStatus,
+        organizer: eventData.organizer,
+        max_participants: parseInt(eventData.max_participants),
+        speaker: Array.isArray(eventData.speaker) ? eventData.speaker : [],
+        agenda: Array.isArray(eventData.agenda) ? eventData.agenda : [],
+        event_image_url: eventData.event_image_url || eventData.event_thumbnail || ''
+      };
+    } catch (error) {
+      console.error('Error formatting event data for backend:', error);
+      throw error;
+    }
+  }
+
+  // Parse event data from backend
+  static parseEventDataFromBackend(eventData) {
     if (!eventData) return null;
 
-    return {
-      id: eventData.id,
-      name: eventData.name || "",
-      description: eventData.description || "",
-      datetime: eventData.datetime || "",
-      date: new Date(eventData.datetime).toISOString().split("T")[0],
-      time: new Date(eventData.datetime).toTimeString().slice(0, 5),
-      location: eventData.location || "",
-      event_type: eventData.event_type || "",
-      event_status: eventData.event_status || "Upcoming",
-      organizer: eventData.organizer || "",
-      max_participants: eventData.max_participants || 0,
-      agenda: Array.isArray(eventData.agenda) ? eventData.agenda : [],
-      speaker: Array.isArray(eventData.speaker) ? eventData.speaker : [],
-      event_image_url: eventData.event_thumbnail || null,
-      totalParticipants: eventData.participants?.length || 0,
-    };
+    try {
+      // Parse the datetime string from backend
+      const datetime = new Date(eventData.datetime);
+      const date = datetime.toISOString().split('T')[0];
+      const time = datetime.toTimeString().slice(0, 5);
+
+      return {
+        id: eventData.id,
+        name: eventData.name || '',
+        description: eventData.description || '',
+        date: date,
+        time: time,
+        datetime: eventData.datetime, // Keep the original datetime for display
+        location: eventData.location || '',
+        event_type: eventData.event_type || '',
+        event_status: eventData.event_status || 'Upcoming',
+        organizer: eventData.organizer || '',
+        max_participants: eventData.max_participants || 0,
+        agenda: Array.isArray(eventData.agenda) ? eventData.agenda : [],
+        speaker: Array.isArray(eventData.speaker) ? eventData.speaker : [],
+        event_thumbnail: eventData.event_thumbnail || null,
+        participants: eventData.participants || [],
+        totalParticipants: eventData.participants?.length || 0,
+        views: eventData.views || 0
+      };
+    } catch (error) {
+      console.error('Error parsing event data from backend:', error);
+      throw new Error('Invalid event data from backend');
+    }
   }
 
   // Fetch all events
@@ -105,7 +164,7 @@ class EventsAPI {
     try {
       const response = await api.get("/events");
       return Array.isArray(response.data)
-        ? response.data.map((event) => this.parseEventData(event))
+        ? response.data.map(event => this.parseEventDataFromBackend(event))
         : [];
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -117,7 +176,7 @@ class EventsAPI {
   static async getEvent(eventId) {
     try {
       const response = await api.get(`/events/${eventId}`);
-      return this.parseEventData(response.data);
+      return this.parseEventDataFromBackend(response.data);
     } catch (error) {
       console.error("Error fetching event:", error);
       throw error;
@@ -134,24 +193,14 @@ class EventsAPI {
         eventImageUrl = await this.uploadImage(eventData.event_image);
       }
 
-      // Prepare event data
-      const postData = {
-        name: eventData.name,
-        description: eventData.description,
-        event_date: eventData.date,
-        event_time: eventData.time,
-        location: eventData.location,
-        event_type: eventData.event_type,
-        event_status: eventData.event_status,
-        organizer: eventData.organizer,
-        max_participants: parseInt(eventData.max_participants),
-        agenda: eventData.agenda,
-        speaker: eventData.speaker,
-        event_image_url: eventImageUrl || eventData.event_image_url || "",
-      };
+      // Prepare event data for backend
+      const postData = this.formatEventDataForBackend({
+        ...eventData,
+        event_image_url: eventImageUrl || eventData.event_image_url
+      });
 
       const response = await api.post("/events", postData);
-      return this.parseEventData(response.data);
+      return this.parseEventDataFromBackend(response.data);
     } catch (error) {
       console.error("Error creating event:", error);
       throw error;
@@ -169,27 +218,13 @@ class EventsAPI {
       }
 
       // Prepare update data
-      const updateData = {
-        name: eventData.name,
-        description: eventData.description,
-        event_date: eventData.date,
-        event_time: eventData.time,
-        location: eventData.location,
-        event_type: eventData.event_type,
-        event_status: eventData.event_status,
-        organizer: eventData.organizer,
-        max_participants: parseInt(eventData.max_participants),
-        agenda: eventData.agenda,
-        speaker: eventData.speaker,
-      };
-
-      // Only include image URL if a new image was uploaded
-      if (eventImageUrl) {
-        updateData.event_image_url = eventImageUrl;
-      }
+      const updateData = this.formatEventDataForBackend({
+        ...eventData,
+        event_image_url: eventImageUrl || eventData.event_image_url
+      });
 
       const response = await api.patch(`/events/${eventId}`, updateData);
-      return this.parseEventData(response.data);
+      return this.parseEventDataFromBackend(response.data);
     } catch (error) {
       console.error("Error updating event:", error);
       throw error;
@@ -207,53 +242,110 @@ class EventsAPI {
     }
   }
 
-  // Validate event data
+  // Validate event data before sending to backend
   static validateEventData(eventData) {
-    const requiredFields = [
-      "name",
-      "description",
-      "date",
-      "time",
-      "location",
-      "event_type",
-      "event_status",
-      "organizer",
-      "max_participants",
-    ];
+    try {
+      const requiredFields = [
+        "name",
+        "description",
+        "date",
+        "time",
+        "location",
+        "event_type",
+        "event_status",
+        "organizer",
+        "max_participants",
+      ];
 
-    const missingFields = requiredFields.filter(
-      (field) =>
-        !eventData[field] ||
-        (typeof eventData[field] === "string" && !eventData[field].trim()),
-    );
+      // Check for missing required fields
+      const missingFields = requiredFields.filter(
+        field => !eventData[field] ||
+          (typeof eventData[field] === "string" && !eventData[field].trim())
+      );
 
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+      }
+
+      // Validate event type
+      if (!this.EVENT_TYPES.includes(eventData.event_type)) {
+        throw new Error(`Invalid event type. Must be one of: ${this.EVENT_TYPES.join(", ")}`);
+      }
+
+      // Validate event status
+      if (!this.EVENT_STATUSES.includes(eventData.event_status)) {
+        throw new Error(`Invalid event status. Must be one of: ${this.EVENT_STATUSES.join(", ")}`);
+      }
+
+      // Validate max participants
+      const maxParticipants = parseInt(eventData.max_participants);
+      if (isNaN(maxParticipants) || maxParticipants < 1) {
+        throw new Error("Max participants must be a positive number");
+      }
+
+      // Validate speakers if present
+      if (eventData.speaker && Array.isArray(eventData.speaker)) {
+        const invalidSpeakers = eventData.speaker.some(
+          speaker => !speaker.name || !speaker.role
+        );
+        if (invalidSpeakers) {
+          throw new Error("All speakers must have a name and role");
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Event validation error:", error);
+      throw error;
     }
+  }
 
-    // Validate event type
-    const validTypes = ["Workshop", "Social", "Conference", "Seminar"];
-    if (!validTypes.includes(eventData.event_type)) {
-      throw new Error("Invalid event type");
+  // Format date for display (kept for backward compatibility)
+  static formatDateForDisplay(date) {
+    if (!date) return '';
+    try {
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return date;
     }
+  }
 
-    // Validate status
-    const validStatuses = ["Upcoming", "Ongoing", "Completed", "Cancelled"];
-    if (!validStatuses.includes(eventData.event_status)) {
-      throw new Error("Invalid event status");
+  // Format date and time for display (matches BlogPostList format)
+  static formatDateTimeForDisplay(dateString) {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting datetime:', error);
+      return dateString;
     }
+  }
 
-    // Validate max participants
-    if (
-      isNaN(parseInt(eventData.max_participants)) ||
-      parseInt(eventData.max_participants) < 0
-    ) {
-      throw new Error("Max participants must be a positive number");
+  // Format time for display
+  static formatTimeForDisplay(time) {
+    if (!time) return '';
+    try {
+      const [hours, minutes] = time.split(':');
+      return new Date(0, 0, 0, hours, minutes).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return time;
     }
-
-    return true;
   }
 }
 
 export default EventsAPI;
-

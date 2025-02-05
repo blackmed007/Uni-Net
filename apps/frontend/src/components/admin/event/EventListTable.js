@@ -1,24 +1,41 @@
 import React from 'react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tooltip, Button } from "@nextui-org/react";
 import { Eye, Edit2, XCircle, Trash2, Users, BarChart2, Play, Calendar, Briefcase, MapPin } from "lucide-react";
+import EventsAPI from "../../../services/events.api"; 
 
 const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
+  // Helper function to truncate text
   const truncateText = (text, maxLength) => {
     if (!text) return '';
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
 
+  // Format tooltip text with line breaks for readability
   const formatTooltipText = (text, maxLength = 90, lineLength = 30) => {
     if (!text) return '';
     const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     return truncatedText.replace(new RegExp(`(.{1,${lineLength}})`, 'g'), '$1\n');
   };
 
+  // Format event ID to match BlogPostList style
   const formatEventId = (id) => {
     if (!id) return '';
-    return id.toString().padStart(3, '0');
+    return id.toString().replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
   };
 
+  // Format datetime to match BlogPostList style
+  const formatEventDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Get status color based on event status
   const getEventStatusColor = (status) => {
     switch (status) {
       case 'Upcoming': return 'primary';
@@ -29,6 +46,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
     }
   };
 
+  // Get event type color
   const getEventTypeColor = (type) => {
     switch (type) {
       case 'Workshop': return 'primary';
@@ -39,6 +57,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
     }
   };
 
+  // Get icon for event type
   const getEventTypeIcon = (type) => {
     switch (type) {
       case 'Workshop': return Briefcase;
@@ -49,25 +68,23 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
+  // Table columns configuration with consistent sorting keys
   const columns = [
-    { name: '#ID', uid: 'id', width: '8%' },
-    { name: 'EVENT NAME', uid: 'name', width: '20%' },
-    { name: 'ORGANIZER', uid: 'organizer', width: '15%' },
-    { name: 'TYPE', uid: 'type', width: '10%' },
-    { name: 'DATE', uid: 'date', width: '12%' },
-    { name: 'STATUS', uid: 'status', width: '10%' },
-    { name: 'PARTICIPANTS', uid: 'participants', width: '10%' },
-    { name: 'TOTAL VIEWS', uid: 'totalViews', width: '10%' },
-    { name: 'ACTIONS', uid: 'actions', width: '15%' },
+    { name: '#ID', uid: 'id', width: '8%', sortable: true },
+    { name: 'EVENT NAME', uid: 'name', width: '20%', sortable: true },
+    { name: 'ORGANIZER', uid: 'organizer', width: '15%', sortable: true },
+    { name: 'TYPE', uid: 'event_type', width: '10%', sortable: true },
+    { name: 'DATE', uid: 'datetime', width: '12%', sortable: true, align: 'center' },
+    { name: 'STATUS', uid: 'event_status', width: '10%', sortable: true },
+    { name: 'PARTICIPANTS', uid: 'totalParticipants', width: '10%', sortable: true },
+    { name: 'TOTAL VIEWS', uid: 'views', width: '10%', sortable: true },
+    { name: 'ACTIONS', uid: 'actions', width: '15%', sortable: false },
   ];
 
+  // Render cell content based on column type
   const renderCell = (event, columnKey) => {
     const cellValue = event[columnKey];
+
     switch (columnKey) {
       case 'id':
         return (
@@ -75,8 +92,9 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             #{formatEventId(cellValue)}
           </span>
         );
+
       case 'name':
-        const EventTypeIcon = getEventTypeIcon(event.type);
+        const EventTypeIcon = getEventTypeIcon(event.event_type);
         return (
           <Tooltip
             content={
@@ -108,6 +126,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             </div>
           </Tooltip>
         );
+
       case 'organizer':
         return (
           <Tooltip 
@@ -118,25 +137,32 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             <span>{truncateText(cellValue, 20)}</span>
           </Tooltip>
         );
-        case 'type':
-  const typeColor = getEventTypeColor(event.type);
-  return (
-    <Chip
-      className="capitalize text-neutral-50"  // Very light, soft white
-      color={typeColor}
-      size="sm"
-      variant="flat"
-    >
-      {cellValue || 'N/A'}
-    </Chip>
-  );
-      case 'date':
-        return <span className="whitespace-nowrap">{formatDate(cellValue)}</span>;
-      case 'status':
-        const statusColor = getEventStatusColor(event.status);
+
+      case 'event_type':
+        const typeColor = getEventTypeColor(cellValue);
         return (
           <Chip
-            className="capitalize"
+            className="capitalize text-neutral-50"
+            color={typeColor}
+            size="sm"
+            variant="flat"
+          >
+            {cellValue || 'N/A'}
+          </Chip>
+        );
+
+      case 'datetime':
+        return (
+          <span className="text-small whitespace-nowrap">
+            {formatEventDateTime(cellValue)}
+          </span>
+        );
+
+      case 'event_status':
+        const statusColor = getEventStatusColor(cellValue);
+        return (
+          <Chip
+            className="capitalize text-neutral-50"
             color={statusColor}
             size="sm"
             variant="flat"
@@ -144,80 +170,125 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             {cellValue || 'N/A'}
           </Chip>
         );
-      case 'participants':
+
+      case 'totalParticipants':
         return (
           <div className="flex items-center">
             <Users className="mr-2" size={16} />
-            <span>{event.participants ? event.participants.length : 0} / {event.maxParticipants || 'N/A'}</span>
+            <span>{event.totalParticipants || 0} / {event.max_participants || 'N/A'}</span>
           </div>
         );
-      case 'totalViews':
+
+      case 'views':
         return (
           <div className="flex items-center">
             <BarChart2 className="mr-2" size={16} />
-            <span>{event.totalViews || 0}</span>
+            <span>{event.views || 0}</span>
           </div>
         );
+
       case 'actions':
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-center">
             <Tooltip content="View Details">
-              <Button isIconOnly size="sm" variant="light" onPress={() => onEventAction('view', event)}>
+              <Button 
+                isIconOnly 
+                size="sm" 
+                variant="light" 
+                onPress={() => onEventAction('view', event)}
+              >
                 <Eye size={20} />
               </Button>
             </Tooltip>
+
             <Tooltip content="Edit Event">
-              <Button isIconOnly size="sm" variant="light" onPress={() => onEventAction('edit', event)}>
+              <Button 
+                isIconOnly 
+                size="sm" 
+                variant="light" 
+                onPress={() => onEventAction('edit', event)}
+              >
                 <Edit2 size={20} />
               </Button>
             </Tooltip>
-            {event.status !== 'Cancelled' ? (
+
+            {event.event_status !== 'Cancelled' ? (
               <Tooltip content="Cancel Event">
-                <Button isIconOnly size="sm" variant="light" color="warning" onPress={() => onEventAction('cancel', event)}>
+                <Button 
+                  isIconOnly 
+                  size="sm" 
+                  variant="light" 
+                  color="warning" 
+                  onPress={() => onEventAction('cancel', event)}
+                >
                   <XCircle size={20} />
                 </Button>
               </Tooltip>
             ) : (
               <Tooltip content="Make Ongoing">
-                <Button isIconOnly size="sm" variant="light" color="success" onPress={() => onEventAction('ongoing', event)}>
+                <Button 
+                  isIconOnly 
+                  size="sm" 
+                  variant="light" 
+                  color="success" 
+                  onPress={() => onEventAction('ongoing', event)}
+                >
                   <Play size={20} />
                 </Button>
               </Tooltip>
             )}
+
             <Tooltip content="Delete Event">
-              <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => onEventAction('delete', event)}>
+              <Button 
+                isIconOnly 
+                size="sm" 
+                variant="light" 
+                color="danger" 
+                onPress={() => onEventAction('delete', event)}
+              >
                 <Trash2 size={20} />
               </Button>
             </Tooltip>
           </div>
         );
+
       default:
         return cellValue || 'N/A';
     }
   };
 
   return (
-    <Table aria-label="Event list table">
+    <Table aria-label="Event list table" className="min-w-full">
       <TableHeader columns={columns}>
         {(column) => (
           <TableColumn 
             key={column.uid} 
-            align={column.uid === 'actions' ? 'center' : 'start'}
+            align={column.align || (column.uid === 'actions' ? 'center' : 'start')}
             width={column.width}
-            onClick={() => column.uid !== 'actions' && onSort(column.uid)}
-            style={{ cursor: column.uid !== 'actions' ? 'pointer' : 'default' }}
+            onClick={() => column.sortable && onSort(column.uid)}
+            style={{ cursor: column.sortable ? 'pointer' : 'default' }}
+            allowsSorting={column.sortable}
           >
             {column.name}
             {sortConfig.key === column.uid && (
-              <span>{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>
+              <span className="ml-2">
+                {sortConfig.direction === 'ascending' ? '▲' : '▼'}
+              </span>
             )}
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody items={events}>
+      <TableBody 
+        items={events}
+        emptyContent="No events found"
+      >
         {(item) => (
           <TableRow key={item.id}>
-            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+            {(columnKey) => (
+              <TableCell>
+                {renderCell(item, columnKey)}
+              </TableCell>
+            )}
           </TableRow>
         )}
       </TableBody>
