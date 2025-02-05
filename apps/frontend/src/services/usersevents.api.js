@@ -8,6 +8,20 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem('access_token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => response,
@@ -48,7 +62,8 @@ const formatEventData = (event) => {
       maxParticipants: event.max_participants,
       participants: event.participants || [],
       agenda: event.agenda || [],
-      speaker: event.speaker || []
+      speaker: event.speaker || [],
+      joinedAt: event.joinedAt
     };
   } catch (error) {
     console.error('Error formatting event data:', error);
@@ -90,9 +105,9 @@ const userEventsApi = {
   // Get user's joined events
   getUserEvents: async () => {
     try {
-      const response = await api.get('/users/events');
-      const eventsArray = ensureArray(response.data);
-      return eventsArray.map(formatEventData).filter(Boolean);
+      const response = await api.get('/users/me');
+      const userEvents = response.data.events || [];
+      return userEvents.map(formatEventData).filter(Boolean);
     } catch (error) {
       console.error('Error in getUserEvents:', error);
       return []; // Return empty array instead of throwing
@@ -109,6 +124,17 @@ const userEventsApi = {
     } catch (error) {
       console.error('Error in joinEvent:', error);
       throw new Error('Failed to join event');
+    }
+  },
+
+  // Leave an event
+  leaveEvent: async (eventId) => {
+    try {
+      const response = await api.delete(`/users/events/${eventId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error in leaveEvent:', error);
+      throw new Error('Failed to leave event');
     }
   },
 
