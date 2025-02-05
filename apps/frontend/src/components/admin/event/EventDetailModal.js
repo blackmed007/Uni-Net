@@ -157,7 +157,7 @@ const EventDetailModal = ({ isOpen, onClose, event }) => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  {/* <div className="flex items-center space-x-2">
                     <BarChart2 className="text-orange-400" size={20} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-400">Total Views</p>
@@ -165,7 +165,7 @@ const EventDetailModal = ({ isOpen, onClose, event }) => {
                         {event.views || 0} view{event.views !== 1 ? 's' : ''}
                       </p>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </CardBody>
             </Card>
