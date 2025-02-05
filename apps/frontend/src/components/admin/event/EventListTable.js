@@ -1,6 +1,27 @@
 import React from 'react';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tooltip, Button } from "@nextui-org/react";
-import { Eye, Edit2, XCircle, Trash2, Users, BarChart2, Play, Calendar, Briefcase, MapPin } from "lucide-react";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Chip,
+  Tooltip,
+  Button,
+} from "@nextui-org/react";
+import {
+  Eye,
+  Edit2,
+  XCircle,
+  Trash2,
+  Users,
+  BarChart2,
+  Play,
+  Calendar,
+  Briefcase,
+  MapPin,
+} from "lucide-react";
 import EventsAPI from "../../../services/events.api"; 
 
 const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
@@ -20,7 +41,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
   // Format event ID to match BlogPostList style
   const formatEventId = (id) => {
     if (!id) return '';
-    return id.toString().replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+    return id.toString().replace(/[^a-zA-Z0-9]/g, '').substring(0, 5);
   };
 
   // Format datetime to match BlogPostList style
@@ -31,7 +52,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -70,14 +91,14 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
 
   // Table columns configuration with consistent sorting keys
   const columns = [
-    { name: '#ID', uid: 'id', width: '8%', sortable: true },
-    { name: 'EVENT NAME', uid: 'name', width: '20%', sortable: true },
-    { name: 'ORGANIZER', uid: 'organizer', width: '15%', sortable: true },
-    { name: 'TYPE', uid: 'event_type', width: '10%', sortable: true },
-    { name: 'DATE', uid: 'datetime', width: '12%', sortable: true, align: 'center' },
-    { name: 'STATUS', uid: 'event_status', width: '10%', sortable: true },
-    { name: 'PARTICIPANTS', uid: 'totalParticipants', width: '10%', sortable: true },
-    { name: 'TOTAL VIEWS', uid: 'views', width: '10%', sortable: true },
+    { name: '#ID', uid: 'id', width: '8%', sortable: false },
+    { name: 'EVENT NAME', uid: 'name', width: '20%', sortable: false },
+    { name: 'ORGANIZER', uid: 'organizer', width: '15%', sortable: false },
+    { name: 'TYPE', uid: 'event_type', width: '10%', sortable: false },
+    { name: 'DATE', uid: 'datetime', width: '12%', sortable: false, align: 'center' },
+    { name: 'STATUS', uid: 'event_status', width: '10%', sortable: false },
+    { name: 'PARTICIPANTS', uid: 'totalParticipants', width: '10%', sortable: false},
+    { name: 'TOTAL VIEWS', uid: 'views', width: '10%', sortable: false},
     { name: 'ACTIONS', uid: 'actions', width: '15%', sortable: false },
   ];
 
@@ -93,7 +114,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
           </span>
         );
 
-      case 'name':
+      case 'name': {
         const EventTypeIcon = getEventTypeIcon(event.event_type);
         return (
           <Tooltip
@@ -113,19 +134,21 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             showArrow
             placement="top"
           >
-            <div className="flex flex-col">
-              <p className="text-bold text-small capitalize flex items-center">
-                <EventTypeIcon className="mr-2" size={16} />
-                {truncateText(cellValue, 20)}
+            {/* Added container with truncate and max-w to prevent overflow */}
+            <div className="flex flex-col truncate max-w-full">
+              <p className="text-bold text-small capitalize flex items-center truncate">
+                <EventTypeIcon className="mr-2 flex-shrink-0" size={16} />
+                {truncateText(cellValue, 15)}
               </p>
               {event.description && (
-                <p className="text-bold text-tiny capitalize text-default-400">
-                  {truncateText(event.description, 25)}
+                <p className="text-bold text-tiny capitalize text-default-400 truncate">
+                  {truncateText(event.description, 10)}
                 </p>
               )}
             </div>
           </Tooltip>
         );
+      }
 
       case 'organizer':
         return (
@@ -134,7 +157,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             isDisabled={cellValue.length <= 20}
             showArrow
           >
-            <span>{truncateText(cellValue, 20)}</span>
+            <span className="truncate max-w-[150px]">{truncateText(cellValue, 10)}</span>
           </Tooltip>
         );
 
@@ -151,12 +174,18 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
           </Chip>
         );
 
-      case 'datetime':
-        return (
-          <span className="text-small whitespace-nowrap">
-            {formatEventDateTime(cellValue)}
-          </span>
-        );
+        case 'datetime': {
+          const formattedDate = formatEventDateTime(cellValue);
+          return (
+            <Tooltip content={formattedDate} showArrow>
+              <span className="text-small whitespace-nowrap">
+                {truncateText(formattedDate, 15)}
+              </span>
+            </Tooltip>
+          );
+        }
+        
+        
 
       case 'event_status':
         const statusColor = getEventStatusColor(cellValue);
@@ -175,7 +204,9 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
         return (
           <div className="flex items-center">
             <Users className="mr-2" size={16} />
-            <span>{event.totalParticipants || 0} / {event.max_participants || 'N/A'}</span>
+            <span>
+              {event.totalParticipants || 0} / {event.max_participants || 'N/A'}
+            </span>
           </div>
         );
 
@@ -258,7 +289,11 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
   };
 
   return (
-    <Table aria-label="Event list table" className="min-w-full">
+    // Adding "table-fixed" to enforce fixed layout and ensure columns honor width settings.
+    <Table
+      aria-label="Event list table"
+      className="min-w-full table-fixed"
+    >
       <TableHeader columns={columns}>
         {(column) => (
           <TableColumn 
