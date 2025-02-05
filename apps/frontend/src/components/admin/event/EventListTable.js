@@ -16,7 +16,6 @@ import {
   XCircle,
   Trash2,
   Users,
-  BarChart2,
   Play,
   Calendar,
   Briefcase,
@@ -137,7 +136,6 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
     { name: 'DATE', uid: 'datetime', width: '12%', sortable: false, align: 'center' },
     { name: 'STATUS', uid: 'event_status', width: '10%', sortable: false },
     { name: 'PARTICIPANTS', uid: 'totalParticipants', width: '10%', sortable: false},
-    { name: 'TOTAL VIEWS', uid: 'views', width: '10%', sortable: false},
     { name: 'ACTIONS', uid: 'actions', width: '15%', sortable: false },
   ];
 
@@ -176,11 +174,11 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             <div className="flex flex-col truncate max-w-full">
               <p className="text-bold text-small capitalize flex items-center truncate">
                 <EventTypeIcon className="mr-2 flex-shrink-0" size={16} />
-                {truncateText(cellValue, 10)}
+                {truncateText(cellValue, 15)}
               </p>
               {event.description && (
                 <p className="text-bold text-tiny capitalize text-default-400 truncate">
-                  {truncateText(event.description, 10)}
+                  {truncateText(event.description, 15)}
                 </p>
               )}
             </div>
@@ -195,7 +193,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
             isDisabled={cellValue.length <= 20}
             showArrow
           >
-            <span className="truncate max-w-[150px]">{truncateText(cellValue, 8)}</span>
+            <span className="truncate max-w-[150px]">{truncateText(cellValue, 12)}</span>
           </Tooltip>
         );
 
@@ -217,7 +215,7 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
         return (
           <Tooltip content={formattedDate} showArrow>
             <span className="text-small whitespace-nowrap">
-              {truncateText(formattedDate, 12)}
+              {truncateText(formattedDate, 22)}
             </span>
           </Tooltip>
         );
@@ -241,16 +239,8 @@ const EventListTable = ({ events, onEventAction, onSort, sortConfig }) => {
           <div className="flex items-center">
             <Users className="mr-2" size={16} />
             <span>
-              {event.totalParticipants || 0} / {event.max_participants || 'N/A'}
+              {event.participants?.length || 0} / {event.max_participants || 'N/A'}
             </span>
-          </div>
-        );
-
-      case 'views':
-        return (
-          <div className="flex items-center">
-            <BarChart2 className="mr-2" size={16} />
-            <span>{event.views || 0}</span>
           </div>
         );
 

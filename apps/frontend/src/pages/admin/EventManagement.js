@@ -294,13 +294,6 @@ const EventManagement = () => {
           startContent={<Search className="text-gray-400" size={20} />}
           className="w-full sm:w-1/2"
         />
-        {/* <Button 
-          color="primary" 
-          onPress={onFilterOpen} 
-          startContent={<Filter size={20} />}
-        >
-          Filters
-        </Button> */}
         <Button 
           color="success" 
           onPress={onCreateOpen} 

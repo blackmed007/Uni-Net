@@ -19,15 +19,58 @@ import UserSidebar from './components/user/UserSidebar';
 import UserNavbar from './components/user/UserNavbar';
 import useDarkMode from './hooks/useDarkMode';
 
+// Protected Route for authenticated users
 const ProtectedRoute = ({ children }) => {
   const token = sessionStorage.getItem('access_token');
-  const userData = localStorage.getItem('userData');
+  const userDataString = localStorage.getItem('userData');
   
-  if (!token || !userData) {
-    return <Navigate to="/login" />;
+  if (!token || !userDataString) {
+    return <Navigate to="/login" replace />;
   }
   
   return children;
+};
+
+// Admin Route for admin-only access
+const AdminRoute = ({ children }) => {
+  const token = sessionStorage.getItem('access_token');
+  const userDataString = localStorage.getItem('userData');
+  
+  if (!token || !userDataString) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  try {
+    const userData = JSON.parse(userDataString);
+    if (!userData || userData.role?.toString().toLowerCase() !== 'admin') {
+      return <Navigate to="/403" replace />;
+    }
+    return children;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    return <Navigate to="/login" replace />;
+  }
+};
+
+// User Route for user-only access
+const UserRoute = ({ children }) => {
+  const token = sessionStorage.getItem('access_token');
+  const userDataString = localStorage.getItem('userData');
+  
+  if (!token || !userDataString) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  try {
+    const userData = JSON.parse(userDataString);
+    if (!userData || userData.role?.toString().toLowerCase() !== 'user') {
+      return <Navigate to="/403" replace />;
+    }
+    return children;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    return <Navigate to="/login" replace />;
+  }
 };
 
 const UserLayout = ({ children }) => {
@@ -83,17 +126,17 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Protected admin route */}
+            {/* Protected admin routes */}
             <Route path="/admin/*" element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <AdminDashboard />
-              </ProtectedRoute>
+              </AdminRoute>
             } />
 
             {/* Protected user routes */}
             <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/user/*" element={
-              <ProtectedRoute>
+              <UserRoute>
                 <UserLayout>
                   <Routes>
                     <Route path="dashboard" element={<UserDashboardPage />} />
@@ -105,7 +148,7 @@ function App() {
                     <Route path="*" element={<Error status={404} />} />
                   </Routes>
                 </UserLayout>
-              </ProtectedRoute>
+              </UserRoute>
             } />
 
             {/* Catch-all route for undefined paths */}
