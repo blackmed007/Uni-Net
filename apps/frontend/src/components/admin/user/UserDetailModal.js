@@ -31,7 +31,7 @@ const UserDetailModal = ({
   user, 
   onEditUser, 
   onDeleteUser, 
-  onBanUser, 
+  onSuspendUser, 
   onActivateUser 
 }) => {
   const [activeTab, setActiveTab] = useState("info");
@@ -168,7 +168,7 @@ const UserDetailModal = ({
                 <div className="flex space-x-2">
                   <ActionButton icon={Edit2} tooltip="Edit User" onClick={() => { onClose(); onEditUser(); }} />
                   {userDetails?.status === 'Active' ? (
-                    <ActionButton icon={Ban} tooltip="Suspend User" onClick={() => onBanUser(user.id)} color="warning" />
+                    <ActionButton icon={Ban} tooltip="Suspend User" onClick={() => onSuspendUser(user.id)} color="warning" />
                   ) : (
                     <ActionButton icon={UserCheck} tooltip="Activate User" onClick={() => onActivateUser(user.id)} color="success" />
                   )}

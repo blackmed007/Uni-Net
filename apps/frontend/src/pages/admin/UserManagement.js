@@ -222,6 +222,7 @@ const UserManagement = () => {
       
       await fetchData();
       onConfirmClose();
+      onUserDetailClose(); // Close the detail modal if it's open
     } catch (error) {
       console.error('Error performing action:', error);
       setError(error.response?.data?.message || 'Failed to perform action');
@@ -355,19 +356,19 @@ const UserManagement = () => {
         onDeleteUser={(userId) => {
           onUserDetailClose();
           setActionType('delete');
-          setSelectedUser({ id: userId });
+          setSelectedUser({ ...selectedUser, id: userId });
           onConfirmOpen();
         }}
         onSuspendUser={(userId) => {
           onUserDetailClose();
           setActionType('suspend');
-          setSelectedUser({ id: userId });
+          setSelectedUser({ ...selectedUser, id: userId });
           onConfirmOpen();
         }}
         onActivateUser={(userId) => {
           onUserDetailClose();
           setActionType('activate');
-          setSelectedUser({ id: userId });
+          setSelectedUser({ ...selectedUser, id: userId });
           onConfirmOpen();
         }}
       />
@@ -388,7 +389,6 @@ const UserManagement = () => {
         onSave={handleEditUser}
         universities={universities}
         cities={cities}
-        error={error}
       />
 
       <UserConfirmActionModal
@@ -396,7 +396,6 @@ const UserManagement = () => {
         onClose={onConfirmClose}
         onConfirm={handleConfirmAction}
         actionType={actionType}
-        userName={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}`.trim() : ''}
       />
 
       <CreateUserModal
@@ -405,7 +404,6 @@ const UserManagement = () => {
         onSave={handleCreateUser}
         universities={universities}
         cities={cities}
-        error={error}
       />
     </div>
   );
