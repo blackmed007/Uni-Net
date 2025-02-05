@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/react";
+import {
+  Navbar,
+  NavbarBrand,
+  NavbarContent,
+  NavbarItem,
+  Button,
+  Avatar,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure
+} from "@nextui-org/react";
 import { Bell, Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileAPI from '../../services/profile.api';
@@ -120,6 +137,7 @@ const CustomNavbar = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.div
+          key="navbar" // Unique key for the navbar container
           initial={{ opacity: 0, y: -100 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -100 }}
@@ -246,6 +264,7 @@ const CustomNavbar = () => {
 
       {/* Logout Modal */}
       <Modal
+        key="logoutModal" // Unique key for the modal
         isOpen={isOpen}
         onClose={onClose}
         classNames={{

@@ -25,9 +25,9 @@ const UserBlogPage = () => {
   const navigate = useNavigate();
 
   const truncateText = (text, maxLength) => {
-    if (!text) return '';
+    if (!text) return "";
     if (text.length > maxLength) {
-      return text.substring(0, maxLength) + '...';
+      return text.substring(0, maxLength) + "...";
     }
     return text;
   };
@@ -37,7 +37,7 @@ const UserBlogPage = () => {
     setUser(userData);
 
     const storedBookmarks = JSON.parse(
-      localStorage.getItem("bookmarkedPosts") || "[]",
+      localStorage.getItem("bookmarkedPosts") || "[]"
     );
     setBookmarkedPosts(storedBookmarks);
 
@@ -48,7 +48,7 @@ const UserBlogPage = () => {
     try {
       setIsLoading(true);
       const posts = await BlogsAPI.getBlogs();
-      const publishedPosts = posts.filter(post => post.status === "Published");
+      const publishedPosts = posts.filter((post) => post.status === "Published");
       setBlogPosts(publishedPosts);
       setError(null);
     } catch (err) {
@@ -64,7 +64,7 @@ const UserBlogPage = () => {
     (post) =>
       (post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.author.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (activeTab === "all" || bookmarkedPosts.includes(post.id)),
+      (activeTab === "all" || bookmarkedPosts.includes(post.id))
   );
 
   const handleSearch = (e) => {
@@ -86,8 +86,12 @@ const UserBlogPage = () => {
     window.open(`/blog/${postId}`, "_blank");
   };
 
+  // Updated FeaturedPost component:
+  // - Using as="div" to avoid nested button issue.
+  // - Added "text-center" to the text container.
   const FeaturedPost = ({ post }) => (
     <Card
+      as="div" // Force Card to render as a div instead of a button
       isPressable
       className="w-[700px] max-w-full bg-gradient-to-b from-gray-900 to-black border border-gray-800 text-white p-6 mb-8 cursor-pointer hover:from-gray-800 hover:to-gray-900 transition-all duration-300 shadow-2xl mx-auto lg:mx-0"
       onClick={() => handlePostClick(post.id)}
@@ -100,7 +104,7 @@ const UserBlogPage = () => {
             className="w-full h-full object-cover rounded-lg"
           />
         </div>
-        <div className="w-full lg:w-3/4 flex flex-col justify-between">
+        <div className="w-full lg:w-3/4 flex flex-col justify-between text-center">
           <div>
             <p className="text-sm mb-2">
               {new Date(post.createdAt).toLocaleDateString()} • Blog
@@ -144,9 +148,13 @@ const UserBlogPage = () => {
       </div>
     </Card>
   );
-  
+
+  // Updated BlogPostCard component:
+  // - Using as="div" to avoid nested button issue.
+  // - Added "text-center" to the text container.
   const BlogPostCard = ({ post }) => (
     <Card
+      as="div" // Force Card to render as a div
       isPressable
       className="h-auto min-h-[24rem] lg:h-96 bg-gradient-to-b from-gray-900 to-black border border-gray-800 text-white p-3 cursor-pointer hover:from-gray-800 hover:to-gray-900 transition-all duration-300 shadow-xl flex flex-col w-full"
       onClick={() => handlePostClick(post.id)}
@@ -158,14 +166,14 @@ const UserBlogPage = () => {
           className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
-      <div className="flex-grow flex flex-col">
+      <div className="flex-grow flex flex-col text-center">
         <h3 className="text-lg lg:text-xl font-bold mb-2 line-clamp-2">
           {truncateText(post.title, 10)}
         </h3>
         <p className="mb-4 flex-grow line-clamp-2 text-gray-300">
           {truncateText(post.excerpt, 10)}
         </p>
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mt-auto w-full text-sm gap-2 lg:gap-20">
+        <div className="flex flex-col lg:flex-row items-center justify-between mt-auto w-full text-sm gap-2 lg:gap-20">
           <span className="text-gray-400 flex-shrink-0">
             {new Date(post.createdAt).toLocaleDateString()} • Blog
           </span>
