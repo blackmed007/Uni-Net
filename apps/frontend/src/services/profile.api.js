@@ -118,6 +118,20 @@ class ProfileAPI {
         : userData.profile_url,
     };
 
+    // Handle university
+    if (userData.universityId) {
+      formattedData.universityId = userData.universityId;
+    } else if (userData.university) {
+      formattedData.universityId = userData.university;
+    }
+
+    // Handle city
+    if (userData.cityId) {
+      formattedData.cityId = userData.cityId;
+    } else if (userData.city) {
+      formattedData.cityId = userData.city;
+    }
+
     // Remove undefined values
     Object.keys(formattedData).forEach(
       key => formattedData[key] === undefined && delete formattedData[key]
@@ -138,7 +152,13 @@ class ProfileAPI {
       profileImage: userData.profile_url,
       role: userData.role,
       status: userData.status === true ? 'Active' : 'Suspended',
-      createdAt: userData.createdAt
+      createdAt: userData.createdAt,
+      
+      // Add university and city details
+      universityId: userData.universityId,
+      cityId: userData.cityId,
+      university: userData.university?.name || userData.university,
+      city: userData.city?.name || userData.city
     };
   }
 }

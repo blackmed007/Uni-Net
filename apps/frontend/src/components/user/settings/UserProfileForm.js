@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Input, Button, Avatar, Select, SelectItem } from "@nextui-org/react";
 import { User, Mail, Building, MapPin, Upload } from "lucide-react";
 import { motion } from "framer-motion";
-import UsersAPI from '../../../services/users.api';
+import { toast } from 'react-hot-toast';
+import ProfileAPI from '../../../services/profile.api';
 import LocationAPI from '../../../services/location.api';
 
 const UserProfileForm = ({ user, onSave }) => {
@@ -19,6 +20,7 @@ const UserProfileForm = ({ user, onSave }) => {
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -31,7 +33,7 @@ const UserProfileForm = ({ user, onSave }) => {
 
         // If user prop is provided, fetch full user details
         if (user && user.id) {
-          const userData = await UsersAPI.getUser(user.id);
+          const userData = await ProfileAPI.getCurrentProfile();
           
           // Find matching university and city
           const matchedUniversity = universitiesData.find(
@@ -50,13 +52,14 @@ const UserProfileForm = ({ user, onSave }) => {
             email: userData.email || '',
             university: matchedUniversity ? matchedUniversity.name : '',
             city: matchedCity ? matchedCity.name : '',
-            profileImage: userData.profile_url || '',
+            profileImage: userData.profileImage || '',
             universityId: matchedUniversity ? matchedUniversity.id : null,
             cityId: matchedCity ? matchedCity.id : null
           });
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
+        toast.error('Failed to load profile data');
       } finally {
         setIsLoading(false);
       }
@@ -88,6 +91,20 @@ const UserProfileForm = ({ user, onSave }) => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type and size
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Invalid file type. Please upload JPEG, PNG, or GIF.');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size should be less than 5MB.');
+        return;
+      }
+
+      setSelectedFile(file);
+      // Preview the image
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, profileImage: reader.result }));
@@ -98,32 +115,51 @@ const UserProfileForm = ({ user, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    if (!user || !user.id) return;
+
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      // Prepare user data for update
-      const updatedUserData = {
-        ...user,
+      // Prepare update payload
+      const updatePayload = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        cityId: formData.cityId,
         universityId: formData.universityId,
-        profile_url: formData.profileImage instanceof File ? formData.profileImage : undefined
+        cityId: formData.cityId
       };
 
-      // Update user via API
-      const updatedUser = await UsersAPI.updateUser(user.id, updatedUserData);
+      // Update profile with or without image
+      const updatedProfile = await ProfileAPI.updateFullProfile(
+        user.id, 
+        updatePayload, 
+        selectedFile
+      );
       
       // Call onSave prop with updated user data
-      onSave(updatedUser);
+      onSave(updatedProfile);
+      
+      // Clear selected file
+      setSelectedFile(null);
+      
+      // Show success message
+      toast.success('Profile updated successfully');
+      
     } catch (error) {
-      console.error('Error updating user:', error);
-      // Optionally, show error notification
+      console.error('Error updating profile:', error);
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (isLoading) {
-    return <div>Loading...</div>; // You might want to replace this with a proper loader
+    return <div className="text-center text-white">Loading...</div>;
   }
 
   return (
@@ -236,6 +272,7 @@ const UserProfileForm = ({ user, onSave }) => {
       <Button
         type="submit"
         color="primary"
+        isLoading={isLoading}
         className="w-full bg-gradient-to-r from-purple-900 to-purple-700 text-white hover:opacity-90"
       >
         Save Profile
