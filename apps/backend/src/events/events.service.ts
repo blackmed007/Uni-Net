@@ -23,14 +23,13 @@ export class EventService {
     timestamp: true,
   });
 
-  async create(createEventDto: CreateEventDto) {
+  async create(userId: string, createEventDto: CreateEventDto) {
     try {
       const { event_date, event_time, speaker, ...eventDto } = createEventDto;
 
       const formattedDate = new Date(
         `${event_date}T${event_time}`,
       ).toISOString();
-      console.log(speaker);
 
       const eventData = {
         ...eventDto,
@@ -51,9 +50,17 @@ export class EventService {
         event_thumbnail: eventData.event_image_url,
       };
 
-      return await this.prisma.event.create({
+      const event = await this.prisma.event.create({
         data: newData,
       });
+
+      await this.prisma.userActivity.create({
+        data: {
+          userId,
+          activity: `Event created: ${event.name}`,
+        },
+      });
+      return event;
     } catch (error) {
       this.logger.error(`${error} - Error while creating event`);
 
@@ -130,13 +137,20 @@ export class EventService {
     }
   }
 
-  async update(id: string, updateEventDto: UpdateEventDto) {
+  async update(userId: string, id: string, updateEventDto: UpdateEventDto) {
     try {
       const event = await this.prisma.event.update({
         where: {
           id,
         },
         data: updateEventDto,
+      });
+
+      await this.prisma.userActivity.create({
+        data: {
+          userId,
+          activity: `Event updated: ${event.name}`,
+        },
       });
 
       return event;
