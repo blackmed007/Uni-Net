@@ -9,6 +9,8 @@ import {
   Delete,
   UploadedFile,
   InternalServerErrorException,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
@@ -16,6 +18,8 @@ import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImagesService } from 'src/images/images.service';
+import { Request as ExpressRequest } from 'express';
+import { JwtGuard } from 'src/auth/guard';
 
 @Controller('blogs')
 export class BlogsController {
@@ -55,8 +59,13 @@ export class BlogsController {
   }
 
   @Post()
-  async create(@Body() createBlogDto: CreateBlogDto) {
-    return this.blogsService.create(createBlogDto);
+  @UseGuards(JwtGuard)
+  async create(
+    @Request() req: ExpressRequest,
+    @Body() createBlogDto: CreateBlogDto,
+  ) {
+    const userId = (req.user as { id: string }).id;
+    return this.blogsService.create(userId, createBlogDto);
   }
 
   @Get()
