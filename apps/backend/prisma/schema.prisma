@@ -45,6 +45,9 @@ model Event {
   event_thumbnail  String
 
   participants UsersOnEvents[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @map("updatedAt")
 }
 
 model UsersOnEvents {
