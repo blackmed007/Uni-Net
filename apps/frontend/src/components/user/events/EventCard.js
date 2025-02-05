@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardBody, Button, Chip } from "@nextui-org/react";
 import { Clock, MapPin, Users, Bookmark, Check, User } from "lucide-react";
 import { motion } from "framer-motion";
+import PropTypes from 'prop-types';
 
 const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJoined }) => {
   const cardVariants = {
@@ -92,10 +93,17 @@ const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJ
             <p className="text-gray-300 text-sm mb-4">
               {truncateText(event.description, 30)}
             </p>
-            <div className="flex items-center text-sm text-gray-400 mb-2">
-              <Clock className="mr-2 text-gray-500" size={16} />
-              <span>{event.time || 'Time not specified'}</span>
-            </div>
+            
+              <div className="flex items-center text-sm text-gray-400 mb-2">
+                <Clock className="mr-2 text-gray-500" size={16} />
+                <span>
+                  {new Date(event.date).toLocaleDateString('en-US', {
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric'
+                  })} • {event.time || 'Time not specified'}
+                </span>
+              </div>
             <div className="flex items-center text-sm text-gray-400 mb-2">
               <MapPin className="mr-2 text-gray-500" size={16} />
               <span>{truncateText(event.location, 20)}</span>
@@ -125,6 +133,27 @@ const EventCard = ({ event, onViewDetails, onJoin, onBookmark, isBookmarked, isJ
       </Card>
     </motion.div>
   );
+};
+
+EventCard.propTypes = {
+  event: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    date: PropTypes.string.isRequired,
+    time: PropTypes.string,
+    location: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    image: PropTypes.string.isRequired,
+    organizer: PropTypes.string.isRequired,
+    participants: PropTypes.array,
+    maxParticipants: PropTypes.number.isRequired,
+  }).isRequired,
+  onViewDetails: PropTypes.func.isRequired,
+  onJoin: PropTypes.func.isRequired,
+  onBookmark: PropTypes.func.isRequired,
+  isBookmarked: PropTypes.bool,
+  isJoined: PropTypes.bool,
 };
 
 export default EventCard;
