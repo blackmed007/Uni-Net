@@ -98,6 +98,15 @@ export class UsersController {
       'You do not have permission to join this event',
     );
   }
+  @Post('leave-event')
+  @UseGuards(JwtGuard)
+  async leaveEvent(
+    @Request() req: ExpressRequest,
+    @Body() leaveEventDto: JoinEventDto,
+  ) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.leaveEvent(userId, leaveEventDto);
+  }
 
   @Get()
   findAll() {
