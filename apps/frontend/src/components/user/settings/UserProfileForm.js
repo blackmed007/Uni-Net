@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Input, Button, Avatar, Select, SelectItem } from "@nextui-org/react";
 import { User, Mail, Building, MapPin, Upload } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from 'react-hot-toast';
+import ProfileAPI from '../../../services/profile.api';
+import LocationAPI from '../../../services/location.api';
 
 const UserProfileForm = ({ user, onSave }) => {
   const [formData, setFormData] = useState({
@@ -10,34 +13,98 @@ const UserProfileForm = ({ user, onSave }) => {
     email: '',
     university: '',
     city: '',
-    profileImage: ''
+    profileImage: '',
+    universityId: null,
+    cityId: null
   });
   const [universities, setUniversities] = useState([]);
   const [cities, setCities] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
-    setFormData({
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      email: user.email || '',
-      university: user.university || '',
-      city: user.city || '',
-      profileImage: user.profileImage || ''
-    });
+    const fetchInitialData = async () => {
+      try {
+        // Fetch universities and cities
+        const universitiesData = await LocationAPI.fetchUniversities();
+        const citiesData = await LocationAPI.fetchCities();
+        setUniversities(universitiesData);
+        setCities(citiesData);
 
-    const storedUniversities = JSON.parse(localStorage.getItem('universities') || '[]');
-    const storedCities = JSON.parse(localStorage.getItem('cities') || '[]');
-    setUniversities(storedUniversities);
-    setCities(storedCities);
+        // If user prop is provided, fetch full user details
+        if (user && user.id) {
+          const userData = await ProfileAPI.getCurrentProfile();
+          
+          // Find matching university and city
+          const matchedUniversity = universitiesData.find(
+            uni => uni.id === userData.universityId || 
+                   uni.name === userData.university
+          );
+          
+          const matchedCity = citiesData.find(
+            city => city.id === userData.cityId || 
+                    city.name === userData.city
+          );
+
+          setFormData({
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            email: userData.email || '',
+            university: matchedUniversity ? matchedUniversity.name : '',
+            city: matchedCity ? matchedCity.name : '',
+            profileImage: userData.profileImage || '',
+            universityId: matchedUniversity ? matchedUniversity.id : null,
+            cityId: matchedCity ? matchedCity.id : null
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+        toast.error('Failed to load profile data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInitialData();
   }, [user]);
 
   const handleChange = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+    if (key === 'university') {
+      const selectedUniversity = universities.find(uni => uni.name === value);
+      setFormData(prev => ({
+        ...prev,
+        university: value,
+        universityId: selectedUniversity ? selectedUniversity.id : null
+      }));
+    } else if (key === 'city') {
+      const selectedCity = cities.find(city => city.name === value);
+      setFormData(prev => ({
+        ...prev,
+        city: value,
+        cityId: selectedCity ? selectedCity.id : null
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [key]: value }));
+    }
   };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type and size
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Invalid file type. Please upload JPEG, PNG, or GIF.');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size should be less than 5MB.');
+        return;
+      }
+
+      setSelectedFile(file);
+      // Preview the image
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, profileImage: reader.result }));
@@ -46,22 +113,54 @@ const UserProfileForm = ({ user, onSave }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const updatedUser = { ...user, ...formData };
-    onSave(updatedUser);
-    
-    // Update local storage
-    localStorage.setItem('userData', JSON.stringify(updatedUser));
+    if (!user || !user.id) return;
 
-    // Update users in local storage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
 
-    // Dispatch storage event to notify other components
-    window.dispatchEvent(new Event('storage'));
+    setIsLoading(true);
+    try {
+      // Prepare update payload
+      const updatePayload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        universityId: formData.universityId,
+        cityId: formData.cityId
+      };
+
+      // Update profile with or without image
+      const updatedProfile = await ProfileAPI.updateFullProfile(
+        user.id, 
+        updatePayload, 
+        selectedFile
+      );
+      
+      // Call onSave prop with updated user data
+      onSave(updatedProfile);
+      
+      // Clear selected file
+      setSelectedFile(null);
+      
+      // Show success message
+      toast.success('Profile updated successfully');
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (isLoading) {
+    return <div className="text-center text-white">Loading...</div>;
+  }
 
   return (
     <motion.form 
@@ -69,32 +168,27 @@ const UserProfileForm = ({ user, onSave }) => {
       className="space-y-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.3 }}
     >
       <div className="flex items-center space-x-4">
         <motion.div
-          whileHover={{ boxShadow: "0 0 25px 5px rgba(168, 85, 247, 0.4)" }}
-          transition={{ duration: 0.3 }}
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
         >
           <Avatar
             src={formData.profileImage || "https://i.pravatar.cc/150?u=a042581f4e29026704d"}
             className="w-24 h-24 ring-2 ring-purple-400 ring-offset-2 ring-offset-gray-950"
           />
         </motion.div>
-        <motion.div
-          whileHover={{ backgroundColor: "rgba(168, 85, 247, 0.1)" }}
-          transition={{ duration: 0.3 }}
+        <Button
+          color="secondary"
+          variant="bordered"
+          onPress={() => document.getElementById('profile-image-upload').click()}
+          startContent={<Upload size={20} />}
+          className="transition-all duration-300 bg-gradient-to-r from-purple-900 to-purple-700 text-white hover:opacity-90"
         >
-          <Button
-            color="secondary"
-            variant="ghost"
-            onPress={() => document.getElementById('profile-image-upload').click()}
-            startContent={<Upload size={20} />}
-            className="transition-all duration-300 bg-gradient-to-r from-purple-400 to-pink-600 text-white"
-          >
-            Upload Image
-          </Button>
-        </motion.div>
+          Upload Image
+        </Button>
         <input
           id="profile-image-upload"
           type="file"
@@ -142,8 +236,8 @@ const UserProfileForm = ({ user, onSave }) => {
       <Select
         label="University"
         placeholder="Select your university"
-        value={formData.university}
-        onChange={(e) => handleChange('university', e.target.value)}
+        selectedKeys={formData.university ? [formData.university] : []}
+        onSelectionChange={(keys) => handleChange('university', Array.from(keys)[0])}
         startContent={<Building className="text-purple-400" size={16} />}
         classNames={{
           trigger: "bg-gray-900 text-white",
@@ -151,7 +245,7 @@ const UserProfileForm = ({ user, onSave }) => {
         }}
       >
         {universities.map((university) => (
-          <SelectItem key={university.id} value={university.name}>
+          <SelectItem key={university.name} value={university.name}>
             {university.name}
           </SelectItem>
         ))}
@@ -160,8 +254,8 @@ const UserProfileForm = ({ user, onSave }) => {
       <Select
         label="City"
         placeholder="Select your city"
-        value={formData.city}
-        onChange={(e) => handleChange('city', e.target.value)}
+        selectedKeys={formData.city ? [formData.city] : []}
+        onSelectionChange={(keys) => handleChange('city', Array.from(keys)[0])}
         startContent={<MapPin className="text-purple-400" size={16} />}
         classNames={{
           trigger: "bg-gray-900 text-white",
@@ -169,25 +263,20 @@ const UserProfileForm = ({ user, onSave }) => {
         }}
       >
         {cities.map((city) => (
-          <SelectItem key={city.id} value={city.name}>
+          <SelectItem key={city.name} value={city.name}>
             {city.name}
           </SelectItem>
         ))}
       </Select>
 
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      <Button
+        type="submit"
+        color="primary"
+        isLoading={isLoading}
+        className="w-full bg-gradient-to-r from-purple-900 to-purple-700 text-white hover:opacity-90"
       >
-        <Button
-          type="submit"
-          color="primary"
-          className="w-full bg-gradient-to-r from-purple-400 to-pink-600 text-white hover:opacity-80 transition-all duration-300"
-        >
-          Save Profile
-        </Button>
-      </motion.div>
+        Save Profile
+      </Button>
     </motion.form>
   );
 };

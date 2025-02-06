@@ -75,9 +75,9 @@ const Header = () => {
           <Link href="/login">Login</Link>
         </NavbarItem>
         <NavbarItem>
-          <Button as={Link} color="primary" href="/signup" variant="flat">
-            Sign Up
-          </Button>
+        <Button as={Link} color="primary" href="/signup" variant="flat" className="text-white">
+  Sign Up
+</Button>
         </NavbarItem>
       </NavbarContent>
 

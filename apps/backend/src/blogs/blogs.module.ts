@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { BlogsService } from './blogs.service';
 import { BlogsController } from './blogs.controller';
-import { ImagesService } from 'src/images/images.service';
-
+import { ImagesModule } from '../images/images.module'; 
 @Module({
+  imports: [ImagesModule],
   controllers: [BlogsController],
-  providers: [BlogsService, ImagesService],
+  providers: [BlogsService],
 })
 export class BlogsModule {}

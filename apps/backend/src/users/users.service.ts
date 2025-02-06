@@ -17,7 +17,7 @@ import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
 } from '@prisma/client/runtime/library';
-import { Bookmark, Event, UserActivity } from '@prisma/client';
+import { Bookmark, Event, EventBookmark, UserActivity } from '@prisma/client';
 import { SignupDto } from 'src/auth/dto/signup.dto';
 
 @Injectable()
@@ -38,7 +38,7 @@ export class UsersService {
           last_name: authDto.last_name,
           email: authDto.email,
           password: hashedPassword,
-          role: authDto.role,
+          role: authDto.role.toLowerCase(),
         },
       });
       return user;
@@ -70,7 +70,7 @@ export class UsersService {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      const onboardedUser = this.prisma.user.update({
+      const onboardedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
           ...onboardUserDto,
@@ -97,7 +97,7 @@ export class UsersService {
       await this.prisma.userActivity.create({
         data: {
           userId,
-          activity: 'Created a profile',
+          activity: `New user registered: ${onboardedUser.first_name} ${onboardedUser.last_name}`,
         },
       });
 
@@ -134,6 +134,7 @@ export class UsersService {
           last_name: true,
           email: true,
           status: true,
+          role: true,
           profile_url: true,
           gender: true,
           cityId: true,
@@ -163,6 +164,7 @@ export class UsersService {
           last_name: true,
           email: true,
           status: true,
+          role: true,
           profile_url: true,
           gender: true,
           cityId: true,
@@ -190,6 +192,7 @@ export class UsersService {
         status: true,
         profile_url: true,
         gender: true,
+        role: true,
         cityId: true,
         universityId: true,
         createdAt: true,
@@ -262,6 +265,52 @@ export class UsersService {
     return joinedEvent;
   }
 
+  async leaveEvent(userId: string, leaveEventDto: JoinEventDto) {
+    const { eventId } = leaveEventDto;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!user || !event) {
+      throw new ForbiddenException('User or Event not found');
+    }
+
+    // Check if the user is joined to the event
+    const joinedEvent = await this.prisma.usersOnEvents.findUnique({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+
+    if (!joinedEvent) {
+      throw new ForbiddenException('User is not joined to this event');
+    }
+
+    // Remove the user from the event
+    await this.prisma.usersOnEvents.delete({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId,
+        activity: 'Left event',
+      },
+    });
+
+    return { message: 'Successfully left the event' };
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -279,6 +328,7 @@ export class UsersService {
         last_name: true,
         email: true,
         status: true,
+        role: true,
         profile_url: true,
         gender: true,
         cityId: true,
@@ -290,7 +340,7 @@ export class UsersService {
     await this.prisma.userActivity.create({
       data: {
         userId: id,
-        activity: 'Updated profile',
+        activity: `User profile updated: ${updatedUser.first_name} ${updatedUser.last_name}`,
       },
     });
 
@@ -357,7 +407,42 @@ export class UsersService {
     await this.prisma.userActivity.create({
       data: {
         userId,
-        activity: 'Added bookmark',
+        activity: `Blog post bookmarked`,
+      },
+    });
+
+    return bookmark;
+  }
+
+  async addEventBookmark(
+    userId: string,
+    eventId: string,
+  ): Promise<EventBookmark> {
+    const existingBookmark = await this.prisma.eventBookmark.findUnique({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+
+    if (existingBookmark) {
+      throw new Error('Bookmark already exists');
+    }
+
+    // Create a new bookmark
+    const bookmark = this.prisma.eventBookmark.create({
+      data: {
+        userId,
+        eventId,
+      },
+    });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId,
+        activity: `Event bookmarked`,
       },
     });
 
@@ -368,6 +453,13 @@ export class UsersService {
     return this.prisma.bookmark.findMany({
       where: { userId },
       include: { blog: true },
+    });
+  }
+
+  async getUserEventsBookmarks(userId: string): Promise<EventBookmark[]> {
+    return this.prisma.eventBookmark.findMany({
+      where: { userId },
+      include: { event: true },
     });
   }
 
@@ -394,6 +486,65 @@ export class UsersService {
       },
     });
   }
+
+  async getUserMetrics(userId: string) {
+    try {
+      const registeredEvents = await this.prisma.usersOnEvents.count({
+        where: {
+          userId,
+        },
+      });
+
+      const bookmarkedPosts = await this.prisma.bookmark.count({
+        where: {
+          userId,
+        },
+      });
+
+      const totalBlogViews = await this.prisma.blog.aggregate({
+        _sum: {
+          views: true,
+        },
+      });
+
+      const engagementRate =
+        bookmarkedPosts > 0
+          ? ((totalBlogViews._sum.views || 0) + bookmarkedPosts) /
+            bookmarkedPosts
+          : 0;
+
+      return {
+        registerd_events: registeredEvents,
+        bookmarked_posts: bookmarkedPosts,
+        engagement_rate: engagementRate,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new ForbiddenException('Error while trying to fetch metrics');
+      } else if (error instanceof PrismaClientInitializationError) {
+        throw new InternalServerErrorException(
+          'Server error - please try again later',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  async removeEventBookmark(
+    userId: string,
+    eventId: string,
+  ): Promise<EventBookmark> {
+    return this.prisma.eventBookmark.delete({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+  }
+
   async getUserActivities(userId: string): Promise<UserActivity[]> {
     return this.prisma.userActivity.findMany({
       where: {

@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
 import { Plus, Edit, Trash } from "lucide-react";
+import LocationAPI from '../../../services/location.api';
 
 const UniversityManagement = ({ universities, onUniversityUpdate }) => {
   const [newUniversity, setNewUniversity] = useState('');
   const [editingUniversity, setEditingUniversity] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleAddUniversity = () => {
+  const handleAddUniversity = async () => {
     if (newUniversity.trim()) {
-      const updatedUniversities = [...universities, { id: Date.now(), name: newUniversity.trim() }];
-      onUniversityUpdate(updatedUniversities);
-      setNewUniversity('');
+      try {
+        const createdUniversity = await LocationAPI.addUniversity({ name: newUniversity.trim() });
+        onUniversityUpdate([...universities, createdUniversity]);
+        setNewUniversity('');
+      } catch (error) {
+        console.error('Error adding university:', error);
+      }
     }
   };
 
@@ -20,18 +25,28 @@ const UniversityManagement = ({ universities, onUniversityUpdate }) => {
     setIsModalOpen(true);
   };
 
-  const handleUpdateUniversity = () => {
-    const updatedUniversities = universities.map(u => 
-      u.id === editingUniversity.id ? editingUniversity : u
-    );
-    onUniversityUpdate(updatedUniversities);
-    setIsModalOpen(false);
-    setEditingUniversity(null);
+  const handleUpdateUniversity = async () => {
+    try {
+      const updatedUniversity = await LocationAPI.updateUniversity(editingUniversity.id, editingUniversity);
+      const updatedUniversities = universities.map((u) =>
+        u.id === updatedUniversity.id ? updatedUniversity : u
+      );
+      onUniversityUpdate(updatedUniversities);
+      setIsModalOpen(false);
+      setEditingUniversity(null);
+    } catch (error) {
+      console.error('Error updating university:', error);
+    }
   };
 
-  const handleDeleteUniversity = (id) => {
-    const updatedUniversities = universities.filter(u => u.id !== id);
-    onUniversityUpdate(updatedUniversities);
+  const handleDeleteUniversity = async (id) => {
+    try {
+      await LocationAPI.deleteUniversity(id);
+      const updatedUniversities = universities.filter((u) => u.id !== id);
+      onUniversityUpdate(updatedUniversities);
+    } catch (error) {
+      console.error('Error deleting university:', error);
+    }
   };
 
   return (

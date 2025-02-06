@@ -1,20 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
+import {
+  Navbar,
+  NavbarBrand,
+  NavbarContent,
+  NavbarItem,
+  Button,
+  Avatar,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure
+} from "@nextui-org/react";
 import { Bell, Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
+import ProfileAPI from '../../services/profile.api';
+import { toast } from 'react-hot-toast';
 
-const CustomNavbar = ({ adminProfile }) => {
+const CustomNavbar = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isIconToggled, setIsIconToggled] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [profileData, setProfileData] = useState({
+    fullName: '',
+    email: '',
+    profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSettingsClick = () => {
-    navigate('/admin/settings');
-  };
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await ProfileAPI.getCurrentProfile();
+        
+        setProfileData({
+          fullName: `${data.firstName} ${data.lastName}`,
+          email: data.email,
+          profileImage: data.profileImage || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile data');
+        
+        // Fallback to a default state
+        setProfileData({
+          fullName: 'Admin User',
+          email: 'admin@example.com',
+          profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -50,6 +101,15 @@ const CustomNavbar = ({ adminProfile }) => {
     }
   }, [lastScrollY]);
 
+  const handleSettingsClick = () => {
+    navigate('/admin/settings');
+  };
+
+  const handleLogout = () => {
+    navigate('/login');
+    onClose();
+  };
+
   const toggleSearch = () => {
     setIsSearchVisible(!isSearchVisible);
   };
@@ -58,10 +118,26 @@ const CustomNavbar = ({ adminProfile }) => {
     setIsIconToggled(!isIconToggled);
   };
 
+  if (isLoading) {
+    return (
+      <Navbar className="bg-black bg-opacity-50 backdrop-filter backdrop-blur-lg fixed top-0 z-50">
+        <NavbarContent justify="end">
+          <NavbarItem>
+            <div className="animate-pulse flex items-center">
+              <div className="w-10 h-10 bg-gray-700 rounded-full mr-4"></div>
+              <div className="h-4 bg-gray-700 rounded w-24"></div>
+            </div>
+          </NavbarItem>
+        </NavbarContent>
+      </Navbar>
+    );
+  }
+
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
+          key="navbar" // Unique key for the navbar container
           initial={{ opacity: 0, y: -100 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -100 }}
@@ -158,9 +234,9 @@ const CustomNavbar = ({ adminProfile }) => {
                       as="button"
                       className="transition-transform hover:scale-110"
                       color="secondary"
-                      name={adminProfile.fullName}
+                      name={profileData.fullName}
                       size="sm"
-                      src={adminProfile.profileImage}
+                      src={profileData.profileImage}
                     />
                   </DropdownTrigger>
                   <DropdownMenu 
@@ -170,18 +246,12 @@ const CustomNavbar = ({ adminProfile }) => {
                   >
                     <DropdownItem key="profile" className="h-14 gap-2">
                       <p className="font-semibold">Signed in as</p>
-                      <p className="font-semibold text-xs">{adminProfile.email}</p>
+                      <p className="font-semibold text-xs">{profileData.email}</p>
                     </DropdownItem>
                     <DropdownItem key="settings" onPress={handleSettingsClick}>
                       My Settings
                     </DropdownItem>
-                    {/* Show notifications in dropdown on mobile */}
-                    {isMobile && (
-                      <DropdownItem key="notifications">
-                        Notifications
-                      </DropdownItem>
-                    )}
-                    <DropdownItem key="logout" color="danger">
+                    <DropdownItem key="logout" color="danger" onPress={onOpen}>
                       Log Out
                     </DropdownItem>
                   </DropdownMenu>
@@ -191,6 +261,36 @@ const CustomNavbar = ({ adminProfile }) => {
           </Navbar>
         </motion.div>
       )}
+
+      {/* Logout Modal */}
+      <Modal
+        key="logoutModal" // Unique key for the modal
+        isOpen={isOpen}
+        onClose={onClose}
+        classNames={{
+          base: "bg-gray-900 text-white",
+          header: "border-b border-gray-800",
+          body: "py-6",
+          footer: "border-t border-gray-800"
+        }}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-semibold">Confirm Logout</h3>
+          </ModalHeader>
+          <ModalBody>
+            <p>Are you sure you want to log out?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="gray" variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="danger" onPress={handleLogout}>
+              Log Out
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </AnimatePresence>
   );
 };

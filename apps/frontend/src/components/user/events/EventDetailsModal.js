@@ -1,56 +1,196 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip, Progress } from "@nextui-org/react";
-import { MapPin, Calendar, Clock, Share2, Users, ChevronDown } from "lucide-react";
+import { MapPin, Calendar, Clock, Share2, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
+import PropTypes from 'prop-types';
 
-const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyA54yGS01UI1divw8YIahs3Js0BtYrj-6M';
+const CHARS_PER_LINE = 100;
+const LOCATION_CHARS_PER_LINE = 30;
 
 const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }) => {
   const [showScrollArrow, setShowScrollArrow] = useState(true);
+  const [coordinates, setCoordinates] = useState(null);
+  const [mapError, setMapError] = useState(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showFullLocation, setShowFullLocation] = useState(false);
   const bodyRef = useRef(null);
   const mapRef = useRef(null);
-  const markerRef = useRef(null);
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
+  const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ['marker']
+    libraries: ['places', 'geometry']
   });
+
+  // Format text into lines
+  const formatTextToLines = (text) => {
+    if (!text) return [];
+    let words = text.split(' ');
+    let lines = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+      if ((currentLine + ' ' + word).length <= CHARS_PER_LINE) {
+        currentLine = currentLine ? `${currentLine} ${word}` : word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    });
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines;
+  };
+
+  // Format location text
+  const formatLocationText = (location) => {
+    if (!location) return '';
+    
+    const lines = [];
+    let remainingText = location;
+
+    while (remainingText.length > 0) {
+      if (remainingText.length <= LOCATION_CHARS_PER_LINE) {
+        lines.push(remainingText);
+        break;
+      }
+
+      lines.push(remainingText.substring(0, LOCATION_CHARS_PER_LINE));
+      remainingText = remainingText.substring(LOCATION_CHARS_PER_LINE);
+    }
+
+    return lines;
+  };
+
+  useEffect(() => {
+    const geocodeAddress = async () => {
+      if (!isLoaded || !event?.location) return;
+
+      try {
+        const geocoder = new window.google.maps.Geocoder();
+        const fullAddress = `${event.location}${event.location.toLowerCase().includes('poland') ? '' : ', Poland'}`;
+        
+        const result = await new Promise((resolve, reject) => {
+          geocoder.geocode({ address: fullAddress }, (results, status) => {
+            if (status === 'OK') {
+              resolve(results[0]);
+            } else {
+              reject(new Error(`Geocoding failed: ${status}`));
+            }
+          });
+        });
+
+        const lat = result.geometry.location.lat();
+        const lng = result.geometry.location.lng();
+        
+        setCoordinates({ lat, lng });
+        setMapError(null);
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        setMapError('Location could not be found on the map');
+        setCoordinates(null);
+      }
+    };
+
+    if (isLoaded && event) {
+      geocodeAddress();
+    }
+  }, [isLoaded, event]);
 
   const mapContainerStyle = {
     width: '100%',
     height: '300px'
   };
 
-  const center = {
-    lat: 36.1699,
-    lng: -115.1398
-  };
-
-  const onLoad = useCallback(function callback(map) {
+  const onLoad = useCallback((map) => {
+    if (!coordinates) return;
+    
     mapRef.current = map;
-    const bounds = new window.google.maps.LatLngBounds(center);
-    map.fitBounds(bounds);
+    map.setZoom(15);
+    map.setCenter(coordinates);
+  }, [coordinates]);
 
-    // Create and add the advanced marker
-    if (window.google && window.google.maps && window.google.maps.marker) {
-      const advancedMarker = new window.google.maps.marker.AdvancedMarkerElement({
-        map,
-        position: center,
-        title: event?.name || 'Event Location'
-      });
-      markerRef.current = advancedMarker;
-    }
-  }, [event]);
-
-  const onUnmount = useCallback(function callback() {
-    if (markerRef.current) {
-      markerRef.current.map = null;
-      markerRef.current = null;
-    }
+  const onUnmount = useCallback(() => {
     mapRef.current = null;
   }, []);
+
+  const mapOptions = {
+    disableDefaultUI: false,
+    zoomControl: true,
+    mapTypeControl: false,
+    streetViewControl: false,
+    styles: [
+      {
+        featureType: "all",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#ffffff" }]
+      },
+      {
+        featureType: "all",
+        elementType: "labels.text.stroke",
+        stylers: [{ color: "#000000" }, { lightness: 13 }]
+      },
+      {
+        featureType: "administrative",
+        elementType: "geometry.fill",
+        stylers: [{ color: "#000000" }]
+      },
+      {
+        featureType: "administrative",
+        elementType: "geometry.stroke",
+        stylers: [{ color: "#144b53" }, { lightness: 14 }, { weight: 1.4 }]
+      },
+      {
+        featureType: "landscape",
+        elementType: "all",
+        stylers: [{ color: "#08304b" }]
+      },
+      {
+        featureType: "poi",
+        elementType: "geometry",
+        stylers: [{ color: "#0c4152" }, { lightness: 5 }]
+      },
+      {
+        featureType: "road.highway",
+        elementType: "geometry.fill",
+        stylers: [{ color: "#000000" }]
+      },
+      {
+        featureType: "road.highway",
+        elementType: "geometry.stroke",
+        stylers: [{ color: "#0b434f" }, { lightness: 25 }]
+      },
+      {
+        featureType: "road.arterial",
+        elementType: "geometry.fill",
+        stylers: [{ color: "#000000" }]
+      },
+      {
+        featureType: "road.arterial",
+        elementType: "geometry.stroke",
+        stylers: [{ color: "#0b3d51" }, { lightness: 16 }]
+      },
+      {
+        featureType: "road.local",
+        elementType: "geometry",
+        stylers: [{ color: "#000000" }]
+      },
+      {
+        featureType: "transit",
+        elementType: "all",
+        stylers: [{ color: "#146474" }]
+      },
+      {
+        featureType: "water",
+        elementType: "all",
+        stylers: [{ color: "#021019" }]
+      },
+    ],
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,9 +214,54 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
 
   if (!event) return null;
 
-  const formatDate = (dateString) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  const renderMap = () => {
+    if (loadError) {
+      return (
+        <div className="w-full h-[300px] bg-gray-800 flex items-center justify-center">
+          <p className="text-red-400">Error loading map: {loadError.message}</p>
+        </div>
+      );
+    }
+
+    if (!isLoaded) {
+      return (
+        <div className="w-full h-[300px] bg-gray-800 flex items-center justify-center">
+          <p className="text-gray-400">Loading map...</p>
+        </div>
+      );
+    }
+
+    if (mapError) {
+      return (
+        <div className="w-full h-[300px] bg-gray-800 flex items-center justify-center">
+          <p className="text-red-400">{mapError}</p>
+        </div>
+      );
+    }
+
+    if (!coordinates) {
+      return (
+        <div className="w-full h-[300px] bg-gray-800 flex items-center justify-center">
+          <p className="text-gray-400">Location not available</p>
+        </div>
+      );
+    }
+
+    return (
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={coordinates}
+        zoom={15}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        options={mapOptions}
+      >
+        <MarkerF
+          position={coordinates}
+          title={event.location}
+        />
+      </GoogleMap>
+    );
   };
 
   return (
@@ -94,7 +279,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
             transition={{ duration: 0.5 }}
           >
             <Chip color="primary" className="mb-2">{event.type}</Chip>
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-600">
+            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-600 line-clamp-2">
               {event.name}
             </h2>
           </motion.div>
@@ -115,7 +300,31 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <h3 className="text-xl font-semibold mb-2">Event Description</h3>
-            <p className="text-gray-300">{event.description}</p>
+            <div className="relative">
+              <div 
+                className={`text-gray-300 space-y-2 ${!showFullDescription ? 'line-clamp-3' : ''}`}
+              >
+                {formatTextToLines(event.description)
+                  .map((line, index) => (
+                    <p key={index} className="whitespace-pre-wrap break-words">
+                      {line}
+                    </p>
+                  ))}
+              </div>
+              {event.description && event.description.length > 150 && (
+                <div className="mt-2">
+                  <Button
+                    color="primary"
+                    variant="light"
+                    size="sm"
+                    className="h-6 min-w-0 p-0"
+                    onPress={() => setShowFullDescription(!showFullDescription)}
+                  >
+                    {showFullDescription ? 'Show Less' : 'Show More'}
+                  </Button>
+                </div>
+              )}
+            </div>
           </motion.div>
           <motion.div 
             className="grid grid-cols-2 gap-4 mb-6"
@@ -127,21 +336,49 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
               <Calendar className="mr-2 text-primary" size={20} />
               <div>
                 <p className="font-semibold">Date</p>
-                <p className="text-sm text-gray-300">{formatDate(event.date)}</p>
+                <p className="text-sm text-gray-300">
+                  {new Date(event.date).toLocaleDateString('en-US', {
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                  })}
+                </p>
               </div>
             </div>
             <div className="flex items-center">
               <Clock className="mr-2 text-primary" size={20} />
               <div>
                 <p className="font-semibold">Time</p>
-                <p className="text-sm text-gray-300">{event.time}</p>
+                <p className="text-sm text-gray-300">
+                  {event.time || 'Time not specified'}
+                </p>
               </div>
             </div>
-            <div className="flex items-center">
-              <MapPin className="mr-2 text-primary" size={20} />
-              <div>
+            <div className="flex items-start">
+              <MapPin className="mr-2 text-primary mt-1" size={20} />
+              <div className="flex-1">
                 <p className="font-semibold">Location</p>
-                <p className="text-sm text-gray-300">{event.location}</p>
+                <div className="relative">
+                  <div 
+                    className={`text-sm text-gray-300 space-y-1 ${!showFullLocation ? 'line-clamp-2' : ''}`}
+                  >
+                    {formatLocationText(event.location).map((line, index) => (
+                      <p key={index}>{line}</p>
+                    ))}
+                  </div>
+                  {event.location && formatLocationText(event.location).length > 2 && (
+                    <Button
+                      color="primary"
+                      variant="light"
+                      size="sm"
+                      className="mt-2 h-6 min-w-0 p-0"
+                      onPress={() => setShowFullLocation(!showFullLocation)}
+                    >
+                      {showFullLocation ? 'Show Less' : 'Show More'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center">
@@ -161,41 +398,64 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
             </div>
           </motion.div>
           {event.agenda && event.agenda.length > 0 && (
-            <motion.div 
-              className="mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+  <motion.div 
+    className="mb-6"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.4 }}
+  >
+    <h3 className="text-xl font-semibold mb-2">Event Agenda</h3>
+    <ul className="list-inside space-y-2">
+      {event.agenda.map((item, index) => (
+        <li 
+          key={index} 
+          className="flex items-start text-gray-300 whitespace-pre-wrap break-words line-clamp-2"
+        >
+          <span className="mr-2 text-primary mt-1">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="currentColor" 
+              className="w-4 h-4 flex-shrink-0"
             >
-              <h3 className="text-xl font-semibold mb-2">Event Agenda</h3>
-              <ul className="list-disc list-inside text-gray-300">
-                {event.agenda.map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ul>
-            </motion.div>
-          )}
-          {event.speakers && event.speakers.length > 0 && (
-            <motion.div 
-              className="mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              <h3 className="text-xl font-semibold mb-2">Speakers</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {event.speakers.map((speaker, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <img src={speaker.image || '/api/placeholder/40/40'} alt={speaker.name} className="w-10 h-10 rounded-full" />
-                    <div>
-                      <p className="font-medium text-white">{speaker.name}</p>
-                      <p className="text-sm text-gray-400">{speaker.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
+              <path 
+                fillRule="evenodd" 
+                d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" 
+                clipRule="evenodd" 
+              />
+            </svg>
+          </span>
+          {item}
+        </li>
+      ))}
+    </ul>
+  </motion.div>
+)}
+          {event.speaker && event.speaker.length > 0 && (
+  <motion.div 
+    className="mb-6"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.5 }}
+  >
+    <h3 className="text-xl font-semibold mb-2">Speakers</h3>
+    <div className="grid grid-cols-2 gap-4">
+      {event.speaker.map((speaker, index) => (
+        <div key={index} className="flex items-center space-x-2">
+          <img 
+            src={speaker.image_url || speaker.image || '/api/placeholder/40/40'} 
+            alt={speaker.name} 
+            className="w-10 h-10 rounded-full object-cover" 
+          />
+          <div className="overflow-hidden">
+            <p className="font-medium text-white truncate">{speaker.name}</p>
+            <p className="text-sm text-gray-400 truncate">{speaker.role}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </motion.div>
+)}
           <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
@@ -203,26 +463,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
             transition={{ duration: 0.5, delay: 0.6 }}
           >
             <h3 className="text-xl font-semibold mb-2">Location</h3>
-            {isLoaded ? (
-              <GoogleMap
-                mapContainerStyle={mapContainerStyle}
-                center={center}
-                zoom={14}
-                onLoad={onLoad}
-                onUnmount={onUnmount}
-                options={{
-                  styles: [
-                    { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                    { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                    { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-                  ],
-                }}
-              />
-            ) : (
-              <div className="w-full h-[300px] bg-gray-800 flex items-center justify-center">
-                <p className="text-gray-400">Loading map...</p>
-              </div>
-            )}
+            {renderMap()}
           </motion.div>
         </ModalBody>
         <ModalFooter>
@@ -253,6 +494,29 @@ const EventDetailsModal = ({ event, isOpen, onClose, onJoin, onShare, isJoined }
       </ModalContent>
     </Modal>
   );
+};
+
+EventDetailsModal.propTypes = {
+  event: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    date: PropTypes.string.isRequired,
+    time: PropTypes.string,
+    location: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    image: PropTypes.string.isRequired,
+    participants: PropTypes.array,
+    maxParticipants: PropTypes.number.isRequired,
+    organizer: PropTypes.string,
+    agenda: PropTypes.array,
+    speakers: PropTypes.array,
+  }),
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onJoin: PropTypes.func.isRequired,
+  onShare: PropTypes.func.isRequired,
+  isJoined: PropTypes.bool,
 };
 
 export default EventDetailsModal;

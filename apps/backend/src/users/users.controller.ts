@@ -22,7 +22,7 @@ import { Request as ExpressRequest } from 'express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JoinEventDto } from './dto/join-event.dto';
 import { ImagesService } from 'src/images/images.service';
-import { Bookmark, UserActivity } from '@prisma/client';
+import { Bookmark, EventBookmark, UserActivity } from '@prisma/client';
 import { SignupDto } from 'src/auth/dto/signup.dto';
 
 @Controller('users')
@@ -40,7 +40,7 @@ export class UsersController {
   ) {
     const role = (req.user as { role: string }).role;
 
-    if (role === 'admin' && req.body.userId) {
+    if (role === 'admin') {
       return this.usersService.create(createDto);
     }
 
@@ -77,6 +77,13 @@ export class UsersController {
     return this.usersService.getCurrentUser(userId);
   }
 
+  @Get('metrics')
+  @UseGuards(JwtGuard)
+  async getUserMetrics(@Request() req: ExpressRequest) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserMetrics(userId);
+  }
+
   @Post('join-event')
   @UseGuards(JwtGuard)
   async joinEvent(
@@ -98,31 +105,21 @@ export class UsersController {
       'You do not have permission to join this event',
     );
   }
+  @Post('leave-event')
+  @UseGuards(JwtGuard)
+  async leaveEvent(
+    @Request() req: ExpressRequest,
+    @Body() leaveEventDto: JoinEventDto,
+  ) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.leaveEvent(userId, leaveEventDto);
+  }
 
   @Get()
   findAll() {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
-  }
-
-  @Patch('admin/:id')
-  updateAdmin(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.updateAdmin(id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
-  }
   @Post('bookmarks')
   @UseGuards(JwtGuard)
   async addBookmark(
@@ -131,6 +128,25 @@ export class UsersController {
   ): Promise<Bookmark> {
     const userId = (req.user as { id: string }).id;
     return this.usersService.addBookmark(userId, blogId);
+  }
+
+  @Post('event-bookmarks')
+  @UseGuards(JwtGuard)
+  async addEventBookmark(
+    @Request() req: ExpressRequest,
+    @Body('eventId') eventId: string,
+  ): Promise<EventBookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.addEventBookmark(userId, eventId);
+  }
+
+  @Get('event-bookmarks')
+  @UseGuards(JwtGuard)
+  async getUserEventsBookmarks(
+    @Request() req: ExpressRequest,
+  ): Promise<EventBookmark[]> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserEventsBookmarks(userId);
   }
 
   @Get('bookmarks')
@@ -164,5 +180,53 @@ export class UsersController {
   ): Promise<Bookmark> {
     const userId = (req.user as { id: string }).id;
     return this.usersService.removeBookmark(userId, blogId);
+  }
+
+  @Delete('event-bookmarks/:eventId')
+  @UseGuards(JwtGuard)
+  async removeEventBookmark(
+    @Request() req: ExpressRequest,
+    @Param('eventId') eventId: string,
+  ): Promise<EventBookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.removeEventBookmark(userId, eventId);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtGuard)
+  @UseInterceptors(FileInterceptor('profile_url'))
+  async update(
+    @Param('id') id: string,
+    // @Request() req: ExpressRequest,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    // const userId = (req.user as { id: string }).id;
+    // const role = (req.user as { role: string }).role;
+
+    // if (role === 'admin' && req.body.userId) {
+    // }
+    if (file) {
+      const profileUrl = await this.imagessService.uploadImage(file, id);
+      updateUserDto.profile_url = profileUrl;
+    }
+
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  @Patch('admin/:id')
+  updateAdmin(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.updateAdmin(id, updateUserDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtGuard)
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
   }
 }

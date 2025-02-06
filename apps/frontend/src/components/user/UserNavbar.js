@@ -3,17 +3,56 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
 import { Moon, Sun, Search } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import RealTimeNotifications from './RealTimeNotifications';
+import ProfileAPI from '../../services/profile.api';
 
-const UserNavbar = ({ user }) => {
+const UserNavbar = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(user);
+  const [currentUser, setCurrentUser] = useState({
+    id: '',
+    name: '',
+    email: '',
+    profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+  });
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isIconToggled, setIsIconToggled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await ProfileAPI.getCurrentProfile();
+        
+        setCurrentUser({
+          id: data.id,
+          name: `${data.firstName} ${data.lastName}`,
+          email: data.email,
+          profileImage: data.profileImage || 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile data');
+        
+        // Fallback to a default state
+        setCurrentUser({
+          id: '',
+          name: 'User',
+          email: 'user@example.com',
+          profileImage: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -49,22 +88,7 @@ const UserNavbar = ({ user }) => {
     }
   }, [lastScrollY]);
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const updatedUserData = JSON.parse(localStorage.getItem('userData'));
-      if (updatedUserData) {
-        setCurrentUser(updatedUserData);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
   const handleLogout = () => {
-    localStorage.removeItem('userData');
     navigate('/login');
     setIsLogoutModalOpen(false);
   };
@@ -76,6 +100,21 @@ const UserNavbar = ({ user }) => {
   const handleIconToggle = () => {
     setIsIconToggled(!isIconToggled);
   };
+
+  if (isLoading) {
+    return (
+      <Navbar className="bg-black bg-opacity-50 backdrop-filter backdrop-blur-lg fixed top-0 z-50">
+        <NavbarContent justify="end">
+          <NavbarItem>
+            <div className="animate-pulse flex items-center">
+              <div className="w-10 h-10 bg-gray-700 rounded-full mr-4"></div>
+              <div className="h-4 bg-gray-700 rounded w-24"></div>
+            </div>
+          </NavbarItem>
+        </NavbarContent>
+      </Navbar>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -117,7 +156,7 @@ const UserNavbar = ({ user }) => {
                       <input
                         type="text"
                         placeholder="Search..."
-                        className="bg-gray-800 bg-opacity-50 text-gray-100 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 w-full md:w-64"
+                        className="bg-black-800 bg-opacity-50 text-gray-100 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 w-full md:w-64"
                       />
                       <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                     </motion.div>
@@ -177,7 +216,7 @@ const UserNavbar = ({ user }) => {
                   <DropdownMenu 
                     aria-label="Profile Actions" 
                     variant="flat"
-                    className="bg-gray-800 text-gray-100"
+                    className="bg-black text-gray-100"
                   >
                     <DropdownItem key="profile" className="h-14 gap-2">
                       <p className="font-semibold">Signed in as</p>
@@ -203,7 +242,7 @@ const UserNavbar = ({ user }) => {
             isOpen={isLogoutModalOpen}
             onClose={() => setIsLogoutModalOpen(false)}
             classNames={{
-              base: "bg-gray-900 text-white",
+              base: "bg-black text-white",
               header: "border-b border-gray-800",
               body: "py-6",
               footer: "border-t border-gray-800"

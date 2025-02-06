@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X } from "lucide-react";
 import AuthAPI from "../../services/auth.api";
 
-const API_URL = "http://localhost:5000/api/v1";
+const API_URL = "http://localhost:5004/api/v1";
 
 const AnimatedErrorMessage = ({ message }) => (
   <motion.div
@@ -31,6 +31,7 @@ const OnboardingPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [pageLoading, setPageLoading] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -75,6 +76,7 @@ const OnboardingPage = () => {
   const handleChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
     setError("");
+    setFieldErrors((prev) => ({ ...prev, [key]: null }));
   };
 
   const handleImageUpload = async (e) => {
@@ -97,25 +99,62 @@ const OnboardingPage = () => {
     setImagePreview(URL.createObjectURL(file));
     setFormData((prev) => ({ ...prev, profile_url: file }));
     setError("");
+    setFieldErrors((prev) => ({ ...prev, profile_url: null }));
   };
 
   const removeImage = () => {
     setFormData((prev) => ({ ...prev, profile_url: null }));
     setImagePreview(null);
+    setFieldErrors((prev) => ({ ...prev, profile_url: "Profile picture is required" }));
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.universityId) {
+      errors.universityId = "University is required";
+    }
+    if (!formData.cityId) {
+      errors.cityId = "City is required";
+    }
+    if (!formData.gender) {
+      errors.gender = "Gender is required";
+    }
+    if (!formData.profile_url) {
+      errors.profile_url = "Profile picture is required";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await AuthAPI.onboard({
+      const response = await AuthAPI.onboard({
         ...formData,
-        profile_url: formData.profile_url || "",
+        profile_url: formData.profile_url,
         gender: formData.gender.toLowerCase(),
       });
 
-      navigate("/user/dashboard");
+      // Update the user data in localStorage with the response data
+      const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const updatedUserData = {
+        ...currentUserData,
+        ...response,
+        role: 'user' // Ensure role is set
+      };
+      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+
+      navigate("/user");
     } catch (error) {
       try {
         const errorData = JSON.parse(error.message);
@@ -174,6 +213,8 @@ const OnboardingPage = () => {
             value={formData.universityId}
             onChange={(e) => handleChange("universityId", e.target.value)}
             className="w-full"
+            isInvalid={!!fieldErrors.universityId}
+            errorMessage={fieldErrors.universityId}
             classNames={{
               label: "text-white",
               trigger: "bg-transparent border-white/20",
@@ -194,6 +235,8 @@ const OnboardingPage = () => {
             value={formData.cityId}
             onChange={(e) => handleChange("cityId", e.target.value)}
             className="w-full"
+            isInvalid={!!fieldErrors.cityId}
+            errorMessage={fieldErrors.cityId}
             classNames={{
               label: "text-white",
               trigger: "bg-transparent border-white/20",
@@ -214,6 +257,8 @@ const OnboardingPage = () => {
             value={formData.gender}
             onChange={(e) => handleChange("gender", e.target.value)}
             className="w-full"
+            isInvalid={!!fieldErrors.gender}
+            errorMessage={fieldErrors.gender}
             classNames={{
               label: "text-white",
               trigger: "bg-transparent border-white/20",
@@ -230,9 +275,13 @@ const OnboardingPage = () => {
           </Select>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium">Profile Picture</label>
+            <label className="block text-sm font-medium">Profile Picture (Required)</label>
             {!imagePreview ? (
-              <label className="flex items-center justify-center w-full h-32 px-4 transition bg-black/30 border-2 border-white/10 border-dashed rounded-lg appearance-none cursor-pointer hover:border-white/20 focus:outline-none">
+              <label className={`flex items-center justify-center w-full h-32 px-4 transition border-2 border-dashed rounded-lg appearance-none cursor-pointer hover:border-white/20 focus:outline-none ${
+                fieldErrors.profile_url 
+                  ? "bg-red-500/10 border-red-500/50" 
+                  : "bg-black/30 border-white/10"
+              }`}>
                 <div className="flex flex-col items-center space-y-2">
                   <Upload className="w-6 h-6" />
                   <span className="text-sm text-white/60">Click to upload</span>
@@ -259,6 +308,9 @@ const OnboardingPage = () => {
                   <X size={16} />
                 </button>
               </div>
+            )}
+            {fieldErrors.profile_url && (
+              <p className="text-red-500 text-sm mt-1">{fieldErrors.profile_url}</p>
             )}
           </div>
 

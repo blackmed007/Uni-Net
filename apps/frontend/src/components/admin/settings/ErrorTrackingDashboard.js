@@ -9,7 +9,7 @@ const ErrorTrackingDashboard = () => {
   const [filter, setFilter] = useState({ severity: 'all', search: '' });
 
   useEffect(() => {
-    // Fetch error logs and performance metrics from API or use mock data
+    // Mock data remains for design purposes
     const mockErrorLogs = Array.from({ length: 20 }, (_, i) => ({
       id: i + 1,
       message: `Error ${i + 1}: ${['Database connection failed', '404 Not Found', 'Null pointer exception', 'API timeout'][Math.floor(Math.random() * 4)]}`,
@@ -36,7 +36,21 @@ const ErrorTrackingDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Error Tracking Dashboard</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Error Tracking Dashboard</h2>
+      </div>
+
+      <div className="mt-2 p-2 bg-gray-800 rounded-lg">
+        <p className="text-sm text-yellow-400">Advanced Error Monitoring System - Launching Soon</p>
+        <ul className="text-sm text-gray-300 mt-1 ml-4 list-disc">
+          <li>Real-time error detection and alerting</li>
+          <li>Automated error categorization and priority assignment</li>
+          <li>Performance metrics and trend analysis</li>
+          <li>Integration with popular issue tracking tools</li>
+          <li>Customizable dashboard and reporting features</li>
+        </ul>
+      </div>
+
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Input
           placeholder="Search errors..."
@@ -44,12 +58,14 @@ const ErrorTrackingDashboard = () => {
           onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
           startContent={<Search className="text-default-400" size={16} />}
           className="w-full sm:w-1/2"
+          isDisabled
         />
         <Select 
           placeholder="Filter by severity"
           selectedKeys={[filter.severity]}
           onChange={(e) => setFilter(prev => ({ ...prev, severity: e.target.value }))}
           className="w-full sm:w-1/2"
+          isDisabled
         >
           <SelectItem key="all" value="all">All Severities</SelectItem>
           <SelectItem key="Critical" value="Critical">Critical</SelectItem>
@@ -57,7 +73,8 @@ const ErrorTrackingDashboard = () => {
           <SelectItem key="Info" value="Info">Info</SelectItem>
         </Select>
       </div>
-      <Card>
+
+      <Card className="opacity-50 pointer-events-none">
         <CardBody>
           <Table aria-label="Error logs table">
             <TableHeader>
@@ -91,7 +108,8 @@ const ErrorTrackingDashboard = () => {
           </Table>
         </CardBody>
       </Card>
-      <Card>
+
+      <Card className="opacity-50 pointer-events-none">
         <CardBody>
           <h3 className="text-lg font-semibold mb-4">Performance Metrics</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -106,7 +124,12 @@ const ErrorTrackingDashboard = () => {
           </ResponsiveContainer>
         </CardBody>
       </Card>
-      <Button color="primary" startContent={<AlertTriangle size={16} />}>
+
+      <Button 
+        color="primary" 
+        startContent={<AlertTriangle size={16} />}
+        isDisabled
+      >
         Integrate with Issue Tracking Tool
       </Button>
     </div>

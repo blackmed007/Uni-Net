@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/v1";
+const API_URL = "http://localhost:5004/api/v1";
 
 // Input validation rules
 const validators = {
@@ -66,6 +66,7 @@ api.interceptors.response.use(
         case 401:
           // Unauthorized - clear token and redirect to login
           AuthAPI.clearToken();
+          AuthAPI.clearUserData();
           window.location.href = "/login";
           break;
         case 403:
@@ -119,6 +120,10 @@ class AuthAPI {
     sessionStorage.removeItem("access_token");
   }
 
+  static clearUserData() {
+    localStorage.removeItem("userData");
+  }
+
   static validateSigninData(data) {
     const errors = {};
     const emailError = validators.email(data.email);
@@ -170,6 +175,10 @@ class AuthAPI {
 
       if (response.data.access_token) {
         this.setToken(response.data.access_token);
+
+        // After successful authentication, fetch user data
+        const userResponse = await api.get("/users/me");
+        localStorage.setItem("userData", JSON.stringify(userResponse.data));
       }
 
       return response.data;
@@ -196,6 +205,10 @@ class AuthAPI {
 
       if (response.data.access_token) {
         this.setToken(response.data.access_token);
+
+        // After successful signup, fetch user data
+        const userResponse = await api.get("/users/me");
+        localStorage.setItem("userData", JSON.stringify(userResponse.data));
       }
 
       return response.data;
@@ -228,6 +241,10 @@ class AuthAPI {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      // Update user data in localStorage after successful onboarding
+      localStorage.setItem("userData", JSON.stringify(response.data));
+
       return response.data;
     } catch (error) {
       throw error;
@@ -235,11 +252,12 @@ class AuthAPI {
   }
 
   static isAuthenticated() {
-    return !!this.getToken();
+    return !!this.getToken() && !!localStorage.getItem("userData");
   }
 
   static logout() {
     this.clearToken();
+    this.clearUserData();
     window.location.href = "/login";
   }
 }

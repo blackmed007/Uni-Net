@@ -1,75 +1,185 @@
 import React, { useState } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@nextui-org/react";
-import { Calendar, Clock, MapPin, Users, User, Image, Upload, Link } from "lucide-react";
+import { 
+  Modal, 
+  ModalContent, 
+  ModalHeader, 
+  ModalBody, 
+  ModalFooter, 
+  Button, 
+  Input, 
+  Select, 
+  SelectItem, 
+  Textarea,
+  Spinner
+} from "@nextui-org/react";
+import { Calendar, Clock, MapPin, Users, User, Upload, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from 'react-hot-toast';
+import EventsAPI from '../../../services/events.api';
 
 const CreateEventModal = ({ isOpen, onClose, onSave }) => {
-  const [newEvent, setNewEvent] = useState({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [errors, setErrors] = useState({});
+  
+  const initialEventState = {
     name: '',
+    description: '',
     date: '',
     time: '',
     location: '',
-    locationUrl: '',
-    type: '',
-    status: 'Upcoming',
+    event_type: '',
+    event_status: 'Upcoming',
     organizer: '',
-    maxParticipants: '',
-    description: '',
+    max_participants: '',
     agenda: [],
-    speakers: [],
-    image: ''
-  });
-  const [uploadedImage, setUploadedImage] = useState(null);
+    speaker: [],
+    event_image: null,
+    event_image_url: ''
+  };
+
+  const [newEvent, setNewEvent] = useState(initialEventState);
+  const [eventImagePreview, setEventImagePreview] = useState(null);
+
+  const validateFileUpload = (file) => {
+    if (!file) return null;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      return 'Please upload a valid image file (JPEG, PNG, GIF, or WebP)';
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      return 'Image size should be less than 5MB';
+    }
+
+    return null;
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const errorMessage = validateFileUpload(file);
+    if (errorMessage) {
+      toast.error(errorMessage);
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEventImagePreview(reader.result);
+        setNewEvent(prev => ({ ...prev, event_image: file }));
+      };
+      reader.readAsDataURL(file);
+
+      setErrors(prev => ({ ...prev, event_image: undefined }));
+    } catch (error) {
+      console.error('Error handling image upload:', error);
+      toast.error('Failed to process image');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    // Basic field validation
+    if (!newEvent.name?.trim()) errors.name = 'Event name is required';
+    if (!newEvent.description?.trim()) errors.description = 'Description is required';
+    if (!newEvent.date) errors.date = 'Date is required';
+    if (!newEvent.time) errors.time = 'Time is required';
+    if (!newEvent.location?.trim()) errors.location = 'Location is required';
+    if (!newEvent.event_type) errors.event_type = 'Event type is required';
+    if (!newEvent.organizer?.trim()) errors.organizer = 'Organizer is required';
+    if (!newEvent.max_participants) errors.max_participants = 'Maximum participants is required';
+    if (!newEvent.event_image && !newEvent.event_image_url) errors.event_image = 'Event image is required';
+
+    // Validate max participants
+    const maxParticipants = parseInt(newEvent.max_participants);
+    if (isNaN(maxParticipants) || maxParticipants <= 0) {
+      errors.max_participants = 'Maximum participants must be a positive number';
+    }
+
+    // Validate date is not in the past
+    if (newEvent.date) {
+      const eventDate = new Date(`${newEvent.date}T${newEvent.time || '00:00'}`);
+      if (eventDate < new Date()) {
+        errors.date = 'Event date cannot be in the past';
+      }
+    }
+
+    // Validate event type
+    if (newEvent.event_type && !EventsAPI.EVENT_TYPES.includes(newEvent.event_type)) {
+      errors.event_type = `Event type must be one of: ${EventsAPI.EVENT_TYPES.join(', ')}`;
+    }
+
+    // Validate event status
+    if (newEvent.event_status && !EventsAPI.EVENT_STATUSES.includes(newEvent.event_status)) {
+      errors.event_status = `Event status must be one of: ${EventsAPI.EVENT_STATUSES.join(', ')}`;
+    }
+
+    // Validate agenda items
+    if (newEvent.agenda.some(item => !item.trim())) {
+      errors.agenda = 'All agenda items must have content';
+    }
+
+    // Validate speakers
+    if (newEvent.speaker.some(speaker => !speaker.name?.trim() || !speaker.role?.trim())) {
+      errors.speaker = 'All speakers must have a name and role';
+    }
+
+    setErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleChange = (key, value) => {
     setNewEvent(prev => ({ ...prev, [key]: value }));
+    if (errors[key]) {
+      setErrors(prev => ({ ...prev, [key]: undefined }));
+    }
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedImage(reader.result);
+  const handleSubmit = async () => {
+    try {
+      if (!validateForm()) {
+        toast.error('Please fill in all required fields correctly');
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      // Prepare the event data
+      const formattedEvent = {
+        ...newEvent,
+        agenda: newEvent.agenda.filter(item => item.trim()),
+        speaker: newEvent.speaker.filter(s => s.name && s.role),
+        max_participants: parseInt(newEvent.max_participants),
+        event_type: newEvent.event_type,
+        event_status: newEvent.event_status || 'Upcoming'
       };
-      reader.readAsDataURL(file);
+
+      await onSave(formattedEvent);
+      handleClose();
+      toast.success('Event created successfully');
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast.error(error.response?.data?.message || 'Failed to create event');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSave = () => {
-    if (Object.values(newEvent).some(value => value === '') && !uploadedImage) {
-      alert('All fields are required');
-      return;
-    }
-    
-    const lastId = localStorage.getItem('lastEventId') || '000';
-    const newId = (parseInt(lastId) + 1).toString().padStart(3, '0');
-    localStorage.setItem('lastEventId', newId);
-
-    onSave({
-      ...newEvent,
-      id: newId,
-      participants: [],
-      bookmarkedBy: [],
-      totalViews: 0,
-      image: uploadedImage || newEvent.image,
-    });
-    setNewEvent({
-      name: '',
-      date: '',
-      time: '',
-      location: '',
-      locationUrl: '',
-      type: '',
-      status: 'Upcoming',
-      organizer: '',
-      maxParticipants: '',
-      description: '',
-      agenda: [],
-      speakers: [],
-      image: '',
-    });
-    setUploadedImage(null);
+  const handleClose = () => {
+    setNewEvent(initialEventState);
+    setEventImagePreview(null);
+    setErrors({});
     onClose();
   };
 
@@ -87,26 +197,40 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
     }));
   };
 
+  const removeAgendaItem = (index) => {
+    setNewEvent(prev => ({
+      ...prev,
+      agenda: prev.agenda.filter((_, i) => i !== index)
+    }));
+  };
+
   const addSpeaker = () => {
     setNewEvent(prev => ({
       ...prev,
-      speakers: [...prev.speakers, { name: '', role: '', image: '' }]
+      speaker: [...prev.speaker, { name: '', role: '', image_url: '' }]
     }));
   };
 
   const updateSpeaker = (index, key, value) => {
     setNewEvent(prev => ({
       ...prev,
-      speakers: prev.speakers.map((speaker, i) => 
+      speaker: prev.speaker.map((speaker, i) => 
         i === index ? { ...speaker, [key]: value } : speaker
       )
+    }));
+  };
+
+  const removeSpeaker = (index) => {
+    setNewEvent(prev => ({
+      ...prev,
+      speaker: prev.speaker.filter((_, i) => i !== index)
     }));
   };
 
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={onClose}
+      onClose={handleClose}
       size="3xl"
       scrollBehavior="inside"
       classNames={{
@@ -136,12 +260,16 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
           >
             <Input
               label="Event Name"
+              placeholder="Enter event name"
               value={newEvent.name}
               onChange={(e) => handleChange('name', e.target.value)}
               startContent={<Calendar className="text-default-400" size={16} />}
               isRequired
+              isInvalid={!!errors.name}
+              errorMessage={errors.name}
             />
-            <div className="flex gap-2">
+
+            <div className="flex gap-4">
               <Input
                 label="Date"
                 type="date"
@@ -149,6 +277,10 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
                 onChange={(e) => handleChange('date', e.target.value)}
                 startContent={<Calendar className="text-default-400" size={16} />}
                 isRequired
+                isInvalid={!!errors.date}
+                errorMessage={errors.date}
+                className="flex-1"
+                min={new Date().toISOString().split('T')[0]}
               />
               <Input
                 label="Time"
@@ -157,137 +289,206 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
                 onChange={(e) => handleChange('time', e.target.value)}
                 startContent={<Clock className="text-default-400" size={16} />}
                 isRequired
+                isInvalid={!!errors.time}
+                errorMessage={errors.time}
+                className="flex-1"
               />
             </div>
+
             <Input
               label="Location"
+              placeholder="Enter event location"
               value={newEvent.location}
               onChange={(e) => handleChange('location', e.target.value)}
               startContent={<MapPin className="text-default-400" size={16} />}
               isRequired
+              isInvalid={!!errors.location}
+              errorMessage={errors.location}
             />
-            <Input
-              label="Location URL for Maps"
-              value={newEvent.locationUrl}
-              onChange={(e) => handleChange('locationUrl', e.target.value)}
-              startContent={<Link className="text-default-400" size={16} />}
-              placeholder="Enter maps URL"
-            />
-            <Select
-              label="Event Type"
-              value={newEvent.type}
-              onChange={(e) => handleChange('type', e.target.value)}
-              isRequired
-            >
-              <SelectItem key="Workshop" value="Workshop">Workshop</SelectItem>
-              <SelectItem key="Seminar" value="Seminar">Seminar</SelectItem>
-              <SelectItem key="Conference" value="Conference">Conference</SelectItem>
-              <SelectItem key="Social" value="Social">Social</SelectItem>
-            </Select>
-            <Select
-              label="Status"
-              value={newEvent.status}
-              onChange={(e) => handleChange('status', e.target.value)}
-              isRequired
-            >
-              <SelectItem key="Upcoming" value="Upcoming">Upcoming</SelectItem>
-              <SelectItem key="Ongoing" value="Ongoing">Ongoing</SelectItem>
-              <SelectItem key="Completed" value="Completed">Completed</SelectItem>
-              <SelectItem key="Cancelled" value="Cancelled">Cancelled</SelectItem>
-            </Select>
-            <Input
-              label="Organizer"
-              value={newEvent.organizer}
-              onChange={(e) => handleChange('organizer', e.target.value)}
-              startContent={<User className="text-default-400" size={16} />}
-              isRequired
-            />
-            <Input
-              label="Max Participants"
-              type="number"
-              value={newEvent.maxParticipants}
-              onChange={(e) => handleChange('maxParticipants', parseInt(e.target.value))}
-              startContent={<Users className="text-default-400" size={16} />}
-              isRequired
-            />
+
+            <div className="flex gap-4">
+              <Select
+                label="Event Type"
+                placeholder="Select event type"
+                selectedKeys={newEvent.event_type ? [newEvent.event_type] : []}
+                onChange={(e) => handleChange('event_type', e.target.value)}
+                isRequired
+                isInvalid={!!errors.event_type}
+                errorMessage={errors.event_type}
+                className="flex-1"
+              >
+                {EventsAPI.EVENT_TYPES.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </Select>
+
+              <Select
+                label="Status"
+                placeholder="Select status"
+                selectedKeys={newEvent.event_status ? [newEvent.event_status] : []}
+                onChange={(e) => handleChange('event_status', e.target.value)}
+                className="flex-1"
+              >
+                {EventsAPI.EVENT_STATUSES.map(status => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </Select>
+            </div>
+
+            <div className="flex gap-4">
+              <Input
+                label="Organizer"
+                placeholder="Enter organizer name"
+                value={newEvent.organizer}
+                onChange={(e) => handleChange('organizer', e.target.value)}
+                startContent={<User className="text-default-400" size={16} />}
+                isRequired
+                isInvalid={!!errors.organizer}
+                errorMessage={errors.organizer}
+                className="flex-1"
+              />
+
+              <Input
+                label="Max Participants"
+                type="number"
+                placeholder="Enter maximum participants"
+                value={newEvent.max_participants}
+                onChange={(e) => handleChange('max_participants', e.target.value)}
+                startContent={<Users className="text-default-400" size={16} />}
+                isRequired
+                isInvalid={!!errors.max_participants}
+                errorMessage={errors.max_participants}
+                className="flex-1"
+                min="1"
+              />
+            </div>
+
             <Textarea
               label="Description"
+              placeholder="Enter event description"
               value={newEvent.description}
               onChange={(e) => handleChange('description', e.target.value)}
               isRequired
+              isInvalid={!!errors.description}
+              errorMessage={errors.description}
+              minRows={3}
+              maxRows={5}
             />
-            <div>
-              <p className="text-small font-bold">Agenda</p>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <p className="text-small font-bold">Agenda</p>
+                <Button size="sm" onClick={addAgendaItem}>Add Agenda Item</Button>
+              </div>
               {newEvent.agenda.map((item, index) => (
-                <Input
-                  key={index}
-                  value={item}
-                  onChange={(e) => updateAgendaItem(index, e.target.value)}
-                  className="mt-2"
-                  isRequired
-                />
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={item}
+                    onChange={(e) => updateAgendaItem(index, e.target.value)}
+                    placeholder="Enter agenda item"
+                    className="flex-1"
+                  />
+                  <Button 
+                    size="sm" 
+                    color="danger" 
+                    variant="flat"
+                    onClick={() => removeAgendaItem(index)}
+                  >
+                    <X size={16} />
+                  </Button>
+                </div>
               ))}
-              <Button size="sm" onPress={addAgendaItem} className="mt-2">Add Agenda Item</Button>
+              {errors.agenda && (
+                <p className="text-danger text-xs">{errors.agenda}</p>
+              )}
             </div>
-            <div>
-              <p className="text-small font-bold">Speakers</p>
-              {newEvent.speakers.map((speaker, index) => (
-                <div key={index} className="flex gap-2 mt-2">
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <p className="text-small font-bold">Speakers</p>
+                <Button size="sm" onClick={addSpeaker}>Add Speaker</Button>
+              </div>
+              {newEvent.speaker.map((speaker, index) => (
+                <div key={index} className="grid grid-cols-3 gap-2">
                   <Input
                     value={speaker.name}
                     onChange={(e) => updateSpeaker(index, 'name', e.target.value)}
-                    placeholder="Name"
-                    isRequired
+                    placeholder="Speaker name"
+                    size="sm"
                   />
                   <Input
                     value={speaker.role}
                     onChange={(e) => updateSpeaker(index, 'role', e.target.value)}
-                    placeholder="Role"
-                    isRequired
+                    placeholder="Speaker role"
+                    size="sm"
                   />
-                  <Input
-                    value={speaker.image}
-                    onChange={(e) => updateSpeaker(index, 'image', e.target.value)}
-                    placeholder="Image URL"
-                    isRequired
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={speaker.image_url}
+                      onChange={(e) => updateSpeaker(index, 'image_url', e.target.value)}
+                      placeholder="Speaker image URL"
+                      size="sm"
+                      className="flex-1"
+                    />
+                    <Button 
+                      size="sm" 
+                      color="danger" 
+                      variant="flat"
+                      onClick={() => removeSpeaker(index)}
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
                 </div>
               ))}
-              <Button size="sm" onPress={addSpeaker} className="mt-2">Add Speaker</Button>
+              {errors.speaker && (
+                <p className="text-danger text-xs">{errors.speaker}</p>
+              )}
             </div>
-            <div>
+
+            <div className="space-y-2">
               <p className="text-small font-bold mb-2">Event Image</p>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Upload Image</p>
-                  <label className="flex items-center justify-center w-full h-[38px] px-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <Upload className="text-gray-400 mr-2" size={16} />
-                    <span className="text-sm text-gray-400">Choose file</span>
-                  </label>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs mb-1">Image URL</p>
-                  <Input
-                    placeholder="Enter image URL"
-                    value={newEvent.image}
-                    onChange={(e) => handleChange('image', e.target.value)}
-                    startContent={<Image className="text-gray-400" size={16} />}
-                    className="h-[38px]"
-                  />
-                </div>
-              </div>
-              {(uploadedImage || newEvent.image) && (
-                <img 
-                  src={uploadedImage || newEvent.image} 
-                  alt="Event" 
-                  className="mt-4 max-w-full h-auto rounded-lg"
+              <div className="flex items-center gap-4">
+                <input
+                  type="file"
+                  id="event-image"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  disabled={isSubmitting || isUploading}
                 />
+                <label
+                  htmlFor="event-image"
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-gray-400 hover:border-gray-200 transition-colors"
+                >
+                  <Upload size={20} />
+                  <span>{isUploading ? 'Uploading...' : 'Choose event image'}</span>
+                </label>
+                {eventImagePreview && (
+                  <div className="relative w-32 h-32">
+                    <img
+                      src={eventImagePreview}
+                      alt="Event preview"
+                      className="w-full h-full rounded-lg object-cover"
+                    />
+                    <Button
+                      isIconOnly
+                      color="danger"
+                      variant="flat"
+                      size="sm"
+                      onPress={() => {
+                        setNewEvent(prev => ({ ...prev, event_image: null }));
+                        setEventImagePreview(null);
+                      }}
+                      className="absolute -top-2 -right-2"
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {errors.event_image && (
+                <p className="text-danger text-xs">{errors.event_image}</p>
               )}
             </div>
           </motion.div>
@@ -296,17 +497,18 @@ const CreateEventModal = ({ isOpen, onClose, onSave }) => {
           <Button 
             color="danger" 
             variant="flat" 
-            onPress={onClose}
-            className="bg-gradient-to-r from-red-500 to-pink-500 text-white"
+            onPress={handleClose}
+            isDisabled={isSubmitting || isUploading}
           >
             Cancel
           </Button>
           <Button 
-            color="primary" 
-            onPress={handleSave}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+            color="primary"
+            onPress={handleSubmit}
+            isDisabled={isSubmitting || isUploading}
+            startContent={isSubmitting ? <Spinner size="sm" /> : null}
           >
-            Create Event
+            {isSubmitting ? 'Creating...' : 'Create Event'}
           </Button>
         </ModalFooter>
       </ModalContent>

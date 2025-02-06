@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
 import { Plus, Edit, Trash } from "lucide-react";
+import LocationAPI from '../../../services/location.api';
 
 const CityManagement = ({ cities, onCityUpdate }) => {
   const [newCity, setNewCity] = useState('');
   const [editingCity, setEditingCity] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleAddCity = () => {
+  const handleAddCity = async () => {
     if (newCity.trim()) {
-      const updatedCities = [...cities, { id: Date.now(), name: newCity.trim() }];
-      onCityUpdate(updatedCities);
-      setNewCity('');
+      try {
+        const createdCity = await LocationAPI.addCity({ name: newCity.trim() });
+        onCityUpdate([...cities, createdCity]);
+        setNewCity('');
+      } catch (error) {
+        console.error('Error adding city:', error);
+      }
     }
   };
 
@@ -20,18 +25,28 @@ const CityManagement = ({ cities, onCityUpdate }) => {
     setIsModalOpen(true);
   };
 
-  const handleUpdateCity = () => {
-    const updatedCities = cities.map(c => 
-      c.id === editingCity.id ? editingCity : c
-    );
-    onCityUpdate(updatedCities);
-    setIsModalOpen(false);
-    setEditingCity(null);
+  const handleUpdateCity = async () => {
+    try {
+      const updatedCity = await LocationAPI.updateCity(editingCity.id, editingCity);
+      const updatedCities = cities.map((c) =>
+        c.id === updatedCity.id ? updatedCity : c
+      );
+      onCityUpdate(updatedCities);
+      setIsModalOpen(false);
+      setEditingCity(null);
+    } catch (error) {
+      console.error('Error updating city:', error);
+    }
   };
 
-  const handleDeleteCity = (id) => {
-    const updatedCities = cities.filter(c => c.id !== id);
-    onCityUpdate(updatedCities);
+  const handleDeleteCity = async (id) => {
+    try {
+      await LocationAPI.deleteCity(id);
+      const updatedCities = cities.filter((c) => c.id !== id);
+      onCityUpdate(updatedCities);
+    } catch (error) {
+      console.error('Error deleting city:', error);
+    }
   };
 
   return (
@@ -50,7 +65,7 @@ const CityManagement = ({ cities, onCityUpdate }) => {
       </div>
       <Table aria-label="Cities table">
         <TableHeader>
-          <TableColumn>CITY NAME</TableColumn>
+          <TableColumn className="pr-60">CITY NAME</TableColumn> {/* Added right padding */}
           <TableColumn>ACTIONS</TableColumn>
         </TableHeader>
         <TableBody>

@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardBody } from "@nextui-org/react";
 import { Activity, Users, Calendar, MessageSquare } from "lucide-react";
+import UsersAPI from '../../../services/users.api';
 
 const RecentActivity = ({ userId }) => {
   const [activities, setActivities] = useState([]);
 
   useEffect(() => {
-    // Fetch recent activities from localStorage or API
-    // For now, we'll use mock data
-    const mockActivities = [
-      { id: 1, type: 'join_group', content: 'You joined the study group "Advanced Mathematics"', timestamp: '2023-09-05T14:30:00Z' },
-      { id: 2, type: 'register_event', content: 'You registered for the event "Web Development Workshop"', timestamp: '2023-09-04T10:15:00Z' },
-      { id: 3, type: 'comment', content: 'You commented on a blog post "Tips for Effective Studying"', timestamp: '2023-09-03T16:45:00Z' },
-      { id: 4, type: 'join_group', content: 'You joined the study group "Physics Study Circle"', timestamp: '2023-09-02T11:30:00Z' },
-    ];
-    // Only show the last 3 activities
-    setActivities(mockActivities.slice(0, 3));
+    const fetchActivities = async () => {
+      try {
+        const fetchedActivities = await UsersAPI.getUserActivity(userId);
+        // Only show the last 3 activities
+        setActivities(fetchedActivities.slice(0, 3));
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+      }
+    };
+
+    fetchActivities();
   }, [userId]);
 
   const getActivityIcon = (type) => {

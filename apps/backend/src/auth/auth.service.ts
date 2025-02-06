@@ -99,7 +99,7 @@ export class AuthService {
 
     // Signing a token
     const token = this.jwt.sign(payload, {
-      expiresIn: '45m',
+      expiresIn: '1d',
       secret,
     });
 

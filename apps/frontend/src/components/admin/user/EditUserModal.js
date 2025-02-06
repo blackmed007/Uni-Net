@@ -1,46 +1,144 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem } from "@nextui-org/react";
+import { 
+  Modal, 
+  ModalContent, 
+  ModalHeader, 
+  ModalBody, 
+  ModalFooter, 
+  Button, 
+  Input, 
+  Select, 
+  SelectItem,
+  Avatar 
+} from "@nextui-org/react";
 import { motion } from "framer-motion";
+import { Upload, X } from 'lucide-react';
 
 const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) => {
-  const [editedUser, setEditedUser] = useState(user || {});
+  const [editedUser, setEditedUser] = useState({});
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (user) {
       setEditedUser({
-        ...user,
+        id: user.id,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
         role: user.role || '',
-        university: user.university || '',
-        city: user.city || '',
         gender: user.gender || '',
-        status: user.status || 'Active'
+        universityId: user.universityId || '',
+        cityId: user.cityId || '',
+        status: user.status || 'Active',
+        profile_url: user.profile_url || null
       });
+      setImagePreview(user.profile_url);
     }
   }, [user]);
 
   const handleChange = (key, value) => {
     setEditedUser(prev => ({ ...prev, [key]: value }));
+    // Clear error for the field being changed
+    if (errors[key]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[key];
+        return newErrors;
+      });
+    }
   };
 
-  const handleSave = () => {
-    if (Object.values(editedUser).some(value => value === '')) {
-      alert('All fields are required');
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setErrors(prev => ({
+        ...prev,
+        profile_url: 'Please upload a valid image file (JPEG, PNG, or GIF)'
+      }));
       return;
     }
 
-    const userToSave = {
-      ...editedUser,
-      id: editedUser.id,
-      registrationDate: editedUser.registrationDate || new Date().toISOString(),
-    };
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({
+        ...prev,
+        profile_url: 'Image size should be less than 5MB'
+      }));
+      return;
+    }
 
-    onSave(userToSave);
+    // Preview image
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Update form data
+    setEditedUser(prev => ({ ...prev, profile_url: file }));
+    // Clear any existing image error
+    if (errors.profile_url) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.profile_url;
+        return newErrors;
+      });
+    }
+  };
+
+  const removeImage = () => {
+    setEditedUser(prev => ({ ...prev, profile_url: null }));
+    setImagePreview(null);
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!editedUser.firstName?.trim()) newErrors.firstName = 'First name is required';
+    if (!editedUser.lastName?.trim()) newErrors.lastName = 'Last name is required';
+    if (!editedUser.email?.trim()) newErrors.email = 'Email is required';
+    if (!editedUser.role) newErrors.role = 'Role is required';
+    if (!editedUser.gender) newErrors.gender = 'Gender is required';
+    if (!editedUser.universityId) newErrors.universityId = 'University is required';
+    if (!editedUser.cityId) newErrors.cityId = 'City is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    try {
+      setIsLoading(true);
+      await onSave(editedUser);
+      onClose();
+    } catch (error) {
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      } else {
+        setErrors({ submit: 'Failed to update user. Please try again.' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setErrors({});
+    onClose();
   };
 
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={onClose}
+      onClose={handleClose}
       classNames={{
         base: "bg-gray-900 bg-opacity-50 backdrop-blur-md border border-gray-800 rounded-3xl",
         header: "border-b border-gray-800",
@@ -79,112 +177,179 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
             Edit User
           </motion.h2>
         </ModalHeader>
+        
         <ModalBody>
+          {errors.submit && (
+            <div className="bg-red-500 bg-opacity-10 border border-red-500 text-red-500 p-3 rounded-lg mb-4">
+              {errors.submit}
+            </div>
+          )}
+
           <motion.div 
             className="space-y-4"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
+            {/* Profile Image Upload */}
+            <div className="flex justify-center">
+              {imagePreview ? (
+                <div className="relative">
+                  <Avatar
+                    src={imagePreview}
+                    className="w-24 h-24"
+                    alt="Profile preview"
+                  />
+                  
+                </div>
+              ) : (
+                <label className="cursor-pointer">
+                  <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center border-2 border-dashed border-gray-600 hover:border-gray-500 transition-colors">
+                    <Upload size={24} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                </label>
+              )}
+            </div>
+            {errors.profile_url && (
+              <p className="text-danger text-sm text-center">{errors.profile_url}</p>
+            )}
+
+            {/* User Info Fields */}
             <div className="grid grid-cols-2 gap-4">
               <Input
-                key="firstName-input"
                 label="First Name"
                 value={editedUser.firstName || ''}
                 onChange={(e) => handleChange('firstName', e.target.value)}
-                required
-                className="bg-gray-800 text-white"
+                errorMessage={errors.firstName}
+                isInvalid={!!errors.firstName}
+                classNames={{
+                  input: ["bg-transparent", "text-white"],
+                  label: "text-white",
+                }}
               />
               <Input
-                key="lastName-input"
                 label="Last Name"
                 value={editedUser.lastName || ''}
                 onChange={(e) => handleChange('lastName', e.target.value)}
-                required
-                className="bg-gray-800 text-white"
+                errorMessage={errors.lastName}
+                isInvalid={!!errors.lastName}
+                classNames={{
+                  input: ["bg-transparent", "text-white"],
+                  label: "text-white",
+                }}
               />
             </div>
+
             <Input
-              key="email-input"
               label="Email"
               value={editedUser.email || ''}
               onChange={(e) => handleChange('email', e.target.value)}
-              required
-              className="bg-gray-800 text-white"
+              errorMessage={errors.email}
+              isInvalid={!!errors.email}
+              classNames={{
+                input: ["bg-transparent", "text-white"],
+                label: "text-white",
+              }}
             />
+
             <div className="grid grid-cols-2 gap-4">
               <Select
-                key="role-select"
                 label="Role"
                 selectedKeys={editedUser.role ? [editedUser.role] : []}
                 onChange={(e) => handleChange('role', e.target.value)}
-                required
-                className="bg-gray-800 text-white"
+                errorMessage={errors.role}
+                isInvalid={!!errors.role}
+                classNames={{
+                  trigger: ["bg-transparent", "text-white"],
+                  label: "text-white",
+                }}
               >
-                <SelectItem key="Admin">Admin</SelectItem>
-                <SelectItem key="Student">Student</SelectItem>
+                <SelectItem key="admin" value="admin">Admin</SelectItem>
+                <SelectItem key="user" value="user">User</SelectItem>
               </Select>
+
               <Select
-                key="gender-select"
                 label="Gender"
                 selectedKeys={editedUser.gender ? [editedUser.gender] : []}
                 onChange={(e) => handleChange('gender', e.target.value)}
-                required
-                className="bg-gray-800 text-white"
+                errorMessage={errors.gender}
+                isInvalid={!!errors.gender}
+                classNames={{
+                  trigger: ["bg-transparent", "text-white"],
+                  label: "text-white",
+                }}
               >
-                <SelectItem key="Male">Male</SelectItem>
-                <SelectItem key="Female">Female</SelectItem>
+                <SelectItem key="male" value="male">Male</SelectItem>
+                <SelectItem key="female" value="female">Female</SelectItem>
               </Select>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <Select
-                key="university-select"
                 label="University"
-                selectedKeys={editedUser.university ? [editedUser.university] : []}
-                onChange={(e) => handleChange('university', e.target.value)}
-                required
-                className="bg-gray-800 text-white"
+                selectedKeys={editedUser.universityId ? [editedUser.universityId] : []}
+                onChange={(e) => handleChange('universityId', e.target.value)}
+                errorMessage={errors.universityId}
+                isInvalid={!!errors.universityId}
+                classNames={{
+                  trigger: ["bg-transparent", "text-white"],
+                  label: "text-white",
+                }}
               >
                 {universities.map((university) => (
-                  <SelectItem key={university.id} value={university.name}>
+                  <SelectItem key={university.id} value={university.id}>
                     {university.name}
                   </SelectItem>
                 ))}
               </Select>
+
               <Select
-                key="city-select"
                 label="City"
-                selectedKeys={editedUser.city ? [editedUser.city] : []}
-                onChange={(e) => handleChange('city', e.target.value)}
-                required
-                className="bg-gray-800 text-white"
+                selectedKeys={editedUser.cityId ? [editedUser.cityId] : []}
+                onChange={(e) => handleChange('cityId', e.target.value)}
+                errorMessage={errors.cityId}
+                isInvalid={!!errors.cityId}
+                classNames={{
+                  trigger: ["bg-transparent", "text-white"],
+                  label: "text-white",
+                }}
               >
                 {cities.map((city) => (
-                  <SelectItem key={city.id} value={city.name}>
+                  <SelectItem key={city.id} value={city.id}>
                     {city.name}
                   </SelectItem>
                 ))}
               </Select>
             </div>
+
             <Select
-              key="status-select"
               label="Status"
               selectedKeys={editedUser.status ? [editedUser.status] : []}
               onChange={(e) => handleChange('status', e.target.value)}
-              required
-              className="bg-gray-800 text-white"
+              classNames={{
+                trigger: ["bg-transparent", "text-white"],
+                label: "text-white",
+              }}
             >
-              <SelectItem key="Active">Active</SelectItem>
-              <SelectItem key="Suspended">Suspended</SelectItem>
+              <SelectItem key="Active" value="Active">Active</SelectItem>
+              <SelectItem key="Suspended" value="Suspended">Suspended</SelectItem>
             </Select>
           </motion.div>
         </ModalBody>
+
         <ModalFooter>
           <Button 
             color="danger" 
             variant="flat" 
-            onPress={onClose}
+            onPress={handleClose}
             className="bg-gradient-to-r from-red-500 to-pink-500 text-white"
+            isDisabled={isLoading}
           >
             Cancel
           </Button>
@@ -192,6 +357,8 @@ const EditUserModal = ({ isOpen, onClose, user, onSave, universities, cities }) 
             color="primary" 
             onPress={handleSave}
             className="bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+            isLoading={isLoading}
+            isDisabled={isLoading}
           >
             Save Changes
           </Button>

@@ -9,7 +9,7 @@ const AccessLogsTable = () => {
   const rowsPerPage = 10;
 
   useEffect(() => {
-    // Fetch logs from API or use mock data
+    // Mock data remains for design purposes
     const mockLogs = Array.from({ length: 50 }, (_, i) => ({
       id: i + 1,
       user: `user${i + 1}@example.com`,
@@ -38,15 +38,33 @@ const AccessLogsTable = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Access Logs</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Access Logs</h2>
+      </div>
+      
+      <div className="mt-2 p-2 bg-gray-800 rounded-lg">
+        <p className="text-sm text-yellow-400">Enhanced Security Monitoring - Coming in Next Release</p>
+        <ul className="text-sm text-gray-300 mt-1 ml-4 list-disc">
+          <li>Detailed user access tracking and monitoring</li>
+          <li>Real-time security alerts and notifications</li>
+          <li>Advanced filtering and reporting capabilities</li>
+          <li>IP-based access control and geographic tracking</li>
+        </ul>
+      </div>
+
       <Input
         placeholder="Search logs..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         startContent={<Search className="text-default-400" size={16} />}
         className="max-w-xs mb-4"
+        isDisabled
       />
-      <Table aria-label="Access logs table">
+      
+      <Table 
+        aria-label="Access logs table"
+        className="opacity-50 pointer-events-none"
+      >
         <TableHeader>
           <TableColumn>USER</TableColumn>
           <TableColumn>ACTION</TableColumn>
@@ -71,6 +89,7 @@ const AccessLogsTable = () => {
           total={pages}
           page={page}
           onChange={(page) => setPage(page)}
+          isDisabled
         />
       </div>
     </div>

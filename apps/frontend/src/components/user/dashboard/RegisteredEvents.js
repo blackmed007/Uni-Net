@@ -1,12 +1,8 @@
 import React from 'react';
-import { Card, CardBody, Button } from "@nextui-org/react";
+import { Card, CardBody } from "@nextui-org/react";
 import { Calendar } from "lucide-react";
 
 const RegisteredEvents = ({ events }) => {
-  const handleViewDetails = (eventId) => {
-    console.log(`View details for event ${eventId}`);
-  };
-
   // Only show the last 3 events
   const recentEvents = events.slice(-3);
 
@@ -26,9 +22,6 @@ const RegisteredEvents = ({ events }) => {
                     <p className="text-sm text-gray-500">{event.date} - {event.time}</p>
                   </div>
                 </div>
-                <Button size="sm" color="primary" variant="light" onPress={() => handleViewDetails(event.id)}>
-                  View Details
-                </Button>
               </div>
             ))}
           </div>

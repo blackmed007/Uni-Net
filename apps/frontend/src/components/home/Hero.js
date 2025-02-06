@@ -13,13 +13,14 @@ const HEADLINES = [
 const HEADLINE_ROTATION_INTERVAL = 5000;
 
 const Hero = () => {
-    // Controls the automatic rotation of headlines
+  // Controls the automatic rotation of headlines
   const [currentHeadline, setCurrentHeadline] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(handleHeadlineRotation, HEADLINE_ROTATION_INTERVAL);
     return () => clearInterval(interval);
   }, []);
+
   // Cycles through headlines with smooth transitions
   const handleHeadlineRotation = () => {
     setCurrentHeadline((prev) => (prev + 1) % HEADLINES.length);
@@ -70,21 +71,23 @@ const Hero = () => {
           >
             Blend in and experience new cultures as an international student
           </motion.p>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          {/* Simplified professional button animation */}
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.3 }}
           >
             <Button 
+              className="transition-all duration-300 ease-in-out hover:opacity-90 hover:shadow-lg"
               color="primary"
               size="lg"
               onClick={handleGetStarted}
               auto
               shadow
-              animated
             >
               Get Started
             </Button>
-          </motion.div>
+          </motion.span>
         </div>
         <motion.div 
           className="md:w-1/2 mt-12 md:mt-0"

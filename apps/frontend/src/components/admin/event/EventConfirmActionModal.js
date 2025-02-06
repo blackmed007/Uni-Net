@@ -1,33 +1,47 @@
-import React from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
-import { AlertTriangle, XCircle, Play } from "lucide-react";
+import React, { useState } from 'react';
+import { 
+  Modal, 
+  ModalContent, 
+  ModalHeader, 
+  ModalBody, 
+  ModalFooter, 
+  Button,
+  Spinner 
+} from "@nextui-org/react";
+import { AlertTriangle, UserX, UserCheck, Trash2 } from "lucide-react";
 
-const EventConfirmActionModal = ({ isOpen, onClose, onConfirm, actionType, eventName }) => {
+const UserConfirmActionModal = ({ isOpen, onClose, onConfirm, actionType, userName = '' }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const getActionDetails = () => {
     switch (actionType) {
-      case 'cancel':
+      case 'suspend':
         return {
-          title: "Cancel Event",
-          message: `Are you sure you want to cancel the event "${eventName}"? This action will notify all participants.`,
-          confirmText: "Cancel Event",
+          title: "Suspend User",
+          message: `Are you sure you want to suspend ${userName || 'this user'}? They will not be able to access the platform until reactivated.`,
+          confirmText: "Suspend User",
           confirmColor: "warning",
-          icon: <XCircle className="text-warning" size={24} />
+          icon: UserX,
+          iconColor: "text-warning"
         };
-      case 'ongoing':
+      case 'activate':
         return {
-          title: "Make Event Ongoing",
-          message: `Are you sure you want to change the status of "${eventName}" to Ongoing?`,
-          confirmText: "Make Ongoing",
+          title: "Activate User",
+          message: `Are you sure you want to activate ${userName || 'this user'}? They will regain access to the platform.`,
+          confirmText: "Activate User",
           confirmColor: "success",
-          icon: <Play className="text-success" size={24} />
+          icon: UserCheck,
+          iconColor: "text-success"
         };
       case 'delete':
         return {
-          title: "Delete Event",
-          message: `Are you sure you want to permanently delete the event "${eventName}"? This action cannot be undone.`,
-          confirmText: "Delete Event",
+          title: "Delete User",
+          message: `Are you sure you want to permanently delete ${userName || 'this user'}? This action cannot be undone.`,
+          confirmText: "Delete User",
           confirmColor: "danger",
-          icon: <AlertTriangle className="text-danger" size={24} />
+          icon: Trash2,
+          iconColor: "text-danger"
         };
       default:
         return {
@@ -35,40 +49,102 @@ const EventConfirmActionModal = ({ isOpen, onClose, onConfirm, actionType, event
           message: "Are you sure you want to perform this action?",
           confirmText: "Confirm",
           confirmColor: "primary",
-          icon: <AlertTriangle className="text-primary" size={24} />
+          icon: AlertTriangle,
+          iconColor: "text-primary"
         };
     }
   };
 
-  const { title, message, confirmText, confirmColor, icon } = getActionDetails();
+  const handleConfirm = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await onConfirm();
+      onClose();
+    } catch (error) {
+      console.error('Error in confirmation action:', error);
+      setError(error.response?.data?.message || error.message || 'An error occurred while performing this action.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const { 
+    title, 
+    message, 
+    confirmText, 
+    confirmColor, 
+    icon: Icon,
+    iconColor 
+  } = getActionDetails();
 
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={onClose}
+      size="sm"
       classNames={{
-        base: "bg-gray-900 text-white",
-        header: "border-b border-gray-800",
+        base: "bg-slate-900 text-white dark:bg-slate-900 dark:text-white",
+        header: "border-b border-slate-800",
         body: "py-6",
-        footer: "border-t border-gray-800"
+        footer: "border-t border-slate-800"
+      }}
+      motionProps={{
+        variants: {
+          enter: {
+            y: 0,
+            opacity: 1,
+            transition: {
+              duration: 0.3,
+              ease: "easeOut",
+            },
+          },
+          exit: {
+            y: -20,
+            opacity: 0,
+            transition: {
+              duration: 0.2,
+              ease: "easeIn",
+            },
+          },
+        }
       }}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
-          <span className="text-2xl font-bold flex items-center">
-            {icon}
-            <span className="ml-2">{title}</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <Icon className={iconColor} size={24} />
+            <span className="text-xl font-bold">{title}</span>
+          </div>
         </ModalHeader>
+        
         <ModalBody>
-          <p>{message}</p>
+          {error && (
+            <div className="bg-danger bg-opacity-10 border border-danger text-danger rounded-lg p-3 mb-4">
+              {error}
+            </div>
+          )}
+          <p className="text-slate-300">{message}</p>
         </ModalBody>
+        
         <ModalFooter>
-          <Button color="gray" variant="light" onPress={onClose}>
+          <Button 
+            variant="flat" 
+            onPress={onClose}
+            className="bg-slate-800 text-white"
+            isDisabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button color={confirmColor} onPress={onConfirm}>
-            {confirmText}
+          <Button 
+            color={confirmColor}
+            onPress={handleConfirm}
+            isLoading={isLoading}
+            className={`bg-${confirmColor} text-white`}
+          >
+            {isLoading ? (
+              <Spinner color="white" size="sm" />
+            ) : confirmText}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -76,4 +152,4 @@ const EventConfirmActionModal = ({ isOpen, onClose, onConfirm, actionType, event
   );
 };
 
-export default EventConfirmActionModal;
+export default UserConfirmActionModal;
