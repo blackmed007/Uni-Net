@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = 'http://localhost:5004/api/v1';
+const API_URL = "http://localhost:5004/api/v1";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -11,21 +11,21 @@ const api = axios.create({
 // Add token to requests if it exists
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('access_token');
+    const token = sessionStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     // Don't override Content-Type for FormData
     if (!(config.data instanceof FormData)) {
-      config.headers['Content-Type'] = 'application/json';
+      config.headers["Content-Type"] = "application/json";
     }
 
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for error handling
@@ -37,26 +37,26 @@ api.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // Unauthorized - clear token and redirect to login
-          sessionStorage.removeItem('access_token');
-          window.location.href = '/login';
+          sessionStorage.removeItem("access_token");
+          window.location.href = "/login";
           break;
         case 403:
-          console.error('Access forbidden:', error.response.data);
+          console.error("Access forbidden:", error.response.data);
           break;
         case 404:
-          console.error('Resource not found:', error.response.data);
+          console.error("Resource not found:", error.response.data);
           break;
         case 422:
-          console.error('Validation error:', error.response.data);
+          console.error("Validation error:", error.response.data);
           break;
         default:
-          console.error('API error:', error.response.data);
+          console.error("API error:", error.response.data);
       }
     } else if (error.request) {
-      console.error('Network error:', error.request);
+      console.error("Network error:", error.request);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 class UsersAPI {
@@ -65,10 +65,10 @@ class UsersAPI {
   // Add bookmark for a blog
   static async addBookmark(blogId) {
     try {
-      const response = await api.post('/users/bookmarks', { blogId });
+      const response = await api.post("/users/bookmarks", { blogId });
       return response.data;
     } catch (error) {
-      console.error('Error adding bookmark:', error);
+      console.error("Error adding bookmark:", error);
       throw error;
     }
   }
@@ -76,14 +76,14 @@ class UsersAPI {
   // Get user's bookmarks
   static async getBookmarks() {
     try {
-      const response = await api.get('/users/bookmarks');
-      return response.data.map(bookmark => ({
+      const response = await api.get("/users/bookmarks");
+      return response.data.map((bookmark) => ({
         id: bookmark.id,
         blogId: bookmark.blogId,
-        blog: bookmark.blog
+        blog: bookmark.blog,
       }));
     } catch (error) {
-      console.error('Error fetching bookmarks:', error);
+      console.error("Error fetching bookmarks:", error);
       throw error;
     }
   }
@@ -94,7 +94,7 @@ class UsersAPI {
       const response = await api.delete(`/users/bookmarks/${blogId}`);
       return response.data;
     } catch (error) {
-      console.error('Error removing bookmark:', error);
+      console.error("Error removing bookmark:", error);
       throw error;
     }
   }
@@ -102,12 +102,12 @@ class UsersAPI {
   // Fetch all users
   static async getUsers() {
     try {
-      const response = await api.get('/users');
-      return Array.isArray(response.data) 
-        ? response.data.map(user => this.parseUserData(user))
+      const response = await api.get("/users");
+      return Array.isArray(response.data)
+        ? response.data.map((user) => this.parseUserData(user))
         : [];
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
       throw error;
     }
   }
@@ -115,42 +115,44 @@ class UsersAPI {
   // Get current user details
   static async getCurrentUser() {
     try {
-      const response = await api.get('/users/me');
+      const response = await api.get("/users/me");
       const userData = this.parseUserData(response.data);
-      
+
       // Transform events to match existing format
-      const events = response.data.events ? response.data.events.map(event => {
-        const eventDateTime = new Date(event.datetime);
-        return {
-          id: event.id,
-          name: event.name,
-          date: eventDateTime.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-          }),
-          time: eventDateTime.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true
-          }),
-          description: event.description,
-          location: event.location,
-          event_type: event.event_type,
-          event_status: event.event_status,
-          organizer: event.organizer,
-          max_participants: event.max_participants,
-          joined_at: event.joinedAt,
-          event_thumbnail: event.event_thumbnail
-        };
-      }) : [];
+      const events = response.data.events
+        ? response.data.events.map((event) => {
+            const eventDateTime = new Date(event.datetime);
+            return {
+              id: event.id,
+              name: event.name,
+              date: eventDateTime.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
+              time: eventDateTime.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+              description: event.description,
+              location: event.location,
+              event_type: event.event_type,
+              event_status: event.event_status,
+              organizer: event.organizer,
+              max_participants: event.max_participants,
+              joined_at: event.joinedAt,
+              event_thumbnail: event.event_thumbnail,
+            };
+          })
+        : [];
 
       return {
         ...userData,
-        events: events
+        events: events,
       };
     } catch (error) {
-      console.error('Error fetching current user:', error);
+      console.error("Error fetching current user:", error);
       throw error;
     }
   }
@@ -161,7 +163,7 @@ class UsersAPI {
       const response = await api.get(`/users/${userId}`);
       return this.parseUserData(response.data);
     } catch (error) {
-      console.error('Error fetching user:', error);
+      console.error("Error fetching user:", error);
       throw error;
     }
   }
@@ -175,42 +177,42 @@ class UsersAPI {
         password: userData.password,
         first_name: userData.firstName,
         last_name: userData.lastName,
-        role: userData.role?.toLowerCase() || 'user'
+        role: userData.role?.toLowerCase() || "user",
       };
 
-      const authResponse = await api.post('/auth/signup', signupData);
+      const authResponse = await api.post("/auth/signup", signupData);
 
       if (!authResponse.data.access_token) {
-        throw new Error('Failed to create user account');
+        throw new Error("Failed to create user account");
       }
 
       // Store the original admin token
-      const originalToken = sessionStorage.getItem('access_token');
+      const originalToken = sessionStorage.getItem("access_token");
 
       try {
         // Set the new user's token for onboarding
-        sessionStorage.setItem('access_token', authResponse.data.access_token);
+        sessionStorage.setItem("access_token", authResponse.data.access_token);
 
         // Prepare onboarding data
         const formData = new FormData();
-        
+
         // Handle profile image if it exists
         if (userData.profile_url instanceof File) {
-          formData.append('profile_url', userData.profile_url);
+          formData.append("profile_url", userData.profile_url);
         }
 
         // Add onboarding data
         const onboardData = {
-          gender: userData.gender?.toLowerCase() || 'male',
+          gender: userData.gender?.toLowerCase() || "male",
           cityId: userData.cityId,
           universityId: userData.universityId,
-          status: true
+          status: true,
         };
 
         // Append data to FormData with proper type handling
         Object.entries(onboardData).forEach(([key, value]) => {
           if (value !== null && value !== undefined) {
-            if (typeof value === 'boolean') {
+            if (typeof value === "boolean") {
               formData.append(key, JSON.stringify(value));
             } else {
               formData.append(key, value);
@@ -219,19 +221,19 @@ class UsersAPI {
         });
 
         // Submit onboarding data
-        const onboardResponse = await api.post('/users/onboard', formData, {
+        const onboardResponse = await api.post("/users/onboard", formData, {
           headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+            "Content-Type": "multipart/form-data",
+          },
         });
 
         return this.parseUserData(onboardResponse.data);
       } finally {
         // Restore the original admin token
-        sessionStorage.setItem('access_token', originalToken);
+        sessionStorage.setItem("access_token", originalToken);
       }
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error("Error creating user:", error);
       throw error;
     }
   }
@@ -239,15 +241,15 @@ class UsersAPI {
   // Update user
   static async updateUser(userId, userData) {
     try {
-      const userDataFormatted = this.formatUserData(userData, false);  // Pass false to indicate this is an update
+      const userDataFormatted = this.formatUserData(userData, false); // Pass false to indicate this is an update
 
       if (userData.profile_url instanceof File) {
         const formData = new FormData();
-        formData.append('profile_url', userData.profile_url);
-        
+        formData.append("profile_url", userData.profile_url);
+
         Object.entries(userDataFormatted).forEach(([key, value]) => {
-          if (value !== null && value !== undefined && key !== 'profile_url') {
-            if (typeof value === 'boolean') {
+          if (value !== null && value !== undefined && key !== "profile_url") {
+            if (typeof value === "boolean") {
               formData.append(key, JSON.stringify(value));
             } else {
               formData.append(key, value);
@@ -257,8 +259,8 @@ class UsersAPI {
 
         const response = await api.patch(`/users/${userId}`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+            "Content-Type": "multipart/form-data",
+          },
         });
         return this.parseUserData(response.data);
       }
@@ -266,7 +268,7 @@ class UsersAPI {
       const response = await api.patch(`/users/${userId}`, userDataFormatted);
       return this.parseUserData(response.data);
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error("Error updating user:", error);
       throw error;
     }
   }
@@ -277,7 +279,7 @@ class UsersAPI {
       const response = await api.delete(`/users/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
       throw error;
     }
   }
@@ -286,11 +288,11 @@ class UsersAPI {
   static async suspendUser(userId) {
     try {
       const response = await api.patch(`/users/${userId}`, {
-        status: false
+        status: false,
       });
       return this.parseUserData(response.data);
     } catch (error) {
-      console.error('Error suspending user:', error);
+      console.error("Error suspending user:", error);
       throw error;
     }
   }
@@ -299,11 +301,11 @@ class UsersAPI {
   static async activateUser(userId) {
     try {
       const response = await api.patch(`/users/${userId}`, {
-        status: true
+        status: true,
       });
       return this.parseUserData(response.data);
     } catch (error) {
-      console.error('Error activating user:', error);
+      console.error("Error activating user:", error);
       throw error;
     }
   }
@@ -313,17 +315,30 @@ class UsersAPI {
     try {
       const response = await api.get(`/users/activity`);
       if (!response.data) return [];
-      
-      return Array.isArray(response.data) 
-        ? response.data.map(activity => ({
+
+      return Array.isArray(response.data)
+        ? response.data.map((activity) => ({
             id: activity.id,
-            type: 'default',
+            type: "default",
             content: activity.activity,
-            timestamp: activity.createdAt
+            timestamp: activity.createdAt,
           }))
         : [];
     } catch (error) {
-      console.error('Error fetching user activity:', error);
+      console.error("Error fetching user activity:", error);
+      throw error;
+    }
+  }
+
+  // Get user metrics
+  static async getUserMetrics() {
+    try {
+      const response = await api.get(`users/metrics`);
+      if (!response.data) return [];
+
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user activity:", error);
       throw error;
     }
   }
@@ -333,9 +348,9 @@ class UsersAPI {
     try {
       const response = await api.get(`/users/events`);
       if (!response.data) return [];
-      
-      return Array.isArray(response.data) 
-        ? response.data.map(event => ({
+
+      return Array.isArray(response.data)
+        ? response.data.map((event) => ({
             id: event.id,
             name: event.name,
             description: event.description,
@@ -347,11 +362,11 @@ class UsersAPI {
             max_participants: event.max_participants,
             agenda: event.agenda,
             speaker: event.speaker,
-            event_thumbnail: event.event_thumbnail
+            event_thumbnail: event.event_thumbnail,
           }))
         : [];
     } catch (error) {
-      console.error('Error fetching user events:', error);
+      console.error("Error fetching user events:", error);
       throw error;
     }
   }
@@ -366,11 +381,14 @@ class UsersAPI {
       gender: userData.gender?.toLowerCase(),
       cityId: userData.cityId || userData.cityld,
       universityId: userData.universityId || userData.universityld,
-      status: typeof userData.status === 'boolean' ? userData.status : userData.status === 'Active'
+      status:
+        typeof userData.status === "boolean"
+          ? userData.status
+          : userData.status === "Active",
     };
 
     // Clean undefined and null values
-    Object.keys(formatted).forEach(key => {
+    Object.keys(formatted).forEach((key) => {
       if (formatted[key] === undefined || formatted[key] === null) {
         delete formatted[key];
       }
@@ -387,7 +405,7 @@ class UsersAPI {
   // Parse user data from API
   static parseUserData(userData) {
     if (!userData) return null;
-    
+
     return {
       id: userData.id,
       firstName: userData.first_name,
@@ -400,12 +418,13 @@ class UsersAPI {
       universityId: userData.universityId,
       city: userData.city,
       university: userData.university,
-      status: userData.status === true ? 'Active' : 'Suspended',
+      status: userData.status === true ? "Active" : "Suspended",
       createdAt: userData.createdAt,
       updatedAt: userData.updatedAt,
-      events: userData.events || [] // Add events to the parsed user data
+      events: userData.events || [], // Add events to the parsed user data
     };
   }
 }
 
 export default UsersAPI;
+
