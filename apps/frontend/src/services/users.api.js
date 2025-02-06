@@ -99,8 +99,6 @@ class UsersAPI {
     }
   }
 
-  // Existing methods remain the same...
-  
   // Fetch all users
   static async getUsers() {
     try {
@@ -276,8 +274,9 @@ class UsersAPI {
       return Array.isArray(response.data) 
         ? response.data.map(activity => ({
             id: activity.id,
-            activity: activity.activity,
-            createdAt: activity.createdAt
+            type: 'default',
+            content: activity.activity,
+            timestamp: activity.createdAt
           }))
         : [];
     } catch (error) {

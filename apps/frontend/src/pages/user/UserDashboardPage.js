@@ -7,6 +7,7 @@ import JoinedStudyGroups from '../../components/user/dashboard/JoinedStudyGroups
 import RegisteredEvents from '../../components/user/dashboard/RegisteredEvents';
 import RecentActivity from '../../components/user/dashboard/RecentActivity';
 import useDarkMode from '../../hooks/useDarkMode';
+import UsersAPI from '../../services/users.api';
 
 const UserDashboardPage = () => {
   const [user, setUser] = useState(null);
@@ -14,20 +15,35 @@ const UserDashboardPage = () => {
   const [events, setEvents] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
   const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
+  const [userActivities, setUserActivities] = useState([]);
   const [isDarkMode, toggleDarkMode] = useDarkMode();
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    const storedGroups = JSON.parse(localStorage.getItem('studyGroups') || '[]');
-    const storedEvents = JSON.parse(localStorage.getItem('events') || '[]');
-    const storedPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
-    const storedBookmarks = JSON.parse(localStorage.getItem('bookmarkedPosts') || '[]');
-    
-    setUser(userData);
-    setStudyGroups(storedGroups);
-    setEvents(storedEvents);
-    setBlogPosts(storedPosts);
-    setBookmarkedPosts(storedBookmarks);
+    const fetchUserData = async () => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const storedGroups = JSON.parse(localStorage.getItem('studyGroups') || '[]');
+        const storedEvents = JSON.parse(localStorage.getItem('events') || '[]');
+        const storedPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
+        const storedBookmarks = JSON.parse(localStorage.getItem('bookmarkedPosts') || '[]');
+        
+        setUser(userData);
+        setStudyGroups(storedGroups);
+        setEvents(storedEvents);
+        setBlogPosts(storedPosts);
+        setBookmarkedPosts(storedBookmarks);
+
+        // Fetch user activities if user exists
+        if (userData && userData.id) {
+          const activities = await UsersAPI.getUserActivity(userData.id);
+          setUserActivities(activities);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   useEffect(() => {
