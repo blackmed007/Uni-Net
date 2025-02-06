@@ -21,15 +21,27 @@ const UserDashboardPage = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        // Fetch user data from /users/me endpoint
+        const userData = await UsersAPI.getCurrentUser();
+        
+        // Update localStorage with fetched user data
+        localStorage.setItem('userData', JSON.stringify(userData));
+        
+        // Set user state
+        setUser(userData);
+
+        // Set events from the user data
+        if (userData && userData.events) {
+          setEvents(userData.events);
+          localStorage.setItem('events', JSON.stringify(userData.events));
+        }
+
+        // Retrieve other data from localStorage
         const storedGroups = JSON.parse(localStorage.getItem('studyGroups') || '[]');
-        const storedEvents = JSON.parse(localStorage.getItem('events') || '[]');
         const storedPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
         const storedBookmarks = JSON.parse(localStorage.getItem('bookmarkedPosts') || '[]');
         
-        setUser(userData);
         setStudyGroups(storedGroups);
-        setEvents(storedEvents);
         setBlogPosts(storedPosts);
         setBookmarkedPosts(storedBookmarks);
 

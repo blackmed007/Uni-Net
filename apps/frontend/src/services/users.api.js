@@ -112,6 +112,49 @@ class UsersAPI {
     }
   }
 
+  // Get current user details
+  static async getCurrentUser() {
+    try {
+      const response = await api.get('/users/me');
+      const userData = this.parseUserData(response.data);
+      
+      // Transform events to match existing format
+      const events = response.data.events ? response.data.events.map(event => {
+        const eventDateTime = new Date(event.datetime);
+        return {
+          id: event.id,
+          name: event.name,
+          date: eventDateTime.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          time: eventDateTime.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true
+          }),
+          description: event.description,
+          location: event.location,
+          event_type: event.event_type,
+          event_status: event.event_status,
+          organizer: event.organizer,
+          max_participants: event.max_participants,
+          joined_at: event.joinedAt,
+          event_thumbnail: event.event_thumbnail
+        };
+      }) : [];
+
+      return {
+        ...userData,
+        events: events
+      };
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      throw error;
+    }
+  }
+
   // Get single user
   static async getUser(userId) {
     try {
@@ -359,7 +402,8 @@ class UsersAPI {
       university: userData.university,
       status: userData.status === true ? 'Active' : 'Suspended',
       createdAt: userData.createdAt,
-      updatedAt: userData.updatedAt
+      updatedAt: userData.updatedAt,
+      events: userData.events || [] // Add events to the parsed user data
     };
   }
 }

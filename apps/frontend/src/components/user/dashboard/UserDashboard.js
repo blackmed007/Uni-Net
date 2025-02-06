@@ -25,9 +25,7 @@ const UserDashboard = ({
     Array.isArray(group.members) && group.members.includes(user.id)
   );
 
-  const registeredEvents = events.filter(event => 
-    Array.isArray(event.participants) && event.participants.includes(user.id)
-  );
+  const registeredEvents = events;
 
   const SummaryCard = ({ title, value, icon: Icon, trend, color }) => {
     const config = {
