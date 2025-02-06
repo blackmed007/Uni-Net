@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { NextUIProvider } from "@nextui-org/react";
-import UserNavbar from '../../components/user/UserNavbar';
-import UserDashboard from '../../components/user/dashboard/UserDashboard';
-import NotificationsList from '../../components/user/dashboard/NotificationsList';
-import JoinedStudyGroups from '../../components/user/dashboard/JoinedStudyGroups';
-import RegisteredEvents from '../../components/user/dashboard/RegisteredEvents';
-import RecentActivity from '../../components/user/dashboard/RecentActivity';
-import useDarkMode from '../../hooks/useDarkMode';
-import UsersAPI from '../../services/users.api';
+import UserNavbar from "../../components/user/UserNavbar";
+import UserDashboard from "../../components/user/dashboard/UserDashboard";
+import NotificationsList from "../../components/user/dashboard/NotificationsList";
+import JoinedStudyGroups from "../../components/user/dashboard/JoinedStudyGroups";
+import RegisteredEvents from "../../components/user/dashboard/RegisteredEvents";
+import RecentActivity from "../../components/user/dashboard/RecentActivity";
+import useDarkMode from "../../hooks/useDarkMode";
+import UsersAPI from "../../services/users.api";
 
 const UserDashboardPage = () => {
   const [user, setUser] = useState(null);
@@ -23,24 +23,33 @@ const UserDashboardPage = () => {
       try {
         // Fetch user data from /users/me endpoint
         const userData = await UsersAPI.getCurrentUser();
-        
+
         // Update localStorage with fetched user data
-        localStorage.setItem('userData', JSON.stringify(userData));
-        
+        localStorage.setItem("userData", JSON.stringify(userData));
+
+        // Update localStorage with fetched user data
+        // localStorage.setItem("userMetric", JSON.stringify(userMetrics));
+
         // Set user state
         setUser(userData);
 
         // Set events from the user data
         if (userData && userData.events) {
           setEvents(userData.events);
-          localStorage.setItem('events', JSON.stringify(userData.events));
+          localStorage.setItem("events", JSON.stringify(userData.events));
         }
 
         // Retrieve other data from localStorage
-        const storedGroups = JSON.parse(localStorage.getItem('studyGroups') || '[]');
-        const storedPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
-        const storedBookmarks = JSON.parse(localStorage.getItem('bookmarkedPosts') || '[]');
-        
+        const storedGroups = JSON.parse(
+          localStorage.getItem("studyGroups") || "[]",
+        );
+        const storedPosts = JSON.parse(
+          localStorage.getItem("blogPosts") || "[]",
+        );
+        const storedBookmarks = JSON.parse(
+          localStorage.getItem("bookmarkedPosts") || "[]",
+        );
+
         setStudyGroups(storedGroups);
         setBlogPosts(storedPosts);
         setBookmarkedPosts(storedBookmarks);
@@ -51,7 +60,7 @@ const UserDashboardPage = () => {
           setUserActivities(activities);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error("Error fetching user data:", error);
       }
     };
 
@@ -60,13 +69,13 @@ const UserDashboardPage = () => {
 
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'bookmarkedPosts') {
-        setBookmarkedPosts(JSON.parse(e.newValue || '[]'));
+      if (e.key === "bookmarkedPosts") {
+        setBookmarkedPosts(JSON.parse(e.newValue || "[]"));
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   if (!user) {
@@ -77,15 +86,15 @@ const UserDashboardPage = () => {
     <NextUIProvider>
       <div className="flex h-screen bg-black text-white">
         <div className="flex flex-col flex-1 overflow-hidden">
-          <UserNavbar 
-            isDarkMode={isDarkMode} 
-            toggleDarkMode={toggleDarkMode} 
+          <UserNavbar
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
             user={user}
           />
           <div className="flex-1 overflow-auto p-6 bg-black mt-16">
-            <UserDashboard 
-              user={user} 
-              studyGroups={studyGroups} 
+            <UserDashboard
+              user={user}
+              studyGroups={studyGroups}
               events={events}
               blogPosts={blogPosts}
               bookmarkedPosts={bookmarkedPosts}
@@ -102,3 +111,4 @@ const UserDashboardPage = () => {
 };
 
 export default UserDashboardPage;
+
