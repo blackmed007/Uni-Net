@@ -487,6 +487,50 @@ export class UsersService {
     });
   }
 
+  async getUserMetrics(userId: string) {
+    try {
+      const registeredEvents = await this.prisma.usersOnEvents.count({
+        where: {
+          userId,
+        },
+      });
+
+      const bookmarkedPosts = await this.prisma.bookmark.count({
+        where: {
+          userId,
+        },
+      });
+
+      const totalBlogViews = await this.prisma.blog.aggregate({
+        _sum: {
+          views: true,
+        },
+      });
+
+      const engagementRate =
+        bookmarkedPosts > 0
+          ? ((totalBlogViews._sum.views || 0) + bookmarkedPosts) /
+            bookmarkedPosts
+          : 0;
+
+      return {
+        registerd_events: registeredEvents,
+        bookmarked_posts: bookmarkedPosts,
+        engagement_rate: engagementRate,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new ForbiddenException('Error while trying to fetch metrics');
+      } else if (error instanceof PrismaClientInitializationError) {
+        throw new InternalServerErrorException(
+          'Server error - please try again later',
+        );
+      }
+
+      throw error;
+    }
+  }
+
   async removeEventBookmark(
     userId: string,
     eventId: string,
