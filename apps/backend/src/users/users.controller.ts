@@ -77,6 +77,13 @@ export class UsersController {
     return this.usersService.getCurrentUser(userId);
   }
 
+  @Get('metrics')
+  @UseGuards(JwtGuard)
+  async getUserMetrics(@Request() req: ExpressRequest) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserMetrics(userId);
+  }
+
   @Post('join-event')
   @UseGuards(JwtGuard)
   async joinEvent(
