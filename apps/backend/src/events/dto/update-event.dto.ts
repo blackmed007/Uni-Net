@@ -32,7 +32,7 @@ export class UpdateEventDto {
     type: String,
     description: 'This is an optional property',
   })
-  event_date?: string;
+  datetime?: string;
 
   @IsOptional()
   @IsNotEmpty()
@@ -105,7 +105,7 @@ export class UpdateEventDto {
     type: String,
     description: 'This is an optional property',
   })
-  event_image_url?: string;
+  event_thumbnail?: string;
 
   @IsOptional()
   @IsString()
