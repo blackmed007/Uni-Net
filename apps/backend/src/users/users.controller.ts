@@ -22,7 +22,7 @@ import { Request as ExpressRequest } from 'express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JoinEventDto } from './dto/join-event.dto';
 import { ImagesService } from 'src/images/images.service';
-import { Bookmark, UserActivity } from '@prisma/client';
+import { Bookmark, EventBookmark, UserActivity } from '@prisma/client';
 import { SignupDto } from 'src/auth/dto/signup.dto';
 
 @Controller('users')
@@ -104,6 +104,78 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Post('bookmarks')
+  @UseGuards(JwtGuard)
+  async addBookmark(
+    @Request() req: ExpressRequest,
+    @Body('blogId') blogId: string,
+  ): Promise<Bookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.addBookmark(userId, blogId);
+  }
+
+  @Post('event-bookmarks')
+  @UseGuards(JwtGuard)
+  async addEventBookmark(
+    @Request() req: ExpressRequest,
+    @Body('eventId') eventId: string,
+  ): Promise<EventBookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.addEventBookmark(userId, eventId);
+  }
+
+  @Get('event-bookmarks')
+  @UseGuards(JwtGuard)
+  async getUserEventsBookmarks(
+    @Request() req: ExpressRequest,
+  ): Promise<EventBookmark[]> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserEventsBookmarks(userId);
+  }
+
+  @Get('bookmarks')
+  @UseGuards(JwtGuard)
+  async getUserBookmarks(@Request() req: ExpressRequest): Promise<Bookmark[]> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserBookmarks(userId);
+  }
+
+  @Get('activity')
+  @UseGuards(JwtGuard)
+  async getUserActivity(
+    @Request() req: ExpressRequest,
+  ): Promise<UserActivity[]> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserActivities(userId);
+  }
+
+  @Get('events')
+  @UseGuards(JwtGuard)
+  async getUserEvents(@Request() req: ExpressRequest) {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.getUserJoinedEvents(userId);
+  }
+
+  @Delete('bookmarks/:blogId')
+  @UseGuards(JwtGuard)
+  async removeBookmark(
+    @Request() req: ExpressRequest,
+    @Param('blogId') blogId: string,
+  ): Promise<Bookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.removeBookmark(userId, blogId);
+  }
+
+  @Delete('event-bookmarks/:eventId')
+  @UseGuards(JwtGuard)
+  async removeEventBookmark(
+    @Request() req: ExpressRequest,
+    @Param('eventId') eventId: string,
+  ): Promise<EventBookmark> {
+    const userId = (req.user as { id: string }).id;
+    return this.usersService.removeEventBookmark(userId, eventId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -140,48 +212,5 @@ export class UsersController {
   @UseGuards(JwtGuard)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
-  }
-
-  @Post('bookmarks')
-  @UseGuards(JwtGuard)
-  async addBookmark(
-    @Request() req: ExpressRequest,
-    @Body('blogId') blogId: string,
-  ): Promise<Bookmark> {
-    const userId = (req.user as { id: string }).id;
-    return this.usersService.addBookmark(userId, blogId);
-  }
-
-  @Get('bookmarks')
-  @UseGuards(JwtGuard)
-  async getUserBookmarks(@Request() req: ExpressRequest): Promise<Bookmark[]> {
-    const userId = (req.user as { id: string }).id;
-    return this.usersService.getUserBookmarks(userId);
-  }
-
-  @Get('activity')
-  @UseGuards(JwtGuard)
-  async getUserActivity(
-    @Request() req: ExpressRequest,
-  ): Promise<UserActivity[]> {
-    const userId = (req.user as { id: string }).id;
-    return this.usersService.getUserActivities(userId);
-  }
-
-  @Get('events')
-  @UseGuards(JwtGuard)
-  async getUserEvents(@Request() req: ExpressRequest) {
-    const userId = (req.user as { id: string }).id;
-    return this.usersService.getUserJoinedEvents(userId);
-  }
-
-  @Delete('bookmarks/:blogId')
-  @UseGuards(JwtGuard)
-  async removeBookmark(
-    @Request() req: ExpressRequest,
-    @Param('blogId') blogId: string,
-  ): Promise<Bookmark> {
-    const userId = (req.user as { id: string }).id;
-    return this.usersService.removeBookmark(userId, blogId);
   }
 }
