@@ -60,6 +60,28 @@ const checkAndUpdateEventStatus = async (event) => {
   }
 };
 
+// Helper function to validate event joining
+const validateEventJoining = (event) => {
+  if (!event) {
+    throw new Error("Event not found");
+  }
+
+  switch (event.event_status) {
+    case "Cancelled":
+      throw new Error("This event has been cancelled");
+    case "Completed":
+      throw new Error("This event has already taken place");
+    case "Upcoming":
+    case "Ongoing":
+      if (event.participants?.length >= event.max_participants) {
+        throw new Error("This event is already full");
+      }
+      break;
+    default:
+      throw new Error("Unable to join event at this time");
+  }
+};
+
 // Helper function to format event data for frontend consistency
 const formatEventData = (event) => {
   if (!event) return null;
@@ -138,6 +160,9 @@ const userEventsApi = {
       const eventResponse = await api.get(`/events/${eventId}`);
       const event = eventResponse.data;
 
+      // Validate event status and capacity before joining
+      validateEventJoining(event);
+
       // Join the event
       const response = await api.post("/users/join-event", {
         eventId,
@@ -152,7 +177,7 @@ const userEventsApi = {
       return response.data;
     } catch (error) {
       console.error("Error in joinEvent:", error);
-      throw new Error("Failed to join event");
+      throw error;
     }
   },
 

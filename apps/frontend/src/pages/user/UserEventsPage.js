@@ -143,16 +143,55 @@ const UserEventsPage = () => {
   const handleJoinEvent = useCallback(
     async (eventId) => {
       try {
+        const eventToJoin = events.find(event => event.id === eventId);
         const isCurrentlyJoined = joinedEvents.includes(eventId);
+
+        if (!eventToJoin) {
+          showMessage("Event not found.");
+          return;
+        }
+
+        // Check event status before allowing join
+        switch (eventToJoin.status) {
+          case "Cancelled":
+            showMessage("Sorry, this event has been cancelled. Keep an eye out for similar events coming up!");
+            return;
+          case "Completed":
+            showMessage("Sorry This event Either has already taken place or Reached Max PARTICIPANTS! ");
+            return;
+          case "Upcoming":
+            if (!isCurrentlyJoined) {
+              showMessage("Great choice! Join now to secure your spot. We'll send you a reminder as the event date approaches.");
+            }
+            break;
+          case "Ongoing":
+            if (!isCurrentlyJoined) {
+              showMessage("This event is happening ! Pay Attention to Date/Time . Happy event .");
+            }
+            break;
+          default:
+            showMessage("Unable to join event at this time. Please try again later.");
+            return;
+        }
+
+        if (eventToJoin.participants.length >= eventToJoin.maxParticipants) {
+          showMessage("Sorry, this event is already full. Join our waitlist to be notified if a spot opens up!");
+          return;
+        }
 
         if (isCurrentlyJoined) {
           await userEventsApi.leaveEvent(eventId);
           setJoinedEvents((prev) => prev.filter((id) => id !== eventId));
-          showMessage("You have successfully left the event.");
+          showMessage("You have successfully left the event. We hope to see you at future events!");
         } else {
           await userEventsApi.joinEvent(eventId);
           setJoinedEvents((prev) => [...prev, eventId]);
-          showMessage("You have successfully joined the event!");
+          const isUpcoming = eventToJoin.status === "Upcoming";
+          showMessage(
+            isUpcoming
+              ? "You're all set! We'll email you the event details and reminders. Remember to bring your student ID and arrive 10 minutes early."
+              : "You've successfully joined! This event is happening ! Pay Attention to Date/Time . Happy event. Don't forget your student ID!"
+          );
         }
 
         // Refresh events list
@@ -163,7 +202,7 @@ const UserEventsPage = () => {
         console.error("Error joining/leaving event:", err);
       }
     },
-    [joinedEvents, showMessage],
+    [events, joinedEvents, showMessage],
   );
 
   const handleBookmarkEvent = useCallback(
@@ -357,4 +396,3 @@ const UserEventsPage = () => {
 };
 
 export default UserEventsPage;
-
