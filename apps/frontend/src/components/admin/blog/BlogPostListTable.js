@@ -119,25 +119,25 @@ const BlogPostListTable = ({
           </Tooltip>
         );
 
-        case "category":
-  return (
-    <Tooltip 
-      content={<p className="whitespace-pre-line">{formatTooltipText(cellValue)}</p>}
-      isDisabled={cellValue.length <= 50}
-      showArrow
-    >
-      <Chip 
-        color="primary" 
-        size="sm" 
-        variant="flat"
-        classNames={{
-          content: "line-clamp-2 max-w-[150px] text-neutral-50"  // Very light, soft white
-        }}
-      >
-        {truncateText(cellValue, 15)}
-      </Chip>
-    </Tooltip>
-  );
+      case "category":
+        return (
+          <Tooltip 
+            content={<p className="whitespace-pre-line">{formatTooltipText(cellValue)}</p>}
+            isDisabled={cellValue.length <= 50}
+            showArrow
+          >
+            <Chip 
+              color="primary" 
+              size="sm" 
+              variant="flat"
+              classNames={{
+                content: "line-clamp-2 max-w-[150px] text-neutral-50"
+              }}
+            >
+              {truncateText(cellValue, 15)}
+            </Chip>
+          </Tooltip>
+        );
 
       case "createdAt":
         return <span className="text-small whitespace-nowrap">{formatBlogDate(cellValue)}</span>;
@@ -163,16 +163,15 @@ const BlogPostListTable = ({
 
       case "actions":
         return (
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-center gap-2 justify-center">
             <Tooltip content="View Details" showArrow>
               <Button
                 isIconOnly
                 size="sm"
                 variant="light"
                 onPress={() => onPostAction("view", post)}
-                className="text-default-400 hover:text-default-900"
               >
-                <Eye size={18} />
+                <Eye size={20} />
               </Button>
             </Tooltip>
             <Tooltip content="Edit Post" showArrow>
@@ -181,9 +180,8 @@ const BlogPostListTable = ({
                 size="sm"
                 variant="light"
                 onPress={() => onPostAction("edit", post)}
-                className="text-default-400 hover:text-default-900"
               >
-                <Edit2 size={18} />
+                <Edit2 size={20} />
               </Button>
             </Tooltip>
             <Tooltip content="Delete Post" showArrow>
@@ -193,9 +191,8 @@ const BlogPostListTable = ({
                 variant="light"
                 color="danger"
                 onPress={() => onPostAction("delete", post)}
-                className="text-danger hover:text-danger-500"
               >
-                <Trash2 size={18} />
+                <Trash2 size={20} />
               </Button>
             </Tooltip>
           </div>
@@ -245,7 +242,7 @@ const BlogPostListTable = ({
         {(column) => (
           <TableColumn
             key={column.uid}
-            align={column.uid === "actions" ? "end" : "start"}
+            align={column.uid === "actions" ? "center" : "start"}
             className="text-small uppercase"
           >
             {column.name}
