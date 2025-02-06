@@ -139,13 +139,22 @@ const OnboardingPage = () => {
     setIsLoading(true);
 
     try {
-      await AuthAPI.onboard({
+      const response = await AuthAPI.onboard({
         ...formData,
         profile_url: formData.profile_url,
         gender: formData.gender.toLowerCase(),
       });
 
-      navigate("/user/dashboard");
+      // Update the user data in localStorage with the response data
+      const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const updatedUserData = {
+        ...currentUserData,
+        ...response,
+        role: 'user' // Ensure role is set
+      };
+      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+
+      navigate("/user");
     } catch (error) {
       try {
         const errorData = JSON.parse(error.message);
