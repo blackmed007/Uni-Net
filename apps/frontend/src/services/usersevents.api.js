@@ -130,7 +130,9 @@ const userEventsApi = {
   // Leave an event
   leaveEvent: async (eventId) => {
     try {
-      const response = await api.delete(`/users/events/${eventId}`);
+      const response = await api.post(`/users/leave-event`, {
+        eventId,
+      });
       return response.data;
     } catch (error) {
       console.error("Error in leaveEvent:", error);
