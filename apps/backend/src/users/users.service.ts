@@ -17,7 +17,7 @@ import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
 } from '@prisma/client/runtime/library';
-import { Bookmark, Event, UserActivity } from '@prisma/client';
+import { Bookmark, Event, EventBookmark, UserActivity } from '@prisma/client';
 import { SignupDto } from 'src/auth/dto/signup.dto';
 
 @Injectable()
@@ -368,10 +368,52 @@ export class UsersService {
     return bookmark;
   }
 
+  async addEventBookmark(
+    userId: string,
+    eventId: string,
+  ): Promise<EventBookmark> {
+    const existingBookmark = await this.prisma.eventBookmark.findUnique({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+
+    if (existingBookmark) {
+      throw new Error('Bookmark already exists');
+    }
+
+    // Create a new bookmark
+    const bookmark = this.prisma.eventBookmark.create({
+      data: {
+        userId,
+        eventId,
+      },
+    });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId,
+        activity: `Event bookmarked`,
+      },
+    });
+
+    return bookmark;
+  }
+
   async getUserBookmarks(userId: string): Promise<Bookmark[]> {
     return this.prisma.bookmark.findMany({
       where: { userId },
       include: { blog: true },
+    });
+  }
+
+  async getUserEventsBookmarks(userId: string): Promise<EventBookmark[]> {
+    return this.prisma.eventBookmark.findMany({
+      where: { userId },
+      include: { event: true },
     });
   }
 
@@ -398,6 +440,21 @@ export class UsersService {
       },
     });
   }
+
+  async removeEventBookmark(
+    userId: string,
+    eventId: string,
+  ): Promise<EventBookmark> {
+    return this.prisma.eventBookmark.delete({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+  }
+
   async getUserActivities(userId: string): Promise<UserActivity[]> {
     return this.prisma.userActivity.findMany({
       where: {
