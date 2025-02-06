@@ -265,6 +265,52 @@ export class UsersService {
     return joinedEvent;
   }
 
+  async leaveEvent(userId: string, leaveEventDto: JoinEventDto) {
+    const { eventId } = leaveEventDto;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!user || !event) {
+      throw new ForbiddenException('User or Event not found');
+    }
+
+    // Check if the user is joined to the event
+    const joinedEvent = await this.prisma.usersOnEvents.findUnique({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+
+    if (!joinedEvent) {
+      throw new ForbiddenException('User is not joined to this event');
+    }
+
+    // Remove the user from the event
+    await this.prisma.usersOnEvents.delete({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+
+    await this.prisma.userActivity.create({
+      data: {
+        userId,
+        activity: 'Left event',
+      },
+    });
+
+    return { message: 'Successfully left the event' };
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({
       where: { id },
