@@ -41,6 +41,20 @@ class EventsAPI {
     }
   }
 
+  // Check and update event status based on participants
+  static async checkAndUpdateEventStatus(eventId, currentParticipants, maxParticipants) {
+    try {
+      if (currentParticipants >= maxParticipants) {
+        await this.updateEventStatus(eventId, "Completed");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking and updating event status:", error);
+      throw error;
+    }
+  }
+
   // Backend Data Formatting
   static formatEventDataForBackend(eventData, isUpdate = false) {
     try {
@@ -250,9 +264,19 @@ class EventsAPI {
   // Join Event
   static async joinEvent(eventId) {
     try {
+      // First, get current event data
+      const event = await this.getEvent(eventId);
+      if (!event) throw new Error("Event not found");
+
+      // Join the event
       const response = await api.post(`/users/join-event`, {
         eventId
       });
+
+      // Check if max participants reached and update status if needed
+      const newParticipantCount = (event.participants?.length || 0) + 1;
+      await this.checkAndUpdateEventStatus(eventId, newParticipantCount, event.max_participants);
+
       return response.data;
     } catch (error) {
       console.error("Error joining event:", error);

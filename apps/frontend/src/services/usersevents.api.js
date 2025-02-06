@@ -43,6 +43,23 @@ const ensureArray = (data) => {
   return Array.isArray(data) ? data : [data];
 };
 
+// Helper function to check and update event status
+const checkAndUpdateEventStatus = async (event) => {
+  try {
+    const currentParticipants = event.participants?.length || 0;
+    if (currentParticipants >= event.max_participants && event.event_status !== 'Completed') {
+      await api.patch(`/events/${event.id}`, {
+        event_status: 'Completed'
+      });
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error updating event status:', error);
+    throw error;
+  }
+};
+
 // Helper function to format event data for frontend consistency
 const formatEventData = (event) => {
   if (!event) return null;
@@ -117,9 +134,21 @@ const userEventsApi = {
   // Join an event
   joinEvent: async (eventId) => {
     try {
+      // First get the event details
+      const eventResponse = await api.get(`/events/${eventId}`);
+      const event = eventResponse.data;
+
+      // Join the event
       const response = await api.post("/users/join-event", {
         eventId,
       });
+
+      // Check and update status if needed
+      await checkAndUpdateEventStatus({
+        ...event,
+        participants: [...(event.participants || []), { id: response.data.userId }]
+      });
+
       return response.data;
     } catch (error) {
       console.error("Error in joinEvent:", error);
@@ -198,4 +227,3 @@ const userEventsApi = {
 };
 
 export default userEventsApi;
-
