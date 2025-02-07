@@ -37,7 +37,6 @@ const UserBlogPage = () => {
     const userData = JSON.parse(localStorage.getItem("userData"));
     setUser(userData);
 
-    // Fetch bookmarks from backend instead of localStorage
     fetchBookmarks();
     fetchBlogPosts();
   }, []);
@@ -80,16 +79,18 @@ const UserBlogPage = () => {
     setSearchTerm(e.target.value);
   };
 
-  const handleBookmark = async (e, postId) => {
-    e.stopPropagation();
+  const handleBookmark = async (event, postId) => {
+    if (event) {
+      if (event.preventDefault) event.preventDefault();
+      if (event.stopPropagation) event.stopPropagation();
+    }
+
     try {
       if (bookmarkedPosts.includes(postId)) {
-        // Remove bookmark
         await UsersAPI.removeBookmark(postId);
         setBookmarkedPosts((prev) => prev.filter((id) => id !== postId));
         toast.success("Bookmark removed");
       } else {
-        // Add bookmark
         await UsersAPI.addBookmark(postId);
         setBookmarkedPosts((prev) => [...prev, postId]);
         toast.success("Bookmark added");
@@ -100,17 +101,19 @@ const UserBlogPage = () => {
     }
   };
 
-  const handlePostClick = (postId) => {
-    window.open(`/blog/${postId}`, "_blank");
+  const handlePostClick = (postId, event) => {
+    if (event) {
+      if (event.preventDefault) event.preventDefault();
+      if (event.stopPropagation) event.stopPropagation();
+    }
+    navigate(`/blog/${postId}`);
   };
-
-  // Updated FeaturedPost component:
   const FeaturedPost = ({ post }) => (
     <Card
       as="div"
       isPressable
       className="w-[700px] max-w-full bg-gradient-to-b from-gray-900 to-black border border-gray-800 text-white p-6 mb-8 cursor-pointer hover:from-gray-800 hover:to-gray-900 transition-all duration-300 shadow-2xl mx-auto lg:mx-0"
-      onClick={() => handlePostClick(post.id)}
+      onClick={(e) => handlePostClick(post.id, e)}
     >
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between relative w-full lg:space-x-6">
         <div className="w-full lg:w-full mb-4 lg:mb-0 h-48 lg:h-64 overflow-hidden">
@@ -135,12 +138,9 @@ const UserBlogPage = () => {
           <div className="flex items-center justify-center relative">
             <Button
               color="primary"
-              endContent={<ArrowRight size={16} />}
+              endContent={<ArrowRight size={25} />}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePostClick(post.id);
-              }}
+              onPress={(e) => handlePostClick(post.id, e)}
             >
               Continue Reading
             </Button>
@@ -148,7 +148,7 @@ const UserBlogPage = () => {
               isIconOnly
               color="secondary"
               variant="light"
-              onClick={(e) => handleBookmark(e, post.id)}
+              onPress={(e) => handleBookmark(e, post.id)}
             >
               <Bookmark
                 size={20}
@@ -165,13 +165,12 @@ const UserBlogPage = () => {
     </Card>
   );
 
-  // Updated BlogPostCard component:
   const BlogPostCard = ({ post }) => (
     <Card
       as="div"
       isPressable
       className="h-auto min-h-[24rem] lg:h-96 bg-gradient-to-b from-gray-900 to-black border border-gray-800 text-white p-3 cursor-pointer hover:from-gray-800 hover:to-gray-900 transition-all duration-300 shadow-xl flex flex-col w-full"
-      onClick={() => handlePostClick(post.id)}
+      onClick={(e) => handlePostClick(post.id, e)}
     >
       <div className="relative w-full pb-[56.25%] mb-4 overflow-hidden rounded-lg">
         <img
@@ -193,30 +192,27 @@ const UserBlogPage = () => {
           </span>
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePostClick(post.id);
-              }}
+              onClick={(e) => handlePostClick(post.id, e)}
               className="text-pink-500 hover:text-pink-600 transition-colors px-1"
             >
               Read More
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleBookmark(e, post.id);
-              }}
+            <Button
+              isIconOnly
+              color="secondary"
+              variant="light"
+              onPress={(e) => handleBookmark(e, post.id)}
               className="hover:bg-gray-800 rounded-full transition-colors p-1"
             >
               <Bookmark
-                size={16}
+                size={26}
                 className={
                   bookmarkedPosts.includes(post.id)
                     ? "fill-current text-purple-500"
                     : "text-gray-400"
                 }
               />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
