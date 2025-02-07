@@ -9,3 +9,5 @@ services:
       POSTGRES_DB: uninet
     ports:
       - 5434:5432
+    volumes:
+      - ./db_dump.sql:/docker-entrypoint-initdb.d/db_dump.sql
