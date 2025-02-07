@@ -123,8 +123,8 @@ const UserDetailModal = ({
 
   const tabs = [
     { key: "info", label: "Overview", icon: User },
-    { key: "activity", label: "Activity", icon: Activity },
-    { key: "events", label: "Joined Events", icon: Calendar }
+    // { key: "activity", label: "Activity", icon: Activity },
+    // { key: "events", label: "Joined Events", icon: Calendar }
   ];
 
   const getStatusColor = (status) => {

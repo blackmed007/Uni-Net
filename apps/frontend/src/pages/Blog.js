@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardHeader,
@@ -16,6 +16,7 @@ import { toast } from "react-hot-toast";
 const Blog = () => {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPosts();
@@ -27,7 +28,7 @@ const Blog = () => {
       const allPosts = await BlogsAPI.getBlogs();
       // Filter published posts
       const publishedPosts = allPosts.filter(
-        (post) => post.status === "Published",
+        (post) => post.status === "Published"
       );
       setPosts(publishedPosts);
     } catch (error) {
@@ -39,19 +40,23 @@ const Blog = () => {
   };
 
   const truncateText = (text, maxLength) => {
-    if (!text) return '';
+    if (!text) return "";
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
+  };
+
+  const handleCardClick = (postId) => {
+    navigate(`/blog/${postId}`);
   };
 
   if (isLoading) {
@@ -72,6 +77,9 @@ const Blog = () => {
           {posts.map((post) => (
             <Card
               key={post.id}
+              as="div"
+              isPressable
+              onClick={() => handleCardClick(post.id)}
               className="bg-gradient-to-b from-gray-900 to-black border border-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
             >
               <div className="relative h-64 bg-gray-800">
@@ -80,7 +88,8 @@ const Blog = () => {
                   alt={post.title}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40" />
+                {/* This overlay now has pointer-events-none so it won’t block touch/click events */}
+                <div className="absolute inset-0 bg-black bg-opacity-40 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <Chip
                     color="primary"
@@ -125,21 +134,27 @@ const Blog = () => {
                 <span className="text-sm text-gray-400">
                   {post.views} view{post.views !== 1 ? "s" : ""}
                 </span>
-                <Link to={`/blog/${post.id}`}>
-                  <Button
-                    color="primary"
-                    endContent={<ArrowRight size={16} />}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
-                  >
-                    Read More
-                  </Button>
-                </Link>
+                <Button
+                  color="primary"
+                  endContent={<ArrowRight size={16} />}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                  onClick={(e) => {
+                    if (e && typeof e.stopPropagation === "function") {
+                      e.stopPropagation();
+                    }
+                    handleCardClick(post.id);
+                  }}
+                >
+                  Read More
+                </Button>
               </CardFooter>
             </Card>
           ))}
         </div>
         {posts.length === 0 && (
-          <p className="text-center text-gray-400 mt-8">No blog posts found.</p>
+          <p className="text-center text-gray-400 mt-8">
+            No blog posts found.
+          </p>
         )}
       </div>
     </div>
